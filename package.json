@@ -1,7 +1,7 @@
 {
-  "name": "dsh-session-messenger",
-  "version": "0.3.0-dev.17",
-  "description": "Native session context references, explicit messaging and conversation trees for DeepSeek Harness",
+  "name": "@leoan698-tom/dsh-agent-hub",
+  "version": "0.3.0-dev.18",
+  "description": "DSH Agent Hub: session context, messaging and conversation trees; local CLI integration and human task management are planned",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",
@@ -31,8 +31,8 @@
     }
   },
   "title": {
-    "en": "Session Messenger",
-    "zh": "跨会话信使"
+    "en": "DSH Agent Hub",
+    "zh": "DSH 智能体协作中心"
   },
   "files": [
     "dist",
@@ -44,6 +44,7 @@
     "CONTEXT.md",
     "docs/ARCHITECTURE.md",
     "docs/OPERATIONS.md",
+    "docs/RENAMING.md",
     "docs/TEST_REPORT.md",
     "docs/ACCEPTANCE_CRITERIA.md",
     "docs/COLLABORATION_0_3_DEV15.md",
@@ -121,10 +122,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/leoan698-tom/dsh-session-messenger.git"
+    "url": "git+https://github.com/leoan698-tom/dsh-agent-hub.git"
   },
-  "homepage": "https://github.com/leoan698-tom/dsh-session-messenger#readme",
+  "homepage": "https://github.com/leoan698-tom/dsh-agent-hub#readme",
   "bugs": {
-    "url": "https://github.com/leoan698-tom/dsh-session-messenger/issues"
+    "url": "https://github.com/leoan698-tom/dsh-agent-hub/issues"
   }
 }

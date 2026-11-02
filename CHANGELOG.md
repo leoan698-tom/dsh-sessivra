@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-dev.18 (unreleased)
+
+- Rename the product to DSH Agent Hub / DSH 智能体协作中心 and the package to `@leoan698-tom/dsh-agent-hub` to distinguish it from existing unscoped packages.
+- Align the bundle entry, Host identity, browser module and protocol package with the scoped name.
+- Preserve legacy wire IDs, message sources, tool names and persistent domains for existing conversations and data.
+- Record local CLI sessions, cross-runtime collaboration/context and a human task panel as future scope; this version does not implement those features.
+- Document replacing the old package and keeping its data; old release artifacts retain their original names.
+
 ## 0.3.0-dev.17
 
 - Preserve the native workspace heading, search, view options and add-workspace controls.

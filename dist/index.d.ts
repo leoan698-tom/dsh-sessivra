@@ -4,7 +4,7 @@ import { type Limits, type Root } from './core.js';
 import { MessengerSettings } from './settings.js';
 import '@deepseek-ai/dsh-typert-registry';
 import { type TreeSessionSummary } from './collaboration.js';
-export declare const name = "dsh-session-messenger";
+export declare const name = "@leoan698-tom/dsh-agent-hub";
 export declare const inject: string[];
 interface SessionControllerAccess {
     create(request: {

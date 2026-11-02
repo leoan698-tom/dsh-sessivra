@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues and specs live as GitHub issues on `leoan698-tom/dsh-session-messenger`. See `docs/agents/issue-tracker.md`.
+Issues and specs live as GitHub issues on `leoan698-tom/dsh-agent-hub`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

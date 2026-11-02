@@ -1,3 +1,3 @@
 - insert:
-    - id: dsh-session-messenger
-      name: dsh-session-messenger
+    - id: leoan698-tom.dsh-agent-hub
+      name: '@leoan698-tom/dsh-agent-hub'

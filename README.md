@@ -1,31 +1,37 @@
-# DSH 跨会话信使
+# DSH Agent Hub · 智能体协作中心
 
-通过原生 `@会话` 引入其他会话的上下文，并按用户明确要求发送任务、提问或结论。会话列表按真实归属展示普通子会话、团队队员及团队外子智能体，支持点击打开和自动刷新。
+在 DSH 中组织 AI 会话、引用上下文并开展协作。项目原名 **DSH 跨会话信使 / dsh-session-messenger**，新包名为 **`@leoan698-tom/dsh-agent-hub`**。
 
-当前发布：**0.3.0-dev.17**（预发布），兼容 **DSH 0.2.1-rc.5 / Node.js 24+**。本版恢复原生工作区栏，主子会话树直接附加在原生列表中。依赖宿主内部父子通信接口，不能直接视为兼容其他 DSH 版本。
+当前功能：通过原生 `@会话` 引入其他会话的上下文，并按用户明确要求发送任务、提问或结论。会话列表按真实归属展示普通子会话、团队队员及团队外子智能体，支持点击打开和自动刷新。
 
-## 命令安装
+后续方向：通过插件调用本机 CLI，将其会话展示在 DSH 中，并支持会话通信、上下文引用和供人使用的任务管理面板。计划覆盖用户提出的 Grok CLI、Antigravity CLI、Claude Code CLI 等工具；每个 CLI 的具体实现、版本和可接入能力需分别核对。这些能力尚未在当前版本实现，产品范围见 [ADR-0011](docs/adr/0011-agent-hub-product-scope-and-identity.md)。
+
+本地改名候选：**0.3.0-dev.18**（未发布）。最近已发布版本仍为旧名 **0.3.0-dev.17**，兼容 **DSH 0.2.1-rc.5 / Node.js 24+**。主子会话树直接附加在原生列表中；依赖宿主内部父子通信接口，不能直接视为兼容其他 DSH 版本。
+
+新名称已有其他作者使用，本项目始终以仓库所有者 `leoan698-tom` 和完整 scoped 包名区分。尚未发布 npm；裸包名 `dsh-agent-hub` 和 `dsh-session-messenger` 均不是本项目的安装入口。新包的构建、安装及旧版迁移见 [改名与迁移](docs/RENAMING.md)。
+
+## 已发布旧版的命令安装
 
 先正常退出使用目标 profile 的 DSH，再运行与宿主相同版本的 CLI。按 DSH 的 [bundle 安装规范](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md)，本仓库提供 manifest、组合 patch、服务端及客户端编译产物，无需在安装机器上构建。
 
 ```sh
 dsh --version
 # 应为 0.2.1-rc.5
-dsh plugin --profile desktop add "github:leoan698-tom/dsh-session-messenger#v0.3.0-dev.17"
+dsh plugin --profile desktop add "github:leoan698-tom/dsh-agent-hub#v0.3.0-dev.17"
 ```
 
 Windows 桌面版如未配置 PATH，使用安装目录中的 CLI（将路径换成实际安装位置）：
 
 ```powershell
-& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'github:leoan698-tom/dsh-session-messenger#v0.3.0-dev.17'
+& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'github:leoan698-tom/dsh-agent-hub#v0.3.0-dev.17'
 ```
 
-Web 用户将 `desktop` 换成 `web`；其他自定义 profile 使用其名称。默认 DSH_HOME 为用户目录下的 `.dsh`；自定义 DSH_HOME 时，应指向目标宿主使用的目录。安装成功后重启 DSH。
+以下标签和压缩包仍安装旧包名的 dev.17；仓库改名不改变历史产物。Web 用户将 `desktop` 换成 `web`；其他自定义 profile 使用其名称。默认 DSH_HOME 为用户目录下的 `.dsh`；自定义 DSH_HOME 时，应指向目标宿主使用的目录。安装成功后重启 DSH。
 
-也可直接安装 [Release](https://github.com/leoan698-tom/dsh-session-messenger/releases/tag/v0.3.0-dev.17) 中的压缩包：
+也可直接安装 [Release](https://github.com/leoan698-tom/dsh-agent-hub/releases/tag/v0.3.0-dev.17) 中的压缩包：
 
 ```sh
-dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-session-messenger/releases/download/v0.3.0-dev.17/dsh-session-messenger-0.3.0-dev.17.tgz"
+dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-agent-hub/releases/download/v0.3.0-dev.17/dsh-session-messenger-0.3.0-dev.17.tgz"
 ```
 
 ## 使用
@@ -49,8 +55,8 @@ AI 根据要求选择排队或直接插入；直接插入在下一执行步接�
 ## 开发与文档
 
 ```sh
-git clone https://github.com/leoan698-tom/dsh-session-messenger.git
-cd dsh-session-messenger
+git clone https://github.com/leoan698-tom/dsh-agent-hub.git
+cd dsh-agent-hub
 npm ci --ignore-scripts
 npm run check
 npm pack

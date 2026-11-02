@@ -2,7 +2,8 @@ import { z } from 'zod';
 import type { InvocationDescriptor } from '@deepseek-ai/dsh-typert-protocol';
 import { policyInput } from './validation.js';
 
-// Explicit strict protocol contribution, shared by Host and browser. No source-mode fallback.
+// Keep legacy wire IDs stable across the package rename. Host and browser share
+// the new package identity; existing messages, tool names and storage stay valid.
 const codec = (name: string, schema: z.ZodType) => ({ mode: 'strict' as const, typeSymbol: `dsh-session-messenger#${name}`, create: () => schema });
 const parameter = (name: string, schema: z.ZodType) => ({ name, wire: name, source: 'json' as const, codec: codec(name, schema) });
 const endpoints = [
@@ -25,5 +26,5 @@ export const descriptors: InvocationDescriptor[] = [
   { method: 'tree', parameters: [], id: 'dsh-session-messenger#sessionCollaboration/tree', service: 'sessionCollaboration', namespace: 'sessionCollaboration', invocation: { kind: 'direct' as const }, result: codec('tree-result', z.json()) },
   { method: 'candidates', parameters: [parameter('sourceId', z.string()), parameter('query', z.string().max(256))], id: 'dsh-session-messenger#sessionCollaboration/candidates', service: 'sessionCollaboration', namespace: 'sessionCollaboration', invocation: { kind: 'direct' as const }, result: codec('candidate-result', z.json()) },
 ];
-export const remoteContribution = { package: 'dsh-session-messenger', descriptors };
-export const hostContribution = { package: 'dsh-session-messenger', face: 'host' as const, schemas: [], model: { services: [], events: [], objects: [] }, invocations: descriptors };
+export const remoteContribution = { package: '@leoan698-tom/dsh-agent-hub', descriptors };
+export const hostContribution = { package: '@leoan698-tom/dsh-agent-hub', face: 'host' as const, schemas: [], model: { services: [], events: [], objects: [] }, invocations: descriptors };

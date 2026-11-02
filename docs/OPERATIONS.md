@@ -1,5 +1,7 @@
 # 安装、升级与卸载
 
+项目已采用 **DSH Agent Hub / DSH 智能体协作中心** 名称。本地 dev.18 候选使用 `@leoan698-tom/dsh-agent-hub`，其安装和跨包名迁移见 [改名与迁移](RENAMING.md)。本文下面的 dev.17 命令用于已发布旧版，仍使用旧包名。
+
 当前分发版本 0.3.0-dev.17，宿主固定为 DSH 0.2.1-rc.5。Node.js 24+；桌面版优先使用其安装目录下的 `resources/runtime/cli/bin/dsh.cmd`。先运行 `dsh --version` 核对；全局旧版 CLI 不应代替桌面程序自带的 CLI。
 
 ## 安装
@@ -7,13 +9,13 @@
 正常退出使用目标 profile 的 DSH。安装命令使用官方 bundle 机制：
 
 ```sh
-dsh plugin --profile desktop add "github:leoan698-tom/dsh-session-messenger#v0.3.0-dev.17"
+dsh plugin --profile desktop add "github:leoan698-tom/dsh-agent-hub#v0.3.0-dev.17"
 ```
 
 或者安装 Release 压缩包：
 
 ```sh
-dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-session-messenger/releases/download/v0.3.0-dev.17/dsh-session-messenger-0.3.0-dev.17.tgz"
+dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-agent-hub/releases/download/v0.3.0-dev.17/dsh-session-messenger-0.3.0-dev.17.tgz"
 ```
 
 已有本地压缩包时，把来源换成 `file:/绝对路径/dsh-session-messenger-0.3.0-dev.17.tgz`。Web profile 使用 `--profile web`。自定义 DSH_HOME 应与实际宿主一致。CLI 会交给包管理器安装依赖，并在 profile 的 bundle 清单中注册插件。包包含 `dsh.manifestVersion: 1`、`dsh.bundle.patch`、`./client` 和编译产物。
