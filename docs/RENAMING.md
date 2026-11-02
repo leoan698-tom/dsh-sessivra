@@ -1,6 +1,23 @@
 # DSH Sessivra 改名与迁移
 
-当前预发布版本为 `@leoan698-tom/dsh-sessivra@0.3.0-dev.19`，显示名称为 **DSH Sessivra / DSH Sessivra 协作空间**，继承既有会话引用、通信和会话树功能。GitHub 标签与 Release 为 [v0.3.0-dev.19](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.19)，尚未发布 npm。可安装 Release 压缩包或本地构建产物。
+## dev.20 的 npm 安装名
+
+当前包名为 `dsh-plugin-sessivra@0.3.0-dev.20`，产品名和仓库仍为 DSH Sessivra / `leoan698-tom/dsh-sessivra`。在 DSH「添加插件」中选择 npm 官方源，只输入 `dsh-plugin-sessivra` 即为本版的安装入口。
+
+已有 dev.19 时，在目标 DSH 正常退出并备份后，先移除 `@leoan698-tom/dsh-sessivra`，再安装 dev.20。原信使包和 Agent Hub 包按下文对应命令移除。新包继续使用原 bundle 条目 ID、三个持久存储域、工具和 wire ID，不同时启用旧包与新包。
+
+```sh
+dsh plugin --profile desktop remove @leoan698-tom/dsh-sessivra
+dsh plugin --profile desktop add dsh-plugin-sessivra
+```
+
+没有安装旧包的用户只需添加新包。上面完整命令用于终端；界面输入框只填写新包名。
+
+本地构建执行 `npm ci --ignore-scripts`、`npm run check`、`npm pack`，生成 `dsh-plugin-sessivra-0.3.0-dev.20.tgz`。离线安装可通过 CLI 使用其绝对 `file:` 地址。卸载 dev.20 使用 `dsh plugin --profile desktop remove dsh-plugin-sessivra`。回退时移除新包，再安装保存的 dev.19；卸载不删除消息与会话关系。[dev.20 检查记录](validation/npm-dev20.md)分别记录本地包迁移与公开安装结果。
+
+## dev.19 的已发布改名记录
+
+dev.19 的历史预发布包为 `@leoan698-tom/dsh-sessivra@0.3.0-dev.19`，显示名称为 **DSH Sessivra / DSH Sessivra 协作空间**，继承既有会话引用、通信和会话树功能。GitHub 标签与 Release 为 [v0.3.0-dev.19](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.19)，该 scoped 包未发布 npm；dev.20 通过上文的新包名分发。历史 dev.19 可安装 Release 压缩包。
 
 | 对象 | 改名后 |
 | --- | --- |
@@ -11,7 +28,7 @@
 | 持久数据 | 保留 `dsh_session_messenger`、`dsh_session_messenger_recipients`、`dsh_session_messenger_conversations` |
 | 工具、旧草稿引用和历史发布包 | 保留原有名称与兼容读法 |
 
-改名前未发现 Sessivra 同名公开项目，检查范围见 [命名记录](adr/0012-sessivra-project-identity.md)。使用完整 scoped 包名；npm 发布之前，以本仓库的 GitHub Release 或固定版本 Git 标签为准。已有本地检出目录可以继续叫 `dsh-session-messenger`，目录名不决定插件身份。
+改名前未发现 Sessivra 同名公开项目，检查范围见 [命名记录](adr/0012-sessivra-project-identity.md)。历史 dev.19 使用完整 scoped 包名，以本仓库的 GitHub Release 或固定版本 Git 标签为准。已有本地检出目录可以继续叫 `dsh-session-messenger`，目录名不决定插件身份。
 
 ## 本地构建
 

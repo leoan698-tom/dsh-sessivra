@@ -1,9 +1,15 @@
 {
-  "name": "@leoan698-tom/dsh-sessivra",
-  "version": "0.3.0-dev.19",
+  "name": "dsh-plugin-sessivra",
+  "version": "0.3.0-dev.20",
   "description": "DSH Sessivra: native session references, explicit messaging and conversation trees for DeepSeek Harness.",
   "type": "module",
   "license": "MIT",
+  "keywords": ["dsh-plugin", "deepseek-harness", "session-messaging", "sessivra"],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "tag": "latest"
+  },
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js",
@@ -45,6 +51,7 @@
     "docs/ARCHITECTURE.md",
     "docs/OPERATIONS.md",
     "docs/RENAMING.md",
+    "docs/NPM_PUBLISH.md",
     "docs/TEST_REPORT.md",
     "docs/ACCEPTANCE_CRITERIA.md",
     "docs/COLLABORATION_0_3_DEV15.md",

@@ -40,34 +40,30 @@ Sessivra 的核心能力是**会话间通信**：在同一 Host、同一 profile
 
 ## 开始使用
 
-**当前公开安装版本为 `0.3.0-dev.19`（预发布）**，显示名称为 **DSH Sessivra 协作空间**。已安装原信使包或 Agent Hub dev.18 的用户，先按[改名与迁移](docs/RENAMING.md)替换旧包；不同包名不能同时启用。
+**当前版本为 `0.3.0-dev.20`（预发布）**，npm 包名为 **`dsh-plugin-sessivra`**，显示名称为 **DSH Sessivra 协作空间**。兼容 DSH `0.2.1-rc.5` / Node.js 24+。
 
 ### 在 DSH「添加插件」窗口安装
 
-打开「插件 → 添加插件」，输入框只粘贴下面的插件地址，不加引号：
+打开「插件 → 添加插件」，选择 npm 官方源，输入框只填写：
 
 ```text
-github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19
+dsh-plugin-sessivra
 ```
 
-点击「安装」，完成后按界面提示重启或重新加载，并确认插件名称和版本。这里不要粘贴 `dsh plugin ...` 整条命令；那是下方终端用法。
+点击「安装」，完成后按界面提示重启或重新加载，确认版本为 `0.3.0-dev.20` 且插件已启用。这里只填写包名，不加引号，不粘贴终端命令。
 
-也可以在同一个输入框粘贴 Release 安装包地址：
-
-```text
-https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.19/leoan698-tom-dsh-sessivra-0.3.0-dev.19.tgz
-```
+已安装 `@leoan698-tom/dsh-sessivra`（dev.19）、原信使包或 Agent Hub dev.18 的用户，先按[改名与迁移](docs/RENAMING.md)移除对应旧包，再安装新包。它们使用同一组服务和持久数据，不能同时启用。
 
 ### 在终端安装
 
-以下完整命令在 PowerShell、CMD 或其他终端中执行。
+以下完整命令在 PowerShell、CMD 或其他终端中执行：
 
 1. 确认 DSH 已完成首次启动，CLI 版本为 `0.2.1-rc.5`。
 2. 正常退出使用目标 profile 的 DSH，然后安装：
 
 ```sh
 dsh --version
-dsh plugin --profile desktop add "github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19"
+dsh plugin --profile desktop add dsh-plugin-sessivra
 ```
 
 3. 重启 DSH，在插件列表确认启用，然后在输入框键入 `@` 选择一个已有会话。
@@ -75,12 +71,12 @@ dsh plugin --profile desktop add "github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19
 Windows 桌面版未配置 PATH 时，使用安装目录内的 CLI，将下面的路径换成实际位置：
 
 ```powershell
-& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19'
+& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add dsh-plugin-sessivra
 ```
 
-Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
+需要固定版本时使用 `dsh-plugin-sessivra@0.3.0-dev.20`。Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
 
-也可安装 [Release 中的压缩包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.19)。旧包替换、本地构建和回退见[改名与迁移](docs/RENAMING.md)。本项目尚未发布到 npm。
+[npm 包页面](https://www.npmjs.com/package/dsh-plugin-sessivra) · [GitHub Release 与离线安装包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.20) · [升级与回退](docs/RENAMING.md)
 
 ## 使用示例
 

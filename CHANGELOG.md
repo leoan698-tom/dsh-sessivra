@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-dev.20 (2026-11-01)
+
+- Use the public npm package `dsh-plugin-sessivra` so users can install by entering its package name in DSH.
+- Align Host registration, browser loader, protocol contribution and bundle patch with the new package name; retain the bundle entry ID and legacy persistent data, tools and wire IDs.
+- Explicitly target the npm `latest` distribution tag for bare-name resolution while keeping the prerelease version and rc.5 compatibility boundary.
+- Document replacement of the dev.19 scoped package and npm publication verification.
+
 ## 0.3.0-dev.19 (2026-11-01)
 
 - Rename the product to DSH Sessivra and the package to `@leoan698-tom/dsh-sessivra` after checking the distinctive name against GitHub, npm and public web results.

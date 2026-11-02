@@ -24,5 +24,5 @@ export const descriptors = [
     { method: 'tree', parameters: [], id: 'dsh-session-messenger#sessionCollaboration/tree', service: 'sessionCollaboration', namespace: 'sessionCollaboration', invocation: { kind: 'direct' }, result: codec('tree-result', z.json()) },
     { method: 'candidates', parameters: [parameter('sourceId', z.string()), parameter('query', z.string().max(256))], id: 'dsh-session-messenger#sessionCollaboration/candidates', service: 'sessionCollaboration', namespace: 'sessionCollaboration', invocation: { kind: 'direct' }, result: codec('candidate-result', z.json()) },
 ];
-export const remoteContribution = { package: '@leoan698-tom/dsh-sessivra', descriptors };
-export const hostContribution = { package: '@leoan698-tom/dsh-sessivra', face: 'host', schemas: [], model: { services: [], events: [], objects: [] }, invocations: descriptors };
+export const remoteContribution = { package: 'dsh-plugin-sessivra', descriptors };
+export const hostContribution = { package: 'dsh-plugin-sessivra', face: 'host', schemas: [], model: { services: [], events: [], objects: [] }, invocations: descriptors };

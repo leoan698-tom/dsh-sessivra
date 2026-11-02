@@ -12,7 +12,7 @@ import { Collaboration } from './collaboration.js';
 import { ProgressReader, progressInput } from './progress.js';
 import { childTransport } from './child-transport.js';
 import { ReferenceTargets } from './reference-target.js';
-export const name = '@leoan698-tom/dsh-sessivra';
+export const name = 'dsh-plugin-sessivra';
 export const inject = ['agents', 'tools', 'storageDomain', 'llm'];
 export async function apply(ctx, config = {}) {
     const domain = await ctx.storageDomain.open(domainSpec);
