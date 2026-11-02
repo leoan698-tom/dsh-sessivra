@@ -18,6 +18,19 @@
 
 适合同时使用多个 DSH 会话处理需求、实现、资料或检查的用户。原生 `@` 提供上下文引用，Sessivra 将其与明确通信和会话树衔接起来。
 
+![检查结果通过关联回复回到原会话](docs/media/sessivra-reply.png)
+
+上图为 DSH rc.5 / Sessivra dev.19 改名候选的实际 Web 界面，使用独立演示会话和固定响应模型；展示插件传输与界面，不代表真实模型业务验收。
+
+<details>
+<summary>查看上下文引用与会话树截图</summary>
+
+![当前会话引用已有结论，目标没有收到新任务](docs/media/sessivra-reference.png)
+
+![从会话树打开普通子会话，查看对应检查结果](docs/media/sessivra-tree.png)
+
+</details>
+
 ## 开始使用
 
 **当前公开安装版本为 `0.3.0-dev.17`（预发布）**，仍显示原名 **DSH 跨会话信使 / Session Messenger**。项目已更名为 DSH Sessivra；仓库中的新名 `0.3.0-dev.19` 是未发布候选。下列固定版本命令安装的是已发布 dev.17，不会安装未发布候选。
