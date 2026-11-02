@@ -58,4 +58,4 @@ npm pack
 
 `dist/` 随 Git 提交，支持直接安装 Git 标签；源码变更后必须重建并同步提交。测试使用真实 rc.5 运行时和免费确定性模型适配器，不调用付费模型。原始桌面截图、会话日志、本机 profile 及旧验收缓存不进入仓库。
 
-[安装、升级和卸载](docs/OPERATIONS.md) · [功能说明](docs/COLLABORATION_0_3_DEV15.md) · [架构](docs/ARCHITECTURE.md) · [变更记录](CHANGELOG.md) · [第三方声明](THIRD_PARTY_NOTICES.md)
+[已知问题及依赖风险](docs/KNOWN_ISSUES.md) · [安装、升级和卸载](docs/OPERATIONS.md) · [功能说明](docs/COLLABORATION_0_3_DEV15.md) · [架构](docs/ARCHITECTURE.md) · [变更记录](CHANGELOG.md) · [第三方声明](THIRD_PARTY_NOTICES.md)

@@ -47,7 +47,8 @@
     "docs/TEST_REPORT.md",
     "docs/ACCEPTANCE_CRITERIA.md",
     "docs/COLLABORATION_0_3_DEV15.md",
-    "docs/adr"
+    "docs/adr",
+    "docs/KNOWN_ISSUES.md"
   ],
   "scripts": {
     "build": "tsc && node scripts/build-client.mjs",

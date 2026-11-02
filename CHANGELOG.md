@@ -6,7 +6,9 @@
 - Publish an npm-format tarball and SHA-256 checksum in GitHub Releases.
 - Make the current 93-test suite independent of private local acceptance artifacts; keep Windows file-lock checks platform-specific.
 - Refresh installation, upgrade, removal, architecture and validation documentation; pin compatibility to DSH 0.2.1-rc.5.
-- No runtime or storage-schema change from dev.15.
+- Specify the TypeScript config explicitly for deterministic client builds.
+- Document the unresolved Zod advisory and rc.5 schema compatibility constraint.
+- No product behavior or storage-schema change from dev.15.
 
 ## 0.3.0-dev.15 feature baseline
 
