@@ -11,11 +11,14 @@ import * as Json from '@deepseek-ai/dsh-storage-json';
 import * as Domain from '@deepseek-ai/dsh-storage-domain';
 import Typert from '@deepseek-ai/dsh-typert-registry';
 import Gateway from '@deepseek-ai/dsh-api-gateway';
+import RemoteAccess from '@deepseek-ai/dsh-api-remote-access';
 import * as Plugin from '../dist/index.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, basename, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+export const productUnderTest = process.env.DSHSM_PRODUCT_ENTRY ? await import(pathToFileURL(process.env.DSHSM_PRODUCT_ENTRY)) : Plugin;
 
 /** Deterministic free adapter; actual Cordis/DSH registries, AgentLoop, tools, inbox and disk storage. */
 export class FreeAdapter extends LlmAdapter {
@@ -31,22 +34,27 @@ export class FreeAdapter extends LlmAdapter {
     yield { type:'finish', reason:'stop' };
   }
 }
-export async function host(root) {
+export async function host(root, pluginModule = productUnderTest) {
   const ownsRoot = root === undefined;
   root ??= await mkdtemp(join(tmpdir(),'dshsm-'));
   const ctx=new Context();
   for (const p of [Typert,Projections,Session,Llm,Tools,Prompt,agent.default,Storage.default]) await ctx.plugin(p);
   await ctx.plugin(Json,{root});
   await ctx.plugin(Domain,{backend:'json'});
+  await ctx.plugin(RemoteAccess);
   await ctx.plugin(Gateway);
   const adapter=new FreeAdapter(); ctx.llm.registerAdapter(['synthetic-free'],adapter);
   await ctx.plugin(Loop);
-  const plugin=await ctx.plugin(Plugin);
-  return {ctx,adapter,plugin,root,
+  const plugin=await ctx.plugin(pluginModule);
+  const peerLifetime=new AbortController();
+  // In-process test carrier owns its principal. This is never a wire argument.
+  const peer={id:'synthetic-owner-peer',ctx,principal:{kind:'owner'},signal:peerLifetime.signal,interactions:'none',dispose:async()=>peerLifetime.abort()};
+  return {ctx,adapter,plugin,root,peer,
     create: (id,cwd=root) => ctx.agents.create({sessionId:id,agentOptions:{provider:'synthetic-free',model:'fixture'},meta:{cwd}}),
-    rpc: (method,args={}) => ctx.typertGateway.invoke({namespace:'sessionMessenger',method,args}),
+    rpc: (method,args={}) => ctx.typertGateway.invoke({namespace:'sessionMessenger',method,args,peer}),
     tool: (agent,name,args) => ctx.tools.execute({callId:randomUUID(),name,arguments:args,agent,signal:new AbortController().signal}),
     close: async () => {
+      peerLifetime.abort();
       await ctx.fiber.dispose();
       if (ownsRoot) {
         // Only the exact mkdtemp child this fixture created; never a supplied profile path.

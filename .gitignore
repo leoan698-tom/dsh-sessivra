@@ -1,7 +1,7 @@
 node_modules/
-dist/
 coverage/
 *.tgz
 .test-home/
 .env*
 *.log
+artifacts/

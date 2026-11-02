@@ -1,1 +1,4 @@
 * text=auto eol=lf
+dist/** linguist-generated=true
+# Bundled Zod templates intentionally contain blank lines with spaces.
+dist/client.js whitespace=-blank-at-eol

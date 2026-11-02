@@ -17,4 +17,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run check
+      - name: Check committed build output
+        run: git diff --exit-code -- dist
       - run: npm pack --dry-run

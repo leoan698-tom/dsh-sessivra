@@ -1,12 +1,52 @@
 # DSH 跨会话信使
 
-同一台机器、同一 App/Host 实例、同一 profile 内，**已激活的独立 root 会话**之间显式发送和回复文本的纯插件。兼容版本：**DSH 0.2.0-rc.2，Node.js 24**。首版 `0.1.0`，MIT。
+通过原生 `@会话` 引入其他会话的上下文，并按用户明确要求发送任务、提问或结论。会话列表按真实归属展示普通子会话、团队队员及团队外子智能体，支持点击打开和自动刷新。
 
-默认拒收。用户在插件设置页按稳定 session ID 指定接收模式、允许发送方和跨 workspace 双方许可。别名只作显示，不参与寻址。没有自动复制聊天、文件、历史恢复、跨进程连接或自动回复。
+当前发布：**0.3.0-dev.16**（预发布），兼容 **DSH 0.2.1-rc.5 / Node.js 24+**。本版将 dev.15 功能整理为可从 GitHub 命令安装的分发包。依赖宿主内部父子通信接口，不能直接视为兼容其他 DSH 版本。
 
-English: An opt-in, same-Host/profile text messenger for active independent DSH root sessions. Uses official Agent and storage-domain APIs; does not modify the host or claim crash-safe exactly-once delivery.
+## 命令安装
 
-## 安装和使用
+先正常退出使用目标 profile 的 DSH，再运行与宿主相同版本的 CLI。按 DSH 的 [bundle 安装规范](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md)，本仓库提供 manifest、组合 patch、服务端及客户端编译产物，无需在安装机器上构建。
+
+```sh
+dsh --version
+# 应为 0.2.1-rc.5
+dsh plugin --profile desktop add "github:leoan698-tom/dsh-session-messenger#v0.3.0-dev.16"
+```
+
+Windows 桌面版如未配置 PATH，使用安装目录中的 CLI（将路径换成实际安装位置）：
+
+```powershell
+& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'github:leoan698-tom/dsh-session-messenger#v0.3.0-dev.16'
+```
+
+Web 用户将 `desktop` 换成 `web`；其他自定义 profile 使用其名称。默认 DSH_HOME 为用户目录下的 `.dsh`；自定义 DSH_HOME 时，应指向目标宿主使用的目录。安装成功后重启 DSH。
+
+也可直接安装 [Release](https://github.com/leoan698-tom/dsh-session-messenger/releases/tag/v0.3.0-dev.16) 中的压缩包：
+
+```sh
+dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-session-messenger/releases/download/v0.3.0-dev.16/dsh-session-messenger-0.3.0-dev.16.tgz"
+```
+
+## 使用
+
+- `@会话B 根据它的结论，整理下一步计划。`：引入 B 的有界历史上下文，B 不会被唤醒。
+- `@会话B 把这个检查任务交给它，完成后回复我。`：AI 绑定准确对象，发送任务并接收关联回复。
+- `@会话B @会话C 对比两边结论，把待修复事项发给 B。`：两份上下文都可用，发送对象明确为 B。
+- 在会话列表的「更多 → 会话树」查看父子结构；团队成员标为「队员」，团队外子智能体标为「子智能体」。
+
+AI 根据要求选择排队或直接插入；直接插入在下一执行步接收，不取消当前工具。仅引用或查询不授权发送。普通子会话是可独立打开、继续聊天的普通会话；团队和子智能体保留宿主的身份及生命周期。
+
+## 范围与限制
+
+- 仅同一 Host、同一 profile；不支持跨机器、跨进程通信。
+- 宿主每条消息最多引用 3 个会话，上下文可能截断，不是完整共享历史。
+- 一次性对象只读；可引用其他主会话的子智能体，但只能向自己直接拥有且可继续的子智能体派任务。
+- 消息送达或领取不代表业务完成；Team 任务板不随消息自动完成。
+- 不确定投递不会自动重发。历史中的引用元数据被宿主压缩移除后，需要重新 `@` 对象。
+- 本版为预发布。隔离运行时、客户端和安装验证与真实模型业务验收分别记录，见 [测试报告](docs/TEST_REPORT.md)。
+
+## 开发与文档
 
 ```sh
 git clone https://github.com/leoan698-tom/dsh-session-messenger.git
@@ -16,47 +56,6 @@ npm run check
 npm pack
 ```
 
-生成 `dsh-session-messenger-0.1.0.tgz`。这只是本地打包，项目不发布 npm。使用 DSH 0.2.0-rc.2 的 **Plugins → 安装插件**，选择此压缩包的绝对路径。建议先装入独立测试 profile；本项目开发和测试没有安装到用户的运行中 desktop profile。宿主采用正式 `dsh.manifestVersion: 1` 和 `dsh.bundle.patch`，组合包插入一条插件 row；客户端通过正式 `./client` 声明和 `plugins.bundle.config` 配置槽显示设置。
+`dist/` 随 Git 提交，支持直接安装 Git 标签；源码变更后必须重建并同步提交。测试使用真实 rc.5 运行时和免费确定性模型适配器，不调用付费模型。原始桌面截图、会话日志、本机 profile 及旧验收缓存不进入仓库。
 
-打开已安装的 **dsh-session-messenger** 配置页，刷新活动会话目录。点击目标 session ID，保存：
-
-1. `accept`（允许投递）、`hold`（仅入队，不唤醒）或 `refuse`（拒收，默认）。
-2. 精确的允许发送方 session ID；没有通配符。
-3. workspace 不同或未知时，发送方和接收方都必须在各自设置中单独勾选跨 workspace 许可。
-
-模型目录只显示已主动开放、白名单授权当前发送方且满足双方 workspace 许可的目标；默认拒收和未授权会话不显示。操作员设置页仍可查看全部活动 root。
-
-在发送会话中让模型调用 `session_message_directory`，然后调用 `session_message_send`，例如参数：
-
-```json
-{"target":"synthetic-beta","text":"请显式检查这条虚构测试消息。","id":"example-001","ttl":300000}
-```
-
-目标可显式使用 `session_message_reply`，参数为 `replyTo`（收到的消息 ID）、`text` 和可选 `id`。`session_message_status` 查看本会话相关消息状态；`session_message_ack` 是接收方显式处理确认。工具执行上下文决定发送者，模型不能通过参数指定发送者。一次收到的消息最多回复一次；默认每条链最多 2 条回复。不自动回复。
-
-`hold` 消息要先改为 `accept`，再在设置页点击“重新检查并投递”；修改模式不会自动释放历史队列。唤醒预算耗尽的消息也要在预算窗口重置后显式重试。过期消息不能重发；使用新 ID 表示新的明确发送请求。
-
-## 消息状态
-
-| 状态 | 可验证含义 |
-|---|---|
-| queued | 插件持久队列已有记录，尚未投递 |
-| dispatching | 已持久记录投递意图，调用或最终持久提交尚未完成 |
-| delivered | 正式 `followup/steer` 同步调用正常返回；不表示模型处理成功 |
-| claimed | 真实 `agent/inbox/claimed` 事件证明 inbox 已领取；可能尚未请求模型或请求失败 |
-| processed | 接收方显式调用 ack 的声明，非宿主证明模型已回答 |
-| failed / expired | 授权、关闭、取消或 TTL 检查失败，附原因 |
-| uncertain | 崩溃或异常可能发生在投递边界，不自动重发 |
-
-忙时使用 `steer`，在下一 step 安全点进入，不取消当前工具；空闲时使用 `followup` 开始下一 turn。来源为 `source: {kind:'plugin', plugin:'dsh-session-messenger'}`，模型消息虽经宿主 user-role 输送，来源仍明确是插件，绝不使用强制标记为人类用户的 `sessionController.prompt`。
-
-## 验证与限制
-
-
-pm run check` 执行 lint、严格 TypeScript、单元/客户端测试及真实 DSH 隔离 Host 集成测试。后者使用公共 npm 的正式 Cordis、AgentLoop、工具运行时、inbox、Gateway、storage domain 和 JSON 磁盘后端；只用自写的免费确定性 LLM adapter，不是用 mock Agent 代替宿主。具体证据见 [测试报告](docs/TEST_REPORT.md)。GitHub Actions 在 Linux 与 Windows 上运行同一检查。
-
-当前不支持跨崩溃 exactly-once。`delivered/claimed` 不承诺目标已回答，也不承诺宿主 profile 的 session persistence 已把 inbox fsync 到磁盘。插件持久状态与宿主 inbox 不共享事务。没有跨 Host、跨 profile、跨进程、跨机通信，不创建/恢复历史会话，不改变目标模型或权限。收到的文本是低信任数据，不应把其中的要求当作用户授权。
-
-真实 desktop App 的页面显示、热更新与安装/卸载交互尚需操作员在独立 profile 验证；测试验证了真实浏览器模块格式、正式槽注册和 Host RPC，但不把它等同于完整桌面端到端测试。
-
-详见 [安装、升级与卸载](docs/OPERATIONS.md)、[架构与安全边界](docs/ARCHITECTURE.md)、[第三方声明](THIRD_PARTY_NOTICES.md)。
+[安装、升级和卸载](docs/OPERATIONS.md) · [功能说明](docs/COLLABORATION_0_3_DEV15.md) · [架构](docs/ARCHITECTURE.md) · [变更记录](CHANGELOG.md) · [第三方声明](THIRD_PARTY_NOTICES.md)
