@@ -42,6 +42,26 @@ Sessivra 的核心能力是**会话间通信**：在同一 Host、同一 profile
 
 **当前公开安装版本为 `0.3.0-dev.19`（预发布）**，显示名称为 **DSH Sessivra 协作空间**。已安装原信使包或 Agent Hub dev.18 的用户，先按[改名与迁移](docs/RENAMING.md)替换旧包；不同包名不能同时启用。
 
+### 在 DSH「添加插件」窗口安装
+
+打开「插件 → 添加插件」，输入框只粘贴下面的插件地址，不加引号：
+
+```text
+github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19
+```
+
+点击「安装」，完成后按界面提示重启或重新加载，并确认插件名称和版本。这里不要粘贴 `dsh plugin ...` 整条命令；那是下方终端用法。
+
+也可以在同一个输入框粘贴 Release 安装包地址：
+
+```text
+https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.19/leoan698-tom-dsh-sessivra-0.3.0-dev.19.tgz
+```
+
+### 在终端安装
+
+以下完整命令在 PowerShell、CMD 或其他终端中执行。
+
 1. 确认 DSH 已完成首次启动，CLI 版本为 `0.2.1-rc.5`。
 2. 正常退出使用目标 profile 的 DSH，然后安装：
 

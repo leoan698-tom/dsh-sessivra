@@ -6,6 +6,20 @@
 
 ## 安装
 
+### DSH 界面安装
+
+在「插件 → 添加插件」输入框中，只填写插件地址，不加引号：
+
+```text
+github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19
+```
+
+点击「安装」，完成后按界面提示重启或重新加载。若出现 `not a package name the registry accepts`，先检查是否误把整条 `dsh plugin ...` 终端命令粘贴到了输入框。
+
+### 终端安装
+
+以下命令在 PowerShell、CMD 或其他终端中执行，不能整行填入「添加插件」窗口。
+
 正常退出使用目标 profile 的 DSH。安装命令使用官方 bundle 机制：
 
 ```sh
