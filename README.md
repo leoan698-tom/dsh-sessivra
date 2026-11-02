@@ -22,6 +22,8 @@
 
 上图为 DSH rc.5 / Sessivra dev.19 改名候选的实际 Web 界面，使用独立演示会话和固定响应模型；展示插件传输与界面，不代表真实模型业务验收。
 
+[观看 63 秒字幕演示（MP4）](https://raw.githubusercontent.com/leoan698-tom/dsh-sessivra/main/docs/media/sessivra-demo-zh.mp4)：引用已有结论 → 明确派发任务 → 关联回复 → 打开对应子会话。录制环境与上图相同。
+
 <details>
 <summary>查看上下文引用与会话树截图</summary>
 
@@ -33,14 +35,14 @@
 
 ## 开始使用
 
-**当前公开安装版本为 `0.3.0-dev.17`（预发布）**，仍显示原名 **DSH 跨会话信使 / Session Messenger**。项目已更名为 DSH Sessivra；仓库中的新名 `0.3.0-dev.19` 是未发布候选。下列固定版本命令安装的是已发布 dev.17，不会安装未发布候选。
+**当前公开安装版本为 `0.3.0-dev.19`（预发布）**，显示名称为 **DSH Sessivra 协作空间**。已安装原信使包或 Agent Hub dev.18 的用户，先按[改名与迁移](docs/RENAMING.md)替换旧包；不同包名不能同时启用。
 
 1. 确认 DSH 已完成首次启动，CLI 版本为 `0.2.1-rc.5`。
 2. 正常退出使用目标 profile 的 DSH，然后安装：
 
 ```sh
 dsh --version
-dsh plugin --profile desktop add "github:leoan698-tom/dsh-sessivra#v0.3.0-dev.17"
+dsh plugin --profile desktop add "github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19"
 ```
 
 3. 重启 DSH，在插件列表确认启用，然后在输入框键入 `@` 选择一个已有会话。
@@ -48,12 +50,12 @@ dsh plugin --profile desktop add "github:leoan698-tom/dsh-sessivra#v0.3.0-dev.17
 Windows 桌面版未配置 PATH 时，使用安装目录内的 CLI，将下面的路径换成实际位置：
 
 ```powershell
-& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'github:leoan698-tom/dsh-sessivra#v0.3.0-dev.17'
+& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'github:leoan698-tom/dsh-sessivra#v0.3.0-dev.19'
 ```
 
 Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
 
-也可安装 [Release 中的压缩包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.17)。历史包名不随仓库改名变化。新名候选的本地构建、旧包替换和回退见[改名与迁移](docs/RENAMING.md)。本项目尚未发布到 npm。
+也可安装 [Release 中的压缩包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.19)。旧包替换、本地构建和回退见[改名与迁移](docs/RENAMING.md)。本项目尚未发布到 npm。
 
 ## 使用示例
 
