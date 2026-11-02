@@ -1,7 +1,7 @@
 {
   "name": "@leoan698-tom/dsh-sessivra",
   "version": "0.3.0-dev.19",
-  "description": "DSH Sessivra: session context, messaging and conversation trees; local CLI integration and human task management are planned",
+  "description": "DSH Sessivra: native session references, explicit messaging and conversation trees for DeepSeek Harness.",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",

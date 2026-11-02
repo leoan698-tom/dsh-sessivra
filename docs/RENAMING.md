@@ -1,6 +1,6 @@
 # DSH Sessivra 改名与迁移
 
-本地候选为 `@leoan698-tom/dsh-sessivra@0.3.0-dev.19`，显示名称为 **DSH Sessivra / DSH Sessivra 协作空间**。它继承 dev.18 的功能，新增 CLI 接入和人工任务面板属于后续规划。此候选尚未发布 Git 标签、Release 或 npm；使用下面的本地压缩包方式试用。
+本地候选为 `@leoan698-tom/dsh-sessivra@0.3.0-dev.19`，显示名称为 **DSH Sessivra / DSH Sessivra 协作空间**，继承既有会话引用、通信和会话树功能。此候选尚未发布 Git 标签、Release 或 npm；使用下面的本地压缩包方式试用。
 
 | 对象 | 改名后 |
 | --- | --- |

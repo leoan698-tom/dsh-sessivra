@@ -1,58 +1,91 @@
-# DSH Sessivra · 会话与任务协作空间
+# DSH Sessivra
 
-在 DSH 中组织 AI 会话、引用上下文并开展协作。项目原名 **DSH 跨会话信使 / dsh-session-messenger**，新包名为 **`@leoan698-tom/dsh-sessivra`**。
+**让多个会话里的工作接得起来。**
 
-当前功能：通过原生 `@会话` 引入其他会话的上下文，并按用户明确要求发送任务、提问或结论。会话列表按真实归属展示普通子会话、团队队员及团队外子智能体，支持点击打开和自动刷新。
+在 DeepSeek Harness 中，用原生 `@会话` 引用已有结论，明确交办任务并接收关联回复，通过会话树找到对应工作。
 
-后续方向：通过插件调用本机 CLI，将其会话展示在 DSH 中，并支持会话通信、上下文引用和供人使用的任务管理面板。计划覆盖用户提出的 Grok CLI、Antigravity CLI、Claude Code CLI 等工具；每个 CLI 的具体实现、版本和可接入能力需分别核对。这些能力尚未在当前版本实现，产品范围见 [ADR-0011](docs/adr/0011-agent-hub-product-scope-and-identity.md)。
+[开始使用](#开始使用) · [使用示例](#使用示例) · [安装与卸载](docs/OPERATIONS.md) · [已知问题](docs/KNOWN_ISSUES.md) · [反馈问题](https://github.com/leoan698-tom/dsh-sessivra/issues)
 
-本地改名候选：**0.3.0-dev.19**（未发布）。最近已发布版本仍为旧名 **0.3.0-dev.17**，兼容 **DSH 0.2.1-rc.5 / Node.js 24+**。主子会话树直接附加在原生列表中；依赖宿主内部父子通信接口，不能直接视为兼容其他 DSH 版本。
+非官方项目，由社区成员独立开发和维护。兼容 **DSH 0.2.1-rc.5 / Node.js 24+**。
 
-Sessivra 是本项目的专有名称。改名前的 GitHub、npm 和公开网页检索未发现同名项目，查询范围与结果见 [命名记录](docs/adr/0012-sessivra-project-identity.md)。包名使用 `@leoan698-tom/dsh-sessivra` 标明发布者；尚未发布 npm，安装以本仓库产物为准。构建、安装，以及从原信使包或 Agent Hub dev.18 候选迁移的步骤见 [改名与迁移](docs/RENAMING.md)。
+## 三件事，接续你的工作
 
-## 已发布旧版的命令安装
+| 你想做什么 | 在 DSH 中怎样操作 |
+| --- | --- |
+| 参考另一个会话的结论 | 用原生 `@` 选择会话，让当前会话根据其上下文继续工作；被引用的会话不会因此被唤醒 |
+| 把检查、提问或结论交给另一个会话 | `@` 选择准确对象，明确说出发送要求；符合条件的目标可以接收任务并回复原请求 |
+| 找到主会话与分出去的工作 | 在原生工作区列表中展开会话树，打开普通子会话、队员或子智能体；保留宿主的搜索和工作区操作 |
 
-先正常退出使用目标 profile 的 DSH，再运行与宿主相同版本的 CLI。按 DSH 的 [bundle 安装规范](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md)，本仓库提供 manifest、组合 patch、服务端及客户端编译产物，无需在安装机器上构建。
+适合同时使用多个 DSH 会话处理需求、实现、资料或检查的用户。原生 `@` 提供上下文引用，Sessivra 将其与明确通信和会话树衔接起来。
+
+## 开始使用
+
+**当前公开安装版本为 `0.3.0-dev.17`（预发布）**，仍显示原名 **DSH 跨会话信使 / Session Messenger**。项目已更名为 DSH Sessivra；仓库中的新名 `0.3.0-dev.19` 是未发布候选。下列固定版本命令安装的是已发布 dev.17，不会安装未发布候选。
+
+1. 确认 DSH 已完成首次启动，CLI 版本为 `0.2.1-rc.5`。
+2. 正常退出使用目标 profile 的 DSH，然后安装：
 
 ```sh
 dsh --version
-# 应为 0.2.1-rc.5
 dsh plugin --profile desktop add "github:leoan698-tom/dsh-sessivra#v0.3.0-dev.17"
 ```
 
-Windows 桌面版如未配置 PATH，使用安装目录中的 CLI（将路径换成实际安装位置）：
+3. 重启 DSH，在插件列表确认启用，然后在输入框键入 `@` 选择一个已有会话。
+
+Windows 桌面版未配置 PATH 时，使用安装目录内的 CLI，将下面的路径换成实际位置：
 
 ```powershell
 & 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'github:leoan698-tom/dsh-sessivra#v0.3.0-dev.17'
 ```
 
-以下标签和压缩包仍安装旧包名的 dev.17；仓库改名不改变历史产物。Web 用户将 `desktop` 换成 `web`；其他自定义 profile 使用其名称。默认 DSH_HOME 为用户目录下的 `.dsh`；自定义 DSH_HOME 时，应指向目标宿主使用的目录。安装成功后重启 DSH。
+Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
 
-也可直接安装 [Release](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.17) 中的压缩包：
+也可安装 [Release 中的压缩包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.17)。历史包名不随仓库改名变化。新名候选的本地构建、旧包替换和回退见[改名与迁移](docs/RENAMING.md)。本项目尚未发布到 npm。
 
-```sh
-dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.17/dsh-session-messenger-0.3.0-dev.17.tgz"
+## 使用示例
+
+先准备两个普通会话，例如“需求整理”和“验收检查”，让“验收检查”中已有一些可参考的结论。在输入框通过原生 `@` 菜单选中它，再输入要求。
+
+**引用结论：**
+
+```text
+@验收检查 根据它已有的结论，整理 3 条后续检查项。
 ```
 
-## 使用
+当前会话获得有界历史上下文；“验收检查”不会因此运行新任务。
 
-- `@会话B 根据它的结论，整理下一步计划。`：引入 B 的有界历史上下文，B 不会被唤醒。
-- `@会话B 把这个检查任务交给它，完成后回复我。`：AI 绑定准确对象，发送任务并接收关联回复。
-- `@会话B @会话C 对比两边结论，把待修复事项发给 B。`：两份上下文都可用，发送对象明确为 B。
-- 在原生工作区列表中直接展开主会话查看父子结构；团队成员标为「队员」，团队外子智能体标为「子智能体」。
+**明确交办：**
 
-AI 根据要求选择排队或直接插入；直接插入在下一执行步接收，不取消当前工具。仅引用或查询不授权发送。普通子会话是可独立打开、继续聊天的普通会话；团队和子智能体保留宿主的身份及生命周期。
+```text
+@验收检查 请检查这份方案中的遗漏项，完成后回复我。
+```
 
-## 范围与限制
+AI 按准确引用对象发送请求。接收方生成结果并显式回复时，回复会关联原请求。
 
-- 仅同一 Host、同一 profile；不支持跨机器、跨进程通信。
-- 宿主每条消息最多引用 3 个会话，上下文可能截断，不是完整共享历史。
-- 一次性对象只读；可引用其他主会话的子智能体，但只能向自己直接拥有且可继续的子智能体派任务。
-- 消息送达或领取不代表业务完成；Team 任务板不随消息自动完成。
-- 不确定投递不会自动重发。历史中的引用元数据被宿主压缩移除后，需要重新 `@` 对象。
-- 本版为预发布。隔离运行时、客户端和安装验证与真实模型业务验收分别记录，见 [测试报告](docs/TEST_REPORT.md)。
+**同时参考多个会话，再指定收件人：**
 
-## 开发与文档
+```text
+@需求整理 @验收检查 对比两边的结论，把待补充的检查事项发给验收检查。
+```
+
+两份上下文都可以使用，发送对象由当前要求明确指定。
+
+**找到对应会话：** 在原生工作区列表中展开主会话。普通子会话可以独立打开和继续聊天；团队成员标为“队员”，团队外子智能体标为“子智能体”，各自保留宿主身份和生命周期。
+
+AI 根据每条要求选择排队或直接插入。即时调整在下一执行步接收，不取消正在执行的工具；仅选择、引用或查询不会授权发送。
+
+## 使用范围
+
+- 同一 Host、同一 profile 内使用，不支持跨机器或跨进程通信。
+- 宿主每条消息最多引用 3 个会话；历史快照可能截断。
+- 一次性对象只读。其他主会话的子智能体可以在宿主允许时被引用，但只有自己直接拥有且可继续的子智能体才能接收派发任务。
+- 消息送达或领取不代表业务完成；Team 任务板由团队工具维护。
+- 不确定投递不会自动重发；历史引用元数据被宿主压缩移除后，需要重新 `@` 对象。
+- 插件依赖 rc.5 内部父子通信接口，其他 DSH 版本需要单独验证。
+
+当前版本为预发布，已知依赖风险见[已知问题](docs/KNOWN_ISSUES.md)。自动化、隔离运行时和安装验证分别记录在[测试报告](docs/TEST_REPORT.md)；这些结果不等于完整真实模型业务验收。
+
+## 开发与支持
 
 ```sh
 git clone https://github.com/leoan698-tom/dsh-sessivra.git
@@ -62,6 +95,8 @@ npm run check
 npm pack
 ```
 
-`dist/` 随 Git 提交，支持直接安装 Git 标签；源码变更后必须重建并同步提交。测试使用真实 rc.5 运行时和免费确定性模型适配器，不调用付费模型。原始桌面截图、会话日志、本机 profile 及旧验收缓存不进入仓库。
+`dist/` 随 Git 提交，源码变更后应重建并同步。默认测试使用真实 rc.5 运行时和免费确定性模型适配器，不调用付费模型。
 
-[已知问题及依赖风险](docs/KNOWN_ISSUES.md) · [安装、升级和卸载](docs/OPERATIONS.md) · [功能说明](docs/COLLABORATION_0_3_DEV15.md) · [架构](docs/ARCHITECTURE.md) · [变更记录](CHANGELOG.md) · [第三方声明](THIRD_PARTY_NOTICES.md)
+反馈时请提供 DSH 版本、插件版本、操作系统、复现步骤、预期和实际结果；截图请先隐去私密信息。
+
+[安装、升级和卸载](docs/OPERATIONS.md) · [功能说明](docs/COLLABORATION_0_3_DEV15.md) · [架构](docs/ARCHITECTURE.md) · [变更记录](CHANGELOG.md) · [第三方声明](THIRD_PARTY_NOTICES.md) · [MIT License](LICENSE)
