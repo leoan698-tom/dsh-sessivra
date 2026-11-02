@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0-dev.19 (unreleased)
+## 0.3.0-dev.19 (2026-11-01)
 
 - Rename the product to DSH Sessivra and the package to `@leoan698-tom/dsh-sessivra` after checking the distinctive name against GitHub, npm and public web results.
 - Update repository URLs, Host registration, client module identity and bundle entry together; preserve legacy wire IDs, tools and persistent data domains.
