@@ -14,7 +14,7 @@ import {remoteContribution} from '../dist/contract.js';
 test('actual DSH remote lifecycle retains old draft serialization without adding a visible @ group',async()=>{
   let bundle;
   vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,globalThis,crypto:webcrypto,TextEncoder,TextDecoder});
-  assert.equal(bundle.id,'@leoan698-tom/dsh-agent-hub');
+  assert.equal(bundle.id,'@leoan698-tom/dsh-sessivra');
   const client=bundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='react-dom')return reactDom;throw new Error(`Unexpected runtime external ${name}`);});
   let rendererBundle;
   vm.runInNewContext(await readFile(new URL(import.meta.resolve('@deepseek-ai/dsh-client-ui-renderer/client')),'utf8'), {window:{__ModuleLoader__:{load:value=>{rendererBundle=value;}}},console,globalThis});

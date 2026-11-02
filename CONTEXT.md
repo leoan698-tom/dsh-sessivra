@@ -1,6 +1,6 @@
-# DSH Agent Hub · 智能体协作中心
+# DSH Sessivra · 会话与任务协作空间
 
-产品原名「跨会话信使」，新分发包名为 `@leoan698-tom/dsh-agent-hub`。当前实现仍是下述会话引用、通信和会话树。后续产品范围已扩展为本机 CLI 接入、外部 CLI 会话在 DSH 中展示与协作，以及供人使用的任务管理面板；范围和兼容身份见 [ADR-0011](docs/adr/0011-agent-hub-product-scope-and-identity.md)。后续方向不代表当前版本已经支持外部 CLI。
+产品原名「跨会话信使」，新分发包名为 `@leoan698-tom/dsh-sessivra`。当前实现仍是下述会话引用、通信和会话树。后续产品范围已扩展为本机 CLI 接入、外部 CLI 会话在 DSH 中展示与协作，以及供人使用的任务管理面板；产品范围见 [ADR-0011](docs/adr/0011-agent-hub-product-scope-and-identity.md)，当前名称与兼容身份见 [ADR-0012](docs/adr/0012-sessivra-project-identity.md)。后续方向不代表当前版本已经支持外部 CLI。
 
 **外部 CLI 会话（规划）**：由本机某个 CLI 创建或继续、在 DSH 中可查看和选择的会话。保留原执行工具和会话身份；展示、读取历史和发送消息按各适配器实际支持的能力分别提供。
 _Avoid_: DSH 原生普通会话, 自动成为主会话的子智能体, 展示即接管执行

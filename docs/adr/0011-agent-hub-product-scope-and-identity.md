@@ -4,6 +4,8 @@ status: accepted
 
 # DSH Agent Hub 的产品范围与分发身份
 
+本条的产品范围继续有效；名称与分发身份已由 [ADR-0012](0012-sessivra-project-identity.md) 替代。下文保留 dev.18 的决策背景。
+
 2026-11-01（America/Los_Angeles），用户结合竞品对比要求项目改名，并明确后续通过插件调用本机 Grok CLI、Antigravity CLI、Claude Code CLI 等主流 CLI，将会话展示在 DSH 中，支持通信、上下文引用和供人使用的任务管理面板。用户选择名称 **DSH Agent Hub（DSH 智能体协作中心）**。
 
 这扩展 ADR-0002、ADR-0003 的产品范围：同一 Host/profile 内的通信仍是当前实现边界，后续增加插件与本机外部 CLI 进程的适配；人工任务管理纳入未来范围。跨机器协作、任务自动验收和失败自动恢复并未由此次需求自动纳入。纯插件集成原则、ADR-0004 的真实会话身份、ADR-0009 的引用与明确通信意图区分、ADR-0010 的原生工作区栏约束继续适用。

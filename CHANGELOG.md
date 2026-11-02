@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-dev.19 (unreleased)
+
+- Rename the product to DSH Sessivra and the package to `@leoan698-tom/dsh-sessivra` after checking the distinctive name against GitHub, npm and public web results.
+- Update repository URLs, Host registration, client module identity and bundle entry together; preserve legacy wire IDs, tools and persistent data domains.
+- Document migration from both the original messenger package and the Agent Hub dev.18 candidate. Local CLI integration and the human task board remain planned features.
+
 ## 0.3.0-dev.18 (unreleased)
 
 - Rename the product to DSH Agent Hub / DSH 智能体协作中心 and the package to `@leoan698-tom/dsh-agent-hub` to distinguish it from existing unscoped packages.

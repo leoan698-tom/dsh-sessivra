@@ -1,7 +1,7 @@
 {
-  "name": "@leoan698-tom/dsh-agent-hub",
-  "version": "0.3.0-dev.18",
-  "description": "DSH Agent Hub: session context, messaging and conversation trees; local CLI integration and human task management are planned",
+  "name": "@leoan698-tom/dsh-sessivra",
+  "version": "0.3.0-dev.19",
+  "description": "DSH Sessivra: session context, messaging and conversation trees; local CLI integration and human task management are planned",
   "type": "module",
   "license": "MIT",
   "main": "dist/index.js",
@@ -31,8 +31,8 @@
     }
   },
   "title": {
-    "en": "DSH Agent Hub",
-    "zh": "DSH 智能体协作中心"
+    "en": "DSH Sessivra",
+    "zh": "DSH Sessivra 协作空间"
   },
   "files": [
     "dist",
@@ -122,10 +122,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/leoan698-tom/dsh-agent-hub.git"
+    "url": "git+https://github.com/leoan698-tom/dsh-sessivra.git"
   },
-  "homepage": "https://github.com/leoan698-tom/dsh-agent-hub#readme",
+  "homepage": "https://github.com/leoan698-tom/dsh-sessivra#readme",
   "bugs": {
-    "url": "https://github.com/leoan698-tom/dsh-agent-hub/issues"
+    "url": "https://github.com/leoan698-tom/dsh-sessivra/issues"
   }
 }

@@ -16,7 +16,7 @@ import { ProgressReader, progressInput } from './progress.js';
 import { childTransport } from './child-transport.js';
 import { ReferenceTargets } from './reference-target.js';
 
-export const name = '@leoan698-tom/dsh-agent-hub';
+export const name = '@leoan698-tom/dsh-sessivra';
 export const inject = ['agents', 'tools', 'storageDomain', 'llm'];
 interface SessionControllerAccess {
   create(request: { sessionId: string; cwd: string }): Promise<{ sessionId: string }>;

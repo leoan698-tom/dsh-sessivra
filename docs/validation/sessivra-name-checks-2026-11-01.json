@@ -1,0 +1,54 @@
+{
+  "checkedAt": "2026-11-02T03:59:04.8069766+00:00",
+  "beforeRepositoryRename": true,
+  "checks": [
+    {
+      "kind": "github",
+      "query": "sessivra in:name",
+      "total_count": 0,
+      "incomplete_results": false,
+      "items": []
+    },
+    {
+      "kind": "github",
+      "query": "dsh-sessivra in:name",
+      "total_count": 0,
+      "incomplete_results": false,
+      "items": []
+    },
+    {
+      "kind": "github",
+      "query": "sessivra in:name,description,readme",
+      "total_count": 0,
+      "incomplete_results": false,
+      "items": []
+    },
+    {
+      "kind": "npm",
+      "name": "sessivra",
+      "url": "https://registry.npmjs.org/sessivra",
+      "status": 404,
+      "body": "{\"error\":\"Not found\"}"
+    },
+    {
+      "kind": "npm",
+      "name": "dsh-sessivra",
+      "url": "https://registry.npmjs.org/dsh-sessivra",
+      "status": 404,
+      "body": "{\"error\":\"Not found\"}"
+    },
+    {
+      "kind": "npm",
+      "name": "@leoan698-tom/dsh-sessivra",
+      "url": "https://registry.npmjs.org/%40leoan698-tom%2Fdsh-sessivra",
+      "status": 404,
+      "body": "{\"error\":\"Not found\"}"
+    }
+  ],
+  "webQueries": [
+    "\"Sessivra\"",
+    "\"DSH Sessivra\"",
+    "\"dsh-sessivra\""
+  ],
+  "webResult": "No results were found for the provided queries"
+}

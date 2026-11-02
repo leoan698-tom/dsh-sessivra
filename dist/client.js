@@ -1,4 +1,4 @@
-window.__ModuleLoader__.load({ id: "@leoan698-tom/dsh-agent-hub", factory(require) { const module = { exports: {} }; const exports = module.exports;
+window.__ModuleLoader__.load({ id: "@leoan698-tom/dsh-sessivra", factory(require) { const module = { exports: {} }; const exports = module.exports;
 "use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -14566,7 +14566,7 @@ var descriptors = [
   { method: "tree", parameters: [], id: "dsh-session-messenger#sessionCollaboration/tree", service: "sessionCollaboration", namespace: "sessionCollaboration", invocation: { kind: "direct" }, result: codec2("tree-result", external_exports.json()) },
   { method: "candidates", parameters: [parameter("sourceId", external_exports.string()), parameter("query", external_exports.string().max(256))], id: "dsh-session-messenger#sessionCollaboration/candidates", service: "sessionCollaboration", namespace: "sessionCollaboration", invocation: { kind: "direct" }, result: codec2("candidate-result", external_exports.json()) }
 ];
-var remoteContribution = { package: "@leoan698-tom/dsh-agent-hub", descriptors };
+var remoteContribution = { package: "@leoan698-tom/dsh-sessivra", descriptors };
 
 // src/recipient-source.ts
 function createLegacyRecipientSource() {
