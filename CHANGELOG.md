@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0-dev.17
+
+- Preserve the native workspace heading, search, view options and add-workspace controls.
+- Extend native session rows with child branches instead of replacing the entire workspace browser.
+- Retain workspace nesting, native row actions and timestamps; remove the separate workspace-management/tree switch.
+- Share one bounded refresh across row extensions and clean up inserted branches when native rows or the plugin unmount.
+- Add DOM interaction coverage for native controls, expansion, sorting, linked-child deduplication and cleanup.
+- No messaging permission or persistent schema change.
+
 ## 0.3.0-dev.16
 
 - Publish prebuilt server/client modules and a tagged GitHub source so DSH can install directly with its official plugin command.

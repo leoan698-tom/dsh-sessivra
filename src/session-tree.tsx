@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol';
 import type { TreeSession } from './collaboration.js';
 import type { SessionCandidate } from './recipient-source.js';
@@ -35,108 +36,129 @@ export function sessionForest(sessions: TreeSession[]): TreeNode[] {
 }
 
 export interface TreeApi { tree(): Promise<RemoteResult<TreeSession[]>>; candidates(sourceId: string, query: string): Promise<RemoteResult<SessionCandidate[]>> }
-interface Props { api: TreeApi; openSession(session: TreeSession): void; startSession(): void; standardList(): void }
-// Geometry and theme tokens match the shipped rc.5 WorkspaceRows / SessionList.
-// Keep local selectors: never depend on the Host's generated CSS class names.
+interface NativeRow { sessionId: string; row: HTMLElement; children: HTMLElement }
+interface Snapshot { nodes: Map<string, TreeNode>; parents: Map<string, string>; rows: Set<NativeRow>; problem: string }
+
+// One read-only poll for all native rows, and no polling while no rows are mounted.
+export function createSessionTreeStore(api: TreeApi) {
+  let snapshot: Snapshot = { nodes: new Map(), parents: new Map(), rows: new Set(), problem: '' };
+  const listeners = new Set<() => void>();
+  let timer: ReturnType<typeof setInterval> | undefined, inFlight = false, disposed = false;
+  const emit = (patch: Partial<Snapshot>) => {
+    snapshot = { ...snapshot, ...patch };
+    for (const listener of listeners) listener();
+  };
+  const refresh = async () => {
+    if (inFlight || disposed || !listeners.size) return;
+    inFlight = true;
+    try {
+      const result = await api.tree();
+      if (disposed || !listeners.size) return;
+      if (!result.ok) { emit({ problem: '读取子会话失败，请稍后重试' }); return; }
+      const nodes = new Map<string, TreeNode>(), parents = new Map<string, string>();
+      const visit = (node: TreeNode) => {
+        nodes.set(node.id, node);
+        for (const child of node.children) { parents.set(child.id, node.id); visit(child); }
+      };
+      sessionForest(result.value).forEach(visit);
+      emit({ nodes, parents, problem: '' });
+    } catch { if (!disposed && listeners.size) emit({ problem: '子会话列表连接中断' }); }
+    finally { inFlight = false; }
+  };
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      if (!timer && !disposed) { void refresh(); timer = setInterval(() => void refresh(), 2000); }
+      return () => { listeners.delete(listener); if (!listeners.size) { clearInterval(timer); timer = undefined; } };
+    },
+    attach: (target: NativeRow) => {
+      emit({ rows: new Set([...snapshot.rows, target]) });
+      return () => { const rows = new Set(snapshot.rows); rows.delete(target); emit({ rows }); };
+    },
+    dispose: () => { disposed = true; clearInterval(timer); timer = undefined; listeners.clear(); },
+  };
+}
+
+type TreeStore = ReturnType<typeof createSessionTreeStore>;
+interface Props { sessionId: string; store: TreeStore; openSession(session: TreeSession): void }
 const styles = `
-.dshsm-session-tree{font-family:var(--dsw-font-family);font-size:14px;font-weight:400;line-height:20px;color:var(--dsw-alias-label-primary);min-width:0;min-height:0;flex:1;display:flex;flex-direction:column;padding:0 var(--dsh-sidebar-inline-padding,12px) 0 0;box-sizing:border-box}
-.dshsm-session-tree *{box-sizing:border-box}
-.dshsm-session-tree button,.dshsm-session-tree input{font:inherit;color:inherit}
-.dshsm-session-tree button{border:0;background:transparent;cursor:pointer}
-.dshsm-tree-toolbar{display:flex;align-items:center;gap:4px;flex:none;height:36px;margin:2px -4px 4px 0;padding-left:4px;color:var(--dsw-alias-label-tertiary)}
-.dshsm-tree-toolbar-label{margin-right:auto}
-.dshsm-tree-toolbar .dshsm-tree-manage{padding:0 4px;height:28px;font-size:12px;border-radius:var(--dsw-radius-sm)}
-.dshsm-tree-toolbar .dshsm-tree-search-toggle{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:var(--dsw-radius-sm);color:var(--dsw-alias-label-secondary)}
-.dshsm-tree-toolbar button:hover,.dshsm-tree-row:hover,.dshsm-tree-row[data-selected=true]{background:var(--dsw-alias-interactive-bg-hover)}
-.dshsm-session-tree .dshsm-session-search{flex:1;min-width:0;width:100%;height:30px;padding:0 8px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:transparent;font-size:13px;line-height:18px;color:var(--dsw-alias-label-primary)}
-.dshsm-session-search::placeholder{color:var(--dsw-alias-label-tertiary)}
-.dshsm-session-tree button:focus-visible,.dshsm-session-search:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
-.dshsm-tree-list{min-height:0;flex:1;overflow-y:auto;scrollbar-gutter:stable;padding-bottom:16px}
-.dshsm-tree-row{position:relative;display:flex;align-items:center;height:32px;min-width:0;padding:0 8px;border-radius:var(--dsw-radius-md);font-size:14px;line-height:20px;user-select:none}
-.dshsm-session-tree .dshsm-tree-toggle{display:flex;align-items:center;justify-content:center;flex:0 0 16px;width:16px;height:20px;padding:0;color:var(--dsw-alias-label-tertiary)}
-.dshsm-tree-spacer{flex:0 0 16px;width:16px;height:20px}
-.dshsm-session-tree .dshsm-tree-name{display:flex;align-items:center;gap:6px;flex:1;min-width:0;height:100%;margin:0 6px 0 4px;padding:0;text-align:left;line-height:20px}
+[data-dshsm-nested=true]{display:none!important}
+.dshsm-native-children{font:inherit;color:var(--dsw-alias-label-primary);min-width:0;margin-left:20px}
+.dshsm-native-children *{box-sizing:border-box}
+.dshsm-native-children button,.dshsm-native-toggle{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer}
+.dshsm-native-toggle{position:absolute;left:-3px;top:6px;width:12px;height:20px;padding:0;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-tertiary)}
+.dshsm-native-children button:focus-visible,.dshsm-native-toggle:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
+.dshsm-tree-row{display:flex;align-items:center;height:32px;min-width:0;padding:0 8px;border-radius:var(--dsw-radius-md);font-size:14px;line-height:20px;user-select:none}
+.dshsm-tree-row:hover,.dshsm-tree-row[data-selected=true]{background:var(--dsw-alias-interactive-bg-hover)}
+.dshsm-native-children .dshsm-tree-toggle{display:flex;align-items:center;justify-content:center;flex:0 0 16px;width:16px;height:24px;padding:0;color:var(--dsw-alias-label-tertiary)}
+.dshsm-tree-spacer{flex:0 0 16px;width:16px}
+.dshsm-native-children .dshsm-tree-name{display:flex;align-items:center;gap:6px;flex:1;min-width:0;height:100%;margin:0 6px 0 4px;padding:0;text-align:left;line-height:20px}
 .dshsm-tree-label{display:block;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dshsm-tree-group-label{height:34px}
-.dshsm-session-tree .dshsm-tree-group-label .dshsm-tree-name{margin:0 0 0 6px}
-.dshsm-tree-folder .dshsm-tree-folder-arrow{display:none}
-.dshsm-tree-group-label:hover .dshsm-tree-folder-icon,.dshsm-tree-folder:focus-visible .dshsm-tree-folder-icon{display:none}
-.dshsm-tree-group-label:hover .dshsm-tree-folder-arrow,.dshsm-tree-folder:focus-visible .dshsm-tree-folder-arrow{display:inline-flex}
 .dshsm-tree-running{flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary)}
 .dshsm-tree-member{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary)}
-.dshsm-session-tree .dshsm-tree-name:disabled{cursor:default;opacity:.75}
+.dshsm-native-children .dshsm-tree-name:disabled{cursor:default;opacity:.75}
 .dshsm-tree-children{margin-left:20px}
-.dshsm-tree-group+.dshsm-tree-group{margin-top:4px}
-.dshsm-tree-list [role=list]>[role=listitem]+[role=listitem]{margin-top:2px}
-.dshsm-tree-notice{font-size:12px;line-height:18px;padding:10px 12px;color:var(--dsw-alias-label-tertiary)}
+.dshsm-tree-notice{font-size:12px;line-height:18px;padding:8px;color:var(--dsw-alias-label-tertiary)}
 `;
-const Chevron = ({ expanded }: { expanded: boolean }) => <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" style={{ transform: expanded ? 'rotate(90deg)' : undefined }}><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-const Folder = () => <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><path d="M2 4h4l1.5 1.5H14V13H2zM2 4V2.5h4l1.5 1.5H14v1.5" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" /></svg>;
+const Chevron = ({ expanded }: { expanded: boolean }) => <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" style={{ transform: expanded ? 'rotate(90deg)' : undefined }}><path d="m6 4 4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
-export function SessionTree({ api, openSession, standardList }: Props) {
-  const [sessions, setSessions] = useState<TreeSession[]>([]);
-  const [problem, setProblem] = useState('');
-  const [query, setQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
+// rc.5 has row action seats, but no row-children seat. The local DOM bridge uses
+// its stable data-row-key and never alters the native header, store or handlers.
+// Each inserted sibling belongs to this component and is removed on disposal.
+export function NativeSessionChildren({ sessionId, store, openSession }: Props) {
+  const anchor = useRef<HTMLSpanElement>(null);
+  const [target, setTarget] = useState<NativeRow>();
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [selected, setSelected] = useState('');
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const node = snapshot.nodes.get(sessionId);
   useEffect(() => {
-    let alive = true, inFlight = false;
-    const refresh = async () => {
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const result = await api.tree();
-        if (alive) {
-          if (result.ok) { setSessions(result.value); setProblem(''); }
-          else setProblem('读取会话列表失败，请稍后重试');
-        }
-      } catch { if (alive) setProblem('会话列表连接中断'); }
-      finally { inFlight = false; }
-    };
-    void refresh();
-    const timer = setInterval(() => void refresh(), 2000);
-    return () => { alive = false; clearInterval(timer); };
-  }, [api]);
+    const row = anchor.current?.closest<HTMLElement>('[data-row-key]');
+    if (!row || row.dataset.rowKey !== `session:${sessionId}`) return;
+    const children = row.ownerDocument.createElement('div');
+    children.className = 'dshsm-native-children';
+    const mounted = { sessionId, row, children };
+    const position = () => { if (row.isConnected && row.nextSibling !== children) row.after(children); };
+    position();
+    // Observe only the owning list: native sort/filter can move its row while
+    // preserving this slot component. Do not observe or modify the header.
+    const observer = new MutationObserver(position);
+    if (row.parentElement) observer.observe(row.parentElement, { childList: true });
+    setTarget(mounted);
+    const detach = store.attach(mounted);
+    return () => { observer.disconnect(); detach(); delete row.dataset.dshsmNested; children.remove(); };
+  }, [sessionId, store]);
+  let nested = false;
+  let parentId = snapshot.parents.get(sessionId);
+  while (parentId) {
+    if ([...snapshot.rows].some(item => item.sessionId === parentId && item.row.isConnected)) { nested = true; break; }
+    parentId = snapshot.parents.get(parentId);
+  }
+  useEffect(() => {
+    if (!target) return;
+    if (nested) target.row.dataset.dshsmNested = 'true'; else delete target.row.dataset.dshsmNested;
+    target.children.hidden = nested || !node?.children.length;
+  }, [target, nested, node]);
   const toggle = (id: string) => setCollapsed(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next; });
-  const forest = sessionForest(sessions);
-  const matches = (node: TreeNode): boolean => `${node.label} ${node.id} ${node.workspace ?? ''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()) || node.children.some(matches);
-  const branch = (node: TreeNode): React.ReactNode => {
-    const children = node.children.filter(matches), expanded = Boolean(query) || !collapsed.has(node.id);
-    return <div key={node.id} role="listitem">
-      <div className="dshsm-tree-row" data-selected={selected === node.id}>
-        {children.length ? <button type="button" className="dshsm-tree-toggle" aria-label={`${expanded ? '收起' : '展开'}${node.label}的子会话`} aria-expanded={expanded} onClick={() => toggle(node.id)}><Chevron expanded={expanded} /></button> : <span className="dshsm-tree-spacer" />}
-        <button type="button" className="dshsm-tree-name" disabled={node.subagent && !node.openable} aria-label={`${node.subagent && !node.openable ? node.note ?? '暂不可打开' : '打开会话'}：${node.label}`} title={[node.label, node.subagent && node.note, node.subagent && node.description].filter(Boolean).join(' · ')} onClick={() => { setSelected(node.id); openSession(node); }}>
-          <span className="dshsm-tree-label">{node.label}</span>{node.subagent && <span className="dshsm-tree-member" title={node.subagentKind === 'teammate' ? '智能体团队队员' : node.subagentKind === 'unknown' ? '子智能体，团队归属待核对' : '团队外子智能体'}>{node.subagentKind === 'teammate' ? '队员' : '子智能体'}{node.note ? ` · ${node.note}` : ''}</span>}{node.running && <span className="dshsm-tree-running" aria-label="运行中" />}
+  const branch = (child: TreeNode): React.ReactNode => {
+    const expanded = !collapsed.has(child.id);
+    return <div key={child.id} role="listitem">
+      <div className="dshsm-tree-row" data-selected={selected === child.id}>
+        {child.children.length ? <button type="button" className="dshsm-tree-toggle" aria-label={`${expanded ? '收起' : '展开'}${child.label}的子会话`} aria-expanded={expanded} onClick={event => { event.stopPropagation(); toggle(child.id); }}><Chevron expanded={expanded} /></button> : <span className="dshsm-tree-spacer" />}
+        <button type="button" className="dshsm-tree-name" disabled={child.subagent && !child.openable} aria-label={`${child.subagent && !child.openable ? child.note ?? '暂不可打开' : '打开会话'}：${child.label}`} title={[child.label, child.subagent && child.note, child.subagent && child.description].filter(Boolean).join(' · ')} onClick={event => { event.stopPropagation(); setSelected(child.id); openSession(child); }}>
+          <span className="dshsm-tree-label">{child.label}</span>{child.subagent && <span className="dshsm-tree-member" title={child.subagentKind === 'teammate' ? '智能体团队队员' : child.subagentKind === 'unknown' ? '子智能体，团队归属待核对' : '团队外子智能体'}>{child.subagentKind === 'teammate' ? '队员' : '子智能体'}{child.note ? ` · ${child.note}` : ''}</span>}{child.running && <span className="dshsm-tree-running" aria-label="运行中" />}
         </button>
       </div>
-      {children.length > 0 && expanded && <div role="list" aria-label={`${node.label}的子会话`} className="dshsm-tree-children">{children.map(branch)}</div>}
+      {child.children.length > 0 && expanded && <div role="list" aria-label={`${child.label}的子会话`} className="dshsm-tree-children">{child.children.map(branch)}</div>}
     </div>;
   };
-  const groups = new Map<string, TreeNode[]>();
-  for (const node of forest.filter(matches)) {
-    const path = node.workspace ?? '未分组';
-    groups.set(path, [...(groups.get(path) ?? []), node]);
-  }
-  return <section aria-label="工作区会话树" className="dshsm-session-tree">
-    <style>{styles}</style>
-    <div className="dshsm-tree-toolbar">
-      {searchOpen ? <input autoFocus aria-label="搜索会话树" className="dshsm-session-search" placeholder="搜索会话" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === 'Escape') { setQuery(''); setSearchOpen(false); } }} /> : <><span className="dshsm-tree-toolbar-label">会话</span><button type="button" className="dshsm-tree-manage" onClick={standardList}>工作区管理</button></>}
-      <button type="button" className="dshsm-tree-search-toggle" aria-label={searchOpen ? '关闭会话搜索' : '搜索会话'} aria-expanded={searchOpen} onClick={() => { setSearchOpen(!searchOpen); setQuery(''); }}><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg></button>
-    </div>
-    <div className="dshsm-tree-list">
-    {problem && <p role="alert" className="dshsm-tree-notice">{problem}</p>}
-    {!problem && sessions.length === 0 && <p role="status" className="dshsm-tree-notice">暂无会话</p>}
-    {[...groups].map(([path, roots]) => {
-      const expanded = Boolean(query) || !collapsed.has(`workspace:${path}`), name = path.split(/[\\/]/u).filter(Boolean).pop() ?? path;
-      return <div key={path} className="dshsm-tree-group">
-        <div className="dshsm-tree-row dshsm-tree-group-label">
-          <button type="button" className="dshsm-tree-toggle dshsm-tree-folder" aria-label={`${expanded ? '收起' : '展开'}工作区${name}`} aria-expanded={expanded} onClick={() => toggle(`workspace:${path}`)}><span className="dshsm-tree-folder-icon"><Folder /></span><span className="dshsm-tree-folder-arrow"><Chevron expanded={expanded} /></span></button>
-          <button type="button" className="dshsm-tree-name" title={path} onClick={() => toggle(`workspace:${path}`)}><span className="dshsm-tree-label">{name}</span></button>
-        </div>
-        {expanded && <div role="list" aria-label={path}>{roots.map(branch)}</div>}
-      </div>;
-    })}
-    </div>
-  </section>;
+  const expanded = !collapsed.has(sessionId), hasChildren = Boolean(node?.children.length);
+  return <><span ref={anchor} hidden />{target && <>
+    {createPortal(<><style>{styles}</style>{!nested && expanded && <>
+      {snapshot.problem && <div role="alert" className="dshsm-tree-notice">{snapshot.problem}</div>}
+      {hasChildren && <div role="list" aria-label={`${node!.label}的子会话`}>{node!.children.map(branch)}</div>}
+    </>}</>, target.children)}
+    {!nested && hasChildren && createPortal(<button type="button" className="dshsm-native-toggle" aria-label={`${expanded ? '收起' : '展开'}${node!.label}的子会话`} aria-expanded={expanded} onClick={event => { event.stopPropagation(); toggle(sessionId); }}><Chevron expanded={expanded} /></button>, target.row)}
+  </>}</>;
 }

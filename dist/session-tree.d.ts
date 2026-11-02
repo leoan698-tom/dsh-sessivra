@@ -10,11 +10,28 @@ export interface TreeApi {
     tree(): Promise<RemoteResult<TreeSession[]>>;
     candidates(sourceId: string, query: string): Promise<RemoteResult<SessionCandidate[]>>;
 }
-interface Props {
-    api: TreeApi;
-    openSession(session: TreeSession): void;
-    startSession(): void;
-    standardList(): void;
+interface NativeRow {
+    sessionId: string;
+    row: HTMLElement;
+    children: HTMLElement;
 }
-export declare function SessionTree({ api, openSession, standardList }: Props): React.JSX.Element;
+interface Snapshot {
+    nodes: Map<string, TreeNode>;
+    parents: Map<string, string>;
+    rows: Set<NativeRow>;
+    problem: string;
+}
+export declare function createSessionTreeStore(api: TreeApi): {
+    getSnapshot: () => Snapshot;
+    subscribe: (listener: () => void) => () => void;
+    attach: (target: NativeRow) => () => void;
+    dispose: () => void;
+};
+type TreeStore = ReturnType<typeof createSessionTreeStore>;
+interface Props {
+    sessionId: string;
+    store: TreeStore;
+    openSession(session: TreeSession): void;
+}
+export declare function NativeSessionChildren({ sessionId, store, openSession }: Props): React.JSX.Element;
 export {};

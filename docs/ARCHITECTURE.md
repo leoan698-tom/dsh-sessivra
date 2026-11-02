@@ -1,12 +1,14 @@
 # 架构与边界
 
-宿主版本固定为 DSH 0.2.1-rc.5。插件通过 bundle patch 加载服务端，通过 `./client` 和宿主 ModuleLoader 加载客户端。React、原生 UI primitives 及 DSH 运行时由宿主提供；Zod runtime 随客户端构建，许可见第三方声明。
+宿主版本固定为 DSH 0.2.1-rc.5。插件通过 bundle patch 加载服务端，通过 `./client` 和宿主 ModuleLoader 加载客户端。React、React DOM 及 DSH 运行时由宿主提供；Zod runtime 随客户端构建，许可见第三方声明。
 
 ## 引用和准确寻址
 
 原生 SessionReferenceResolver 按准确 ID 生成有界历史快照。`ReferenceTargets` 从已接受消息的结构化引用元数据恢复目标，不从标题、快照正文或工具输出推断授权。多引用不默认选最后一项。查询保持只读；用户明确要求通信后，发送工具复核 `selectionRevision` 并进入既有 Messenger 许可和传输路径。旧草稿的投递芯片保留转换能力，新菜单只显示原生引用入口。见 [ADR-0009](adr/0009-unified-session-references-and-messaging.md)。
 
 ## 会话树和子智能体
+
+原生 WorkspaceBrowser 保有整个工作区标题栏、搜索、视图选项、目录管理与会话行。插件只注册原生会话行动作插槽，以准确行 ID 挂载子节点；rc.5 暂无子内容插槽，因此使用限定于该行和相邻容器的 DOM 桥。所有行共享一个刷新，排序时子节点跟随，卸载时恢复原生行。见 [ADR-0010](adr/0010-preserve-native-workspace-browser.md)。
 
 普通子会话关系保存在插件的独立域；普通子会话仍是可独立打开和聊天的 root 会话。子智能体归属来自宿主 Session 头、subagentCatalog 和 Team 名册，按层级自动发现，不写成普通会话关系。创建中、失败、外部执行及历史不可用的对象保留状态节点。可读节点通过宿主父子地址打开，查看不唤醒模型。见 [ADR-0004](adr/0004-conversation-tree-is-not-subagent-ownership.md) 和 [ADR-0008](adr/0008-automatic-subagent-tree-discovery.md)。
 

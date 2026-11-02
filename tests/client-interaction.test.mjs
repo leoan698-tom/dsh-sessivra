@@ -2,79 +2,112 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
-import React from 'react';
+import React, {act} from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
-import {renderToStaticMarkup} from 'react-dom/server';
+import * as reactDom from 'react-dom';
+import {createRoot} from 'react-dom/client';
+import {JSDOM} from 'jsdom';
+import {createSessionTreeStore,NativeSessionChildren} from '../dist/session-tree.js';
 
-test('native tree menu restores the same sidebar after workspace management without a separate panel',async()=>{
+test('native workspace stays registered; row navigation uses original ordinary and child addresses',async()=>{
   let bundle;
-  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,TextEncoder,TextDecoder});
-  const client=bundle.factory(name=>name==='react'?React:name==='react/jsx-runtime'?jsxRuntime:name==='@deepseek-ai/dsh-client-ui-primitives'?{MenuItemButton:()=>null}:undefined);
-  const active=new Set(),opened=[],selected=[];
+  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,TextEncoder,TextDecoder,setInterval,clearInterval});
+  const client=bundle.factory(name=>name==='react'?React:name==='react/jsx-runtime'?jsxRuntime:name==='react-dom'?reactDom:undefined);
+  const active=new Set(),opened=[],selected=[],disposals=[];
   const ctx={
     remote:{$mount:async()=>{},sessionMessenger:{selectRecipient:async(...args)=>{selected.push(args);return{ok:true};}},sessionCollaboration:{candidates:async()=>({ok:true,value:[]})}},
-    uiWorkspace:{openSession:id=>opened.push(id),startSession:()=>{}},
+    uiWorkspace:{openSession:id=>opened.push(id)},
     slots:{inject:(_name,register)=>register(),register:(entry,component)=>{const row={entry,component};active.add(row);return()=>active.delete(row);}},
-    inputTriggers:{registerSource:()=>()=>{}},effect:fn=>fn(),
+    inputTriggers:{registerSource:()=>()=>{}},effect:fn=>disposals.push(fn()),
   };
   ctx.inject=async(_deps,fn)=>fn(ctx);
   await client.apply(ctx);
-  const tree=()=>[...active].find(row=>row.entry.name==='sidebar.workspaces');
-  assert.ok(tree());
-  const props=tree().entry.inject();
+  assert.equal([...active].some(row=>row.entry.name==='sidebar.workspaces'),false);
+  assert.equal([...active].some(row=>row.entry.name==='sidebar.panellist.actions'),false);
+  const tree=[...active].find(row=>row.entry.name==='sidebar.workspaces.session.row.action');
+  assert.ok(tree);
+  const props=tree.entry.inject();
   props.openSession({id:'ordinary:B'});
-  assert.deepEqual(opened,['ordinary:B']);
-  props.openSession({id:'teammate:B',parentId:'lead:A',subagent:true,subagentKind:'teammate',teammateName:'reviewer',subagentMode:'continuable',openable:true});
-  assert.equal(opened.length,2);
-  assert.equal(opened[1].parentSessionId,'lead:A');
-  assert.equal(opened[1].childSessionId,'teammate:B');
-  assert.equal(opened[1].mode,'continuable','Team navigation uses the Host child address, never ordinary Session routing');
+  props.openSession({id:'teammate:B',parentId:'lead:A',subagent:true,subagentKind:'teammate',subagentMode:'continuable',openable:true});
   props.openSession({id:'outside:C',parentId:'lead:A',subagent:true,subagentKind:'standalone',subagentMode:'continuable',openable:true});
-  assert.equal(opened[2].parentSessionId,'lead:A');
-  assert.equal(opened[2].childSessionId,'outside:C');
-  assert.equal(opened[2].mode,'continuable','outside-Team navigation also uses the original Host child address');
   props.openSession({id:'nested:D',parentId:'outside:C',subagent:true,subagentKind:'standalone',subagentMode:'one-shot',openable:true});
-  assert.equal(opened[3].parentSessionId,'outside:C');
-  assert.equal(opened[3].childSessionId,'nested:D');
-  assert.equal(opened[3].mode,'one-shot','one-shot descendants use their direct parent and read-only address');
   props.openSession({id:'pending:E',parentId:'lead:A',subagent:true,subagentKind:'teammate',subagentMode:'unknown',openable:false});
-  assert.equal(opened.length,4,'a pending or unavailable row never opens an invented Session');
-  props.standardList();
-  assert.equal(tree(),undefined);
-  const menu=[...active].find(row=>row.entry.id==='messenger-session-tree');
-  let dismissed=0;
-  menu.component({...menu.entry.inject(),onDismiss:()=>dismissed++}).props.onSelect();
-  assert.ok(tree());
-  assert.equal(dismissed,1);
-  menu.component({...menu.entry.inject(),onDismiss:()=>dismissed++}).props.onSelect();
-  assert.equal([...active].filter(row=>row.entry.name==='sidebar.workspaces').length,1);
-  assert.equal([...active].some(row=>row.entry.name==='plugins.bundle.config'),false);
+  assert.deepEqual(JSON.parse(JSON.stringify(opened)),['ordinary:B',
+    {parentSessionId:'lead:A',childSessionId:'teammate:B',mode:'continuable'},
+    {parentSessionId:'lead:A',childSessionId:'outside:C',mode:'continuable'},
+    {parentSessionId:'outside:C',childSessionId:'nested:D',mode:'one-shot'}]);
   assert.deepEqual(selected,[],'navigation never sends or mutates communication intent');
+  disposals.forEach(dispose=>dispose?.());
 });
 
-test('an already mounted tree automatically renders newly discovered nested children on its next refresh',async()=>{
-  let bundle,component,props,tick,cleanup,cleared=false,hookIndex=0,effect;
-  const stateValues=[];
-  const hooks={...React,useState:initial=>{
-    const index=hookIndex++;if(!(index in stateValues))stateValues[index]=typeof initial==='function'?initial():initial;
-    return[stateValues[index],value=>{stateValues[index]=typeof value==='function'?value(stateValues[index]):value;}];
-  },useEffect:fn=>{effect??=fn;}};
-  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{
-    window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,TextEncoder,TextDecoder,
-    setInterval:(fn,ms)=>{assert.equal(ms,2000);tick=fn;return 1;},clearInterval:()=>{cleared=true;},
-  });
-  const client=bundle.factory(name=>name==='react'?hooks:name==='react/jsx-runtime'?jsxRuntime:name==='@deepseek-ai/dsh-client-ui-primitives'?{MenuItemButton:()=>null}:undefined);
-  let rows=[{id:'lead',label:'Refresh lead',subagent:false,workspace:'/test',running:false}],reads=0;
-  const ctx={remote:{$mount:async()=>{},sessionMessenger:{},sessionCollaboration:{tree:async()=>{reads++;return{ok:true,value:structuredClone(rows)};}}},
-    uiWorkspace:{},slots:{inject:(_name,fn)=>fn(),register:(entry,view)=>{if(entry.name==='sidebar.workspaces'){component=view;props=entry.inject();}return()=>{};}},
-    inputTriggers:{registerSource:()=>()=>{}},effect:fn=>fn()};ctx.inject=async(_deps,fn)=>fn(ctx);
-  await client.apply(ctx);
-  const render=()=>{hookIndex=0;return renderToStaticMarkup(component(props));};
-  render();cleanup=effect();await new Promise(resolve=>setImmediate(resolve));
-  assert.match(render(),/Refresh lead/);assert.equal(reads,1);
-  rows.push({id:'child',parentId:'lead',label:'New worker',workspace:'/test',running:false,subagent:true,subagentKind:'standalone',subagentMode:'continuable',openable:true,canMessage:true},
-    {id:'nested',parentId:'child',label:'New nested review',workspace:'/test',running:false,subagent:true,subagentKind:'standalone',subagentMode:'one-shot',openable:true,canMessage:false,note:'只读'});
-  tick();await new Promise(resolve=>setImmediate(resolve));
-  const updated=render();assert.match(updated,/New worker/);assert.match(updated,/New nested review/);assert.match(updated,/只读/);assert.equal(reads,2);
-  cleanup();assert.equal(cleared,true);
+test('native header handlers, hierarchy, collapse, sorting, workspace removal and cleanup coexist',async()=>{
+  const dom=new JSDOM('<div id="app"></div>');
+  const previous={window:globalThis.window,document:globalThis.document,MutationObserver:globalThis.MutationObserver,IS_REACT_ACT_ENVIRONMENT:globalThis.IS_REACT_ACT_ENVIRONMENT};
+  Object.assign(globalThis,{window:dom.window,document:dom.window.document,MutationObserver:dom.window.MutationObserver,IS_REACT_ACT_ENVIRONMENT:true});
+  let rows=[{id:'lead',label:'Lead',subagent:false,running:false},{id:'ordinary',parentId:'lead',label:'Ordinary child',subagent:false,running:false},
+    {id:'child',parentId:'lead',label:'Worker',subagent:true,subagentKind:'teammate',subagentMode:'continuable',openable:true,running:false},
+    {id:'nested',parentId:'child',label:'Review',subagent:true,subagentKind:'standalone',subagentMode:'one-shot',openable:true,running:false,note:'只读'}];
+  const store=createSessionTreeStore({tree:async()=>({ok:true,value:rows})});
+  const opened=[],actions=[];
+  const root=createRoot(document.getElementById('app'));
+  function NativeFixture({ids=['lead','ordinary','other']}){
+    return React.createElement('section',{'data-slot':'sidebar.workspaces'},
+      React.createElement('header',null,'工作区',...['搜索','筛选','添加工作区'].map(label=>React.createElement('button',{key:label,onClick:()=>actions.push(label)},label))),
+      React.createElement('div',{id:'list'},...ids.map(id=>React.createElement('div',{key:id,'data-row-key':`session:${id}`,onClick:()=>opened.push(`native:${id}`)},
+        React.createElement('span',null,id),React.createElement('span',null,'1天'),React.createElement('span',null,
+          React.createElement(NativeSessionChildren,{sessionId:id,store,openSession:node=>opened.push(node.id)}))))));
+  }
+  const render=async(ids)=>act(async()=>{root.render(React.createElement(NativeFixture,{ids}));await new Promise(resolve=>setImmediate(resolve));});
+  const click=async(element)=>act(async()=>element.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})));
+  try{
+    await render();
+    const header=document.querySelector('header'),headerHTML=header.outerHTML;
+    for(const button of header.querySelectorAll('button'))await click(button);
+    assert.deepEqual(actions,['搜索','筛选','添加工作区']);
+    const lead=document.querySelector('[data-row-key="session:lead"]');
+    const children=lead.nextElementSibling;
+    assert.ok(children.classList.contains('dshsm-native-children'));
+    assert.match(children.textContent,/Worker/);assert.match(children.textContent,/Review/);assert.match(children.textContent,/只读/);
+    assert.equal(document.querySelector('[data-row-key="session:ordinary"]').dataset.dshsmNested,'true','linked ordinary child is shown once under its parent');
+    assert.equal(document.querySelector('[data-row-key="session:other"]').nextElementSibling.hidden,true,'no empty spacer for childless rows');
+    await click(lead.querySelector('.dshsm-native-toggle'));
+    assert.equal(children.querySelector('[role=list]'),null);
+    assert.deepEqual(opened,[],'expansion does not open the parent');
+    await click(lead.querySelector('.dshsm-native-toggle'));
+    await click(children.querySelector('.dshsm-tree-toggle'));
+    assert.equal(children.querySelector('[aria-label="打开会话：Review"]'),null);
+    assert.deepEqual(opened,[],'nested expansion does not open the native parent');
+    await click(children.querySelector('.dshsm-tree-toggle'));
+    await click(children.querySelector('[aria-label="打开会话：Review"]'));
+    assert.deepEqual(opened,['nested']);
+    await render(['other','ordinary','lead']);
+    assert.equal(lead.nextElementSibling,children,'children follow a native sort operation');
+    assert.equal(document.querySelector('header'),header);assert.equal(header.outerHTML,headerHTML);
+    await render(['ordinary','other']);
+    assert.equal(document.querySelector('[data-row-key="session:ordinary"]').dataset.dshsmNested,undefined,'visible child is restored if its parent workspace is not rendered');
+    assert.equal(children.isConnected,false);
+    await render(['lead','ordinary']);
+    assert.match(document.querySelector('[data-row-key="session:lead"]').nextElementSibling.textContent,/Review/);
+    await act(async()=>root.unmount());
+    assert.equal(document.querySelectorAll('.dshsm-native-children,.dshsm-native-toggle,[data-dshsm-nested]').length,0);
+  }finally{store.dispose();dom.window.close();Object.assign(globalThis,previous);}
+});
+
+test('one shared refresh discovers new children, prevents overlapping reads and stops after disposal',async()=>{
+  const originalSetInterval=globalThis.setInterval,originalClearInterval=globalThis.clearInterval;
+  let tick,cleared=0,reads=0,resolveRead;
+  globalThis.setInterval=(fn,ms)=>{assert.equal(ms,2000);tick=fn;return 123;};
+  globalThis.clearInterval=()=>cleared++;
+  const store=createSessionTreeStore({tree:()=>{reads++;return new Promise(resolve=>{resolveRead=resolve;});}});
+  try{
+    const unsubscribe=store.subscribe(()=>{}),second=store.subscribe(()=>{});
+    tick();tick();assert.equal(reads,1);
+    resolveRead({ok:true,value:[{id:'lead',label:'Lead',subagent:false}]});await new Promise(resolve=>setImmediate(resolve));
+    tick();assert.equal(reads,2);
+    resolveRead({ok:true,value:[{id:'lead',label:'Lead',subagent:false},{id:'new',parentId:'lead',label:'New worker',subagent:true,subagentKind:'standalone'}]});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(store.getSnapshot().nodes.get('lead').children[0].id,'new');
+    unsubscribe();second();assert.equal(cleared,1);
+    store.dispose();tick();assert.equal(reads,2);
+  }finally{store.dispose();globalThis.setInterval=originalSetInterval;globalThis.clearInterval=originalClearInterval;}
 });
