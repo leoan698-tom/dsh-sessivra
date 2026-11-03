@@ -16,6 +16,17 @@ const tree=h=>h.ctx.typertGateway.invoke({namespace:'sessionCollaboration',metho
 const candidates=(h,sourceId)=>h.ctx.typertGateway.invoke({namespace:'sessionCollaboration',method:'candidates',args:{sourceId,query:''},peer:h.peer});
 const identity=(mode='continuable',label='Task')=>({agentTeam:null,subagentCatalog:[],subagent:{mode,label}});
 
+test('tree passes through exact parent availability without treating idle or absent metadata as offline',async t=>{
+  const h=await host();t.after(()=>h.close());
+  const items=[{sessionId:'lead',agentAvailable:false,running:false,cwd:h.root,projections:{values:{agentTeam:null,subagentCatalog:[]}}},
+    {sessionId:'child',parentSessionId:'lead',origin:'subagent',running:false,cwd:h.root,projections:{values:identity()}}];
+  h.ctx.provide('sessionController',{list:async()=>({items})});
+  assert.equal((await tree(h)).find(row=>row.id==='child').parentAvailable,false);
+  items[0].agentAvailable=true;assert.equal((await tree(h)).find(row=>row.id==='child').parentAvailable,true);
+  delete items[0].agentAvailable;assert.equal((await tree(h)).find(row=>row.id==='child').parentAvailable,undefined);
+  assert.equal(h.adapter.calls.length,0);
+});
+
 test('new direct, nested and one-shot children appear on the next read without changing the parent',async t=>{
   const h=await host();t.after(()=>h.close());
   const items=[{sessionId:'lead',blank:false,cwd:h.root,running:false,projections:{values:{title:'Lead',agentTeam:null,subagentCatalog:[]}}}];

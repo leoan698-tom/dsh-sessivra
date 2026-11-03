@@ -100,7 +100,7 @@ export interface ChildRecipient extends SessionAddress {
 }
 export interface ChildTransport {
     inspect(parent: Root, childId: string, signal?: AbortSignal): Promise<ChildRecipient | undefined>;
-    send(parent: Root, recipient: ChildRecipient, input: UserMessage, deliveryMode: DeliveryMode, signal: AbortSignal): Promise<string>;
+    send(parent: Root, recipient: ChildRecipient, input: UserMessage, deliveryMode: DeliveryMode, signal: AbortSignal, beforeDispatch?: () => void): Promise<string>;
     reply(child: Root, parentId: string, input: UserMessage, signal: AbortSignal): Promise<string>;
 }
 export interface Runtime {
@@ -152,6 +152,9 @@ export declare class Messenger {
     }[];
     /** Read-only progress uses existing exact-pair/policy admission; never grant here. */
     assertProgressAccess(caller: Root, target: SessionAddress): void;
+    /** Task scopes extend one explicitly established pair, never a general sender grant.
+     * The task transport separately checks live identities, ownership and archive state. */
+    taskPair(source: SessionAddress, target: SessionAddress): number;
     progressMessages(caller: Root, target: SessionAddress): {
         total: number;
         messages: {

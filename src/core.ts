@@ -22,7 +22,7 @@ export interface Root { id: string; status: string; session: { header: { cwd?: s
 export interface ChildRecipient extends SessionAddress { child: ChildAddress }
 export interface ChildTransport {
   inspect(parent: Root, childId: string, signal?: AbortSignal): Promise<ChildRecipient | undefined>;
-  send(parent: Root, recipient: ChildRecipient, input: UserMessage, deliveryMode: DeliveryMode, signal: AbortSignal): Promise<string>;
+  send(parent: Root, recipient: ChildRecipient, input: UserMessage, deliveryMode: DeliveryMode, signal: AbortSignal, beforeDispatch?: () => void): Promise<string>;
   reply(child: Root, parentId: string, input: UserMessage, signal: AbortSignal): Promise<string>;
 }
 export interface Runtime { roots(): Root[]; get(id: string): Root | undefined; resolve?(id: string): Promise<Root | undefined>; inspect?(id: string): Promise<SessionAddress | undefined>; children?: ChildTransport }
@@ -96,6 +96,18 @@ export class Messenger {
     const denied = this.admissionAt(this.store.read(), { origin: 'agent', sender: caller.id } as Message, caller.id, caller.session.header.cwd, target.id, target.cwd);
     if (denied) throw new Error(`PROGRESS_DENIED:${denied}`);
   }
+  /** Task scopes extend one explicitly established pair, never a general sender grant.
+   * The task transport separately checks live identities, ownership and archive state. */
+  taskPair(source: SessionAddress, target: SessionAddress): number {
+    const state = this.store.read();
+    const grant = this.grant(state, source.id, target.id, workspace(source.cwd), workspace(target.cwd));
+    if (!grant) throw new Error('TASK_PERMISSION_REVOKED');
+    for (const address of [source, target]) {
+      const policy = state.policies[key(address.id)];
+      if (policy?.workspace === workspace(address.cwd) && policy.mode !== 'accept') throw new Error('TASK_POLICY_BLOCKED');
+    }
+    return grant.grantedAt;
+  }
   progressMessages(caller: Root, target: SessionAddress) {
     this.assertProgressAccess(caller, target);
     const related = Object.values(this.store.read().messages).filter(message => message.origin === 'agent' &&
@@ -151,7 +163,7 @@ export class Messenger {
           !(targetPolicy?.workspace === selected.targetWorkspace && targetPolicy.mode !== 'accept')) {
         state.pairGrants ??= {};
         if (!state.pairGrants[pairKey(caller.id, targetId)] && Object.keys(state.pairGrants).length >= 512) throw new Error('GRANT_LIMIT');
-        state.pairGrants[pairKey(caller.id, targetId)] = { sourceId: caller.id, targetId, sourceWorkspace: selected.sourceWorkspace, targetWorkspace: selected.targetWorkspace, grantedAt: this.clock() };
+        if (!this.grant(state, caller.id, targetId, selected.sourceWorkspace, selected.targetWorkspace)) state.pairGrants[pairKey(caller.id, targetId)] = { sourceId: caller.id, targetId, sourceWorkspace: selected.sourceWorkspace, targetWorkspace: selected.targetWorkspace, grantedAt: this.clock() };
       }
       await this.store.write(state);
       return selected;

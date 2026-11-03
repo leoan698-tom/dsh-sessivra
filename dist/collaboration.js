@@ -52,6 +52,7 @@ let Collaboration = (() => {
         messenger = __runInitializers(this, _instanceExtraInitializers);
         relations;
         tail = Promise.resolve();
+        taskSummary;
         constructor(ctx, messenger, relations) {
             super(ctx, 'sessionCollaboration');
             this.messenger = messenger;
@@ -141,6 +142,7 @@ let Collaboration = (() => {
                         label: member?.name || identity?.label || entry?.label || view?.values.title || '未命名子智能体',
                         running: child?.running ?? false, subagent: true, childWorkspace: child?.cwd ?? null,
                         subagentMode: mode, openable, canMessage,
+                        ...(typeof parent.agentAvailable === 'boolean' ? { parentAvailable: parent.agentAvailable } : {}),
                         ...(member ? { subagentKind: 'teammate', teammateName: member.name } : { subagentKind: uncertain ? 'unknown' : 'standalone' }),
                         ...(phaseNote ? { note: phaseNote } : mode === 'external' ? { note: '外部执行' } : !openable ? { note: '历史暂不可用' } : uncertain ? { note: '归属待核对' } : mode === 'one-shot' ? { note: '只读' } : {}),
                         description: view?.values.title || identity?.label || entry?.label };
@@ -151,7 +153,10 @@ let Collaboration = (() => {
                 }
             }
             const parents = new Set(tree.map(row => row.parentId));
-            return tree.filter(row => row.subagent || !byId.get(row.id)?.blank || edges[row.id] || row.parentId || parents.has(row.id));
+            return tree.filter(row => row.subagent || !byId.get(row.id)?.blank || edges[row.id] || row.parentId || parents.has(row.id)).map(row => {
+                const task = this.taskSummary?.(row.id);
+                return task ? { ...row, task } : row;
+            });
         }
         async treeProjections(item) {
             const hints = item.projections?.values ?? {};
@@ -194,7 +199,7 @@ let Collaboration = (() => {
                     mention: `@[${label}](dsh-session:${Buffer.from(JSON.stringify(session.id)).toString('base64url')})` };
             });
         }
-        createChild(parent, input, signal) {
+        createChild(parent, input, signal, managed) {
             const work = this.tail.then(async () => {
                 if (this.ctx.agents.get(parent.id) !== parent || !this.ctx.agents.roots().includes(parent) || parent.session.header.origin === 'subagent' || (parent.session.header.delegationDepth ?? 0) > 0)
                     throw new Error('PARENT_NOT_ACTIVE_CONVERSATION');
@@ -207,7 +212,7 @@ let Collaboration = (() => {
                 const initialText = `${input.prompt}\n完成任务后，请向此请求发送一次关联回复。`;
                 if (initialText.length > this.messenger.limits.maxLength)
                     throw new Error('CHILD_INITIAL_TASK_TOO_LONG');
-                const requestHash = createHash('sha256').update(JSON.stringify([input.label, input.prompt, cwd, input.reasoningEffort ?? null])).digest('hex');
+                const requestHash = createHash('sha256').update(JSON.stringify([input.label, input.prompt, cwd, input.reasoningEffort ?? null, ...(managed ? ['managed-task'] : [])])).digest('hex');
                 const edges = structuredClone(this.relations.read());
                 const prior = edges[sessionId];
                 if (prior && (prior.parentId !== parent.id || prior.requestHash !== requestHash))
@@ -279,9 +284,9 @@ let Collaboration = (() => {
                     if (controller)
                         await controller.rename({ sessionId, title: input.label });
                     const selection = await this.messenger.selectRecipient(parent, sessionId, input.label);
-                    const receipt = await this.messenger.send(parent, { id: messageId, target: sessionId, selectionRevision: selection.revision,
+                    const receipt = managed ? await managed(sessionId, selection.revision) : await this.messenger.send(parent, { id: messageId, target: sessionId, selectionRevision: selection.revision,
                         text: initialText }, signal);
-                    return { id: sessionId, parentId: parent.id, kind: 'conversation', reused: Boolean(prior), status: receipt.status, messageId: receipt.id, ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}) };
+                    return { id: sessionId, parentId: parent.id, kind: 'conversation', reused: Boolean(prior), status: receipt.status, messageId: receipt.id, ...('taskId' in receipt ? { taskId: receipt.taskId } : {}), ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}) };
                 }
                 catch (error) {
                     return { id: sessionId, parentId: parent.id, kind: 'conversation', created, reused: Boolean(prior), status: 'not-confirmed', messageId,

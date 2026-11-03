@@ -4,7 +4,7 @@ status: accepted
 
 # DSH Agent Hub 的产品范围与分发身份
 
-本条的产品范围继续有效；名称与分发身份已由 [ADR-0012](0012-sessivra-project-identity.md) 替代。下文保留 dev.18 的决策背景。
+当前产品范围以 [CONTEXT.md](../../CONTEXT.md) 为准；名称与分发身份已由 [ADR-0012](0012-sessivra-project-identity.md) 替代。下文保留 dev.18 的历史决策背景。
 
 2026-11-01（America/Los_Angeles），用户结合竞品对比要求项目改名，并明确后续通过插件调用本机 Grok CLI、Antigravity CLI、Claude Code CLI 等主流 CLI，将会话展示在 DSH 中，支持通信、上下文引用和供人使用的任务管理面板。用户选择名称 **DSH Agent Hub（DSH 智能体协作中心）**。
 

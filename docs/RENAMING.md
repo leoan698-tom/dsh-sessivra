@@ -1,8 +1,12 @@
 # DSH Sessivra 改名与迁移
 
-## dev.20 的 npm 安装名
+## 当前 dev.25 与旧版升级
 
-当前包名为 `dsh-plugin-sessivra@0.3.0-dev.20`，产品名和仓库仍为 DSH Sessivra / `leoan698-tom/dsh-sessivra`。在 DSH「添加插件」中选择 npm 官方源，只输入 `dsh-plugin-sessivra` 即为本版的安装入口。
+当前版本为 `dsh-plugin-sessivra@0.3.0-dev.25`。dev.20 及 dev.21–24 本地版使用同一包名，退出 DSH 后可原位更新；保留原消息、会话关系及 dev.24 任务域。回退至 dev.20 时旧版不能继续受管任务，先结束或暂停任务并备份。具体命令见[安装与升级](OPERATIONS.md)。
+
+## dev.20 引入的 npm 安装名
+
+dev.20 首次采用包名 `dsh-plugin-sessivra`，产品名和仓库仍为 DSH Sessivra / `leoan698-tom/dsh-sessivra`。在 DSH「添加插件」中选择 npm 官方源，只输入 `dsh-plugin-sessivra` 即为本版的安装入口。
 
 已有 dev.19 时，在目标 DSH 正常退出并备份后，先移除 `@leoan698-tom/dsh-sessivra`，再安装 dev.20。原信使包和 Agent Hub 包按下文对应命令移除。新包继续使用原 bundle 条目 ID、三个持久存储域、工具和 wire ID，不同时启用旧包与新包。
 

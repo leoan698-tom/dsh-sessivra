@@ -1,0 +1,20 @@
+{
+  "sourceVersion": "0.3.0-dev.24.local.2",
+  "host": "DSH 0.2.1-rc.5",
+  "model": "DeepSeek-V4.1-Flash / Max",
+  "status": "PASS",
+  "acceptedTaskCount": 7,
+  "queueEvidence": [
+    {
+      "resultAt": "2026-11-03T14:45:23.019Z",
+      "acceptedAt": "2026-11-03T14:46:25.311Z",
+      "successorScheduledAt": "2026-11-03T14:46:25.318Z"
+    },
+    {
+      "resultAt": "2026-11-03T14:53:57.709Z",
+      "acceptedAt": "2026-11-03T14:54:53.679Z",
+      "successorScheduledAt": "2026-11-03T14:54:53.686Z"
+    }
+  ],
+  "scope": "4 initial tasks on local.1 and 3 additional tasks on local.2, same A/B/C sessions. Local original records remain private."
+}

@@ -1,9 +1,11 @@
 # 验收范围
 
-当前产品范围由 [ADR-0003](adr/0003-session-collaboration-product-scope.md)、[ADR-0007](adr/0007-parent-child-messenger-transport.md)、[ADR-0008](adr/0008-automatic-subagent-tree-discovery.md) 和 [ADR-0009](adr/0009-unified-session-references-and-messaging.md) 决定：原生会话上下文引用、明确通信、普通子会话、真实主子树和直接子智能体调度。
+dev.24 在既有通信上落实 [ADR-0015](adr/0015-scoped-managed-task-coordination.md) 的受管任务闭环。新增验收对象为任务版本与采用确认、共享问题与来源绑定裁决、自动派发与结果回传、任务级排队、工具边界更新/暂停/取消、验收证据、直接用户输入冲突和持久恢复。最终一次隔离官方 Host 的真实模型完整场景通过，具体输入、产物、失败及复验说明见 [测试报告](TEST_REPORT.md)；日常原生桌面仍未执行该新增场景。下文历史预发布范围不替代这一分层结论。
+
+当前产品范围由 [ADR-0003](adr/0003-session-collaboration-product-scope.md)、[ADR-0007](adr/0007-parent-child-messenger-transport.md)、[ADR-0008](adr/0008-automatic-subagent-tree-discovery.md)、[ADR-0009](adr/0009-unified-session-references-and-messaging.md) 和 [ADR-0014](adr/0014-sidebar-conversations-and-teammates-only.md) 决定：原生会话上下文引用、明确通信、普通子会话、真实主子树和直接子智能体调度。侧栏仅保留普通会话、普通子会话和团队队员；其他子智能体隐藏。
 
 预发布验证覆盖：可复现构建；单元、客户端与真实 rc.5 隔离宿主；准确目标和归属；只引用不发送；关联回复；队列/插入；冷会话；重开恢复；撤权、过期、去重和不确定投递；实际包的安装与 profile 注册。每个版本单独记录结果，不能把旧候选的检查相加后作为新候选通过。
 
 真实模型验收与确定性适配器分开。完整业务验收应固定最终候选、宿主、模型和运行条件，使用虚构任务观察自然语言指令、真实工具调用、同一目标的处理轨迹及关联回复。覆盖选择分析、空闲往返、运行中调整、后续调度、跨工作目录、冷会话和退出重开；每轮单独报告，保留失败及复验原因。历史约定的两轮七项标准不能单独覆盖后来增加的团队、树及统一引用功能，新增行为须另行验证。
 
-delivered/claimed 不代表业务完成；截图、安装成功和模型口头成功声明不能代替通信闭环。合成或安装通过、真实模型未执行时应明确该边界。本版作为可安装预发布发布，不声明新版完整真实模型业务验收已通过。现有结果见 [测试报告](TEST_REPORT.md)。
+delivered/claimed 不代表业务完成；截图、安装成功和模型口头成功声明不能代替通信闭环。合成或安装通过、真实模型未执行时应明确该边界。历史 dev.20 发布没有声明新版完整真实模型业务验收通过；dev.24 以本页开头的新增场景和明确边界为准。现有结果见 [测试报告](TEST_REPORT.md)。

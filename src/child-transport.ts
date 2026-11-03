@@ -39,12 +39,13 @@ export function childTransport(ctx: Context): ChildTransport {
   };
   return {
     inspect,
-    async send(parent, recipient, input, deliveryMode, signal) {
+    async send(parent, recipient, input, deliveryMode, signal, beforeDispatch) {
       const current: ChildRecipient | undefined = await inspect(parent, recipient.id, signal);
       if (!current || current.child.kind !== recipient.child.kind || workspace(current.cwd) !== workspace(recipient.cwd)) throw new Error('CHILD_ADDRESS_CHANGED');
       const deliver = deliveryMode === 'queue' ? queueHostSubagentPrompt : steerHostSubagentPrompt;
       const runtime = ctx.get('subagents');
       if (!runtime) throw new Error('CHILD_TRANSPORT_UNAVAILABLE');
+      beforeDispatch?.();
       return deliver(runtime, parent as Agent, recipient.id as Agent['id'], [...input.content], input.source, signal);
     },
     async reply(child, parentId, input, signal) {

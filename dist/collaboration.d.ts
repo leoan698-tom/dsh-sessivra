@@ -10,6 +10,17 @@ interface TreeSessionBase {
     workspace: string | null;
     label: string;
     running: boolean;
+    task?: {
+        id: string;
+        title: string;
+        status: string;
+        label: string;
+        revision: number;
+        appliedRevision: number;
+        pendingUpdate: boolean;
+        queued: number;
+        updatedAt: number;
+    };
 }
 export type TreeSession = TreeSessionBase & ({
     subagent: false;
@@ -21,6 +32,7 @@ export type TreeSession = TreeSessionBase & ({
     subagentMode: 'continuable' | 'one-shot' | 'external' | 'unknown';
     openable: boolean;
     canMessage: boolean;
+    parentAvailable?: boolean;
     note?: string;
 } & ({
     subagentKind: 'teammate';
@@ -55,6 +67,7 @@ export interface TreeSessionSummary {
     parentSessionId?: string;
     cwd?: string;
     running: boolean;
+    agentAvailable?: boolean;
     blank?: boolean;
     origin?: 'subagent';
     delegationDepth?: number;
@@ -71,6 +84,7 @@ export declare class Collaboration extends TypertRemoteService {
     private messenger;
     private relations;
     private tail;
+    taskSummary?: (id: string) => TreeSessionBase['task'];
     constructor(ctx: Context, messenger: Messenger, relations: RelationsStore);
     tree(): Promise<TreeSession[]>;
     private treeProjections;
@@ -81,7 +95,12 @@ export declare class Collaboration extends TypertRemoteService {
         cwd?: string;
         reasoningEffort?: string;
         requestId?: string;
-    }, signal: AbortSignal): Promise<{
+    }, signal: AbortSignal, managed?: (targetId: string, selectionRevision: string) => Promise<{
+        id: string;
+        status: string;
+        taskId: string;
+        reason?: string;
+    }>): Promise<{
         reasoningEffort?: string | undefined;
         messageId: string;
         reason?: string | undefined;
@@ -90,6 +109,18 @@ export declare class Collaboration extends TypertRemoteService {
         kind: string;
         reused: boolean;
         status: import("./core.js").Status;
+        created?: undefined;
+        error?: undefined;
+        recovery?: undefined;
+    } | {
+        reasoningEffort?: string | undefined;
+        taskId?: string | undefined;
+        id: string;
+        parentId: import("@deepseek-ai/dsh-session").SessionId;
+        kind: string;
+        reused: boolean;
+        status: string;
+        messageId: string;
         created?: undefined;
         error?: undefined;
         recovery?: undefined;

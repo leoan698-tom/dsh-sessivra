@@ -15,7 +15,7 @@ test('actual DSH remote lifecycle retains old draft serialization without adding
   let bundle;
   vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,globalThis,crypto:webcrypto,TextEncoder,TextDecoder});
   assert.equal(bundle.id,'dsh-plugin-sessivra');
-  const client=bundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='react-dom')return reactDom;throw new Error(`Unexpected runtime external ${name}`);});
+  const client=bundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='react-dom')return reactDom;if(name==='@deepseek-ai/dsh-client-ui-primitives')return {};throw new Error(`Unexpected runtime external ${name}`);});
   let rendererBundle;
   vm.runInNewContext(await readFile(new URL(import.meta.resolve('@deepseek-ai/dsh-client-ui-renderer/client')),'utf8'), {window:{__ModuleLoader__:{load:value=>{rendererBundle=value;}}},console,globalThis});
   const renderer=rendererBundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='@deepseek-ai/dsh-client-ui-primitives')return {MenuItemButton:({onSelect,icon,children})=>React.createElement('button',{role:'menuitem',onClick:onSelect},icon,children)};if(name==='react-dom')return reactDom;if(name==='react-dom/client')return reactDomClient;if(name==='@deepseek-ai/dsh-client-ui-slots')return slotContracts;if(name==='@deepseek-ai/cordis')return cordis;throw new Error(`Unexpected renderer external ${name}`);});
@@ -64,7 +64,7 @@ test('actual DSH remote lifecycle retains old draft serialization without adding
 test('browser bundle leaves native file and session references as the only visible @ source',async()=>{
   let bundle;
   vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,globalThis,crypto:webcrypto,TextEncoder,TextDecoder});
-  const client=bundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='react-dom')return reactDom;throw new Error(`Unexpected runtime external ${name}`);});
+  const client=bundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='react-dom')return reactDom;if(name==='@deepseek-ai/dsh-client-ui-primitives')return {};throw new Error(`Unexpected runtime external ${name}`);});
   const entries=[];let source;
   const nativeRows=[{name:'Project B',value:'native-session'},{name:'README.md',value:'native-file'}];
   const native={name:'reference',trigger:'@',candidates:async()=>nativeRows};

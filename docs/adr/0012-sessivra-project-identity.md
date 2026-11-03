@@ -4,7 +4,7 @@ status: accepted
 
 # DSH Sessivra 的项目名称与兼容身份
 
-2026-11-01（America/Los_Angeles），用户在查看同名竞品分析后要求再次改名，并明确不要有重名项目。原名称 DSH Agent Hub 已有多个同类项目，仅加 npm scope 不能解决产品名称混淆。本条替代 ADR-0011 的名称与分发身份决定，其 CLI 接入、会话协作和人工任务管理的产品范围继续有效。
+2026-11-01（America/Los_Angeles），用户在查看同名竞品分析后要求再次改名，并明确不要有重名项目。原名称 DSH Agent Hub 已有多个同类项目，仅加 npm scope 不能解决产品名称混淆。本条替代 ADR-0011 的名称与分发身份决定；当前产品范围以 [CONTEXT.md](../../CONTEXT.md) 为准。
 
 采用专有名称 **DSH Sessivra**，中文显示为 **DSH Sessivra 协作空间**；GitHub 仓库为 `leoan698-tom/dsh-sessivra`，分发包为 `@leoan698-tom/dsh-sessivra`，bundle 条目为 `leoan698-tom.dsh-sessivra`。scope 用于标明发布者，名称本身也经过重名检查。
 

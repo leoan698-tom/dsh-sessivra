@@ -61,4 +61,18 @@ export class ReferenceTargets {
     const selected = await this.messenger.selectRecipient(agent, resolved.target, resolved.label, resolved.selectionRevision);
     return this.messenger.send(agent, { ...args, target: selected.targetId, selectionRevision: selected.revision }, signal);
   }
+  /** Explicit task admission uses the same exact reference and consent boundary as send. */
+  async prepareTask(agent: Agent, target: string | undefined, selectionRevision: string | undefined, signal: AbortSignal) {
+    const resolved = await this.resolve(agent, target);
+    if (resolved) {
+      if (resolved.requiresTarget) throw new Error('REFERENCE_TARGET_REQUIRED');
+      if (!resolved.canMessage) throw new Error(`REFERENCE_ONLY_TARGET:${resolved.reason}`);
+      if (selectionRevision !== resolved.selectionRevision) throw new Error('REFERENCE_SELECTION_REVISION_REQUIRED');
+      signal.throwIfAborted();
+      return this.messenger.selectRecipient(agent, resolved.target, resolved.label, resolved.selectionRevision);
+    }
+    const selected = this.messenger.selectedFor(agent.id);
+    if (!selected || (target && selected.targetId !== target) || selected.revision !== selectionRevision) throw new Error('TASK_TARGET_SELECTION_REQUIRED');
+    return selected;
+  }
 }

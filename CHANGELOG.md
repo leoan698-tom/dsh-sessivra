@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.3.0-dev.25 (public prerelease, 2026-11-03)
+
+- Publish the managed task coordination and sidebar improvements from dev.21 through dev.24.local.2 under the existing npm package name.
+- Include task revisions, shared questions and decisions, automatic delivery, coordinator acceptance and queue release after acceptance.
+- Include the pending checklist, queue count and first-step human-message-ID fixes verified in the native desktop workflow.
+- Refresh public installation, upgrade, recovery and verification documentation; keep DSH 0.2.1-rc.5 / Node.js 24+ compatibility.
+- Runtime source is unchanged from the verified dev.24.local.2 candidate. This is a distribution and documentation promotion, not a stable release.
+
+## 0.3.0-dev.24.local.2 (local desktop fix, 2026-11-03)
+
+- Expose the admitted current human message ID in the first model request after a user reply. rc.5 prepares runtime context before that message is appended to session history; decision authorization still validates the genuine persisted message.
+- Add a regression that fails with the previous human message ID and passes without an extra model step. Retain both local.1 fixes.
+
+## 0.3.0-dev.24.local.1 (local desktop fix, 2026-11-03)
+
+- Align an unstarted task's derived checklist with revised acceptance conditions, including repair on reopen; retain recorded execution progress, task identity and shared decisions.
+- Exclude the currently displayed waiting task from the sidebar's subsequent-task count.
+- Add regressions for requirement changes before startup, exact queue counts, repair without model activation, and preservation of existing execution checkpoints.
+
+## 0.3.0-dev.24 (local development build, 2026-11-03)
+
+- Add durable scoped tasks with revision adoption, checkpoints, a separately versioned decision record, automatic question/result delivery and coordinator acceptance evidence.
+- Deduplicate business questions across related child sessions, hold known prerequisite work before startup, validate user answers against current human messages, and synchronize direct answers from a child.
+- Queue subsequent tasks until acceptance, preserve unfinished obligations during updates, and pause/cancel only at safe tool boundaries without aborting running tools.
+- Guard stale work and results, preserve task identity across retries and restart, and quarantine uncertain deliveries instead of automatically repeating external effects.
+- Show managed task status and pending adoption in the existing conversation tree; keep native tool approvals and ordinary child conversation identity.
+- Retain the dev.23.local.3 sidebar and dialog improvements. This tarball is a local release, not an npm publication. See docs/MANAGED_TASKS.md for installation, recovery and limitations.
+
+## 0.3.0-dev.23.local.3 (local development build, 2026-11-02)
+
+- Read the native workspace's shared archive filter through the public Slot store and suppress active teammate supplements in archived-only searches; exclude newly archived members and ancestors immediately.
+- Retain the teammate identity badge alongside running, waiting, offline, read-only and creation states.
+- Render session dialogs through the native shell.overlay slot so modal events have no parent-row React ancestry; isolate child-tree and menu pointer transitions, preserving native hover and dialog focus recovery.
+
+## 0.3.0-dev.22.local.2 (local development build, 2026-11-02)
+
+- Match the native DSH rename dialog: its input geometry and focus behavior, shared primary/outline buttons and modal footer, with IME-safe submission and retryable errors.
+- Let users set and clear local teammate display names without changing Team identities; preserve original names in tooltips and search.
+- Extend the existing native search results with visible team members, matching original names, meaningful task labels, aliases and parent paths; opening a match reveals its branch.
+- Show exact Host-reported parent unavailability and offer an Open parent action in the read-only composer without sending a message.
+- Mark collapsed branches that contain the current conversation, preserving deliberate folds during refresh.
+- Reclaim leaf and menu space in narrow sidebars; show menus on hover or keyboard focus and retain long-name suffixes when truncating.
+
+## 0.3.0-dev.21.local.1 (local development build, 2026-11-02)
+
+- Follow the Host's current main-view session for one accurate child selection; reveal and scroll to its ancestor path after navigation or search.
+- Restore ordinary child-session rename, pin/unpin and archive controls through Host APIs, with confirmation, failure feedback and the running-session archive guard. Team members remain outside ordinary-session management.
+- Persist expansion by session identity, limit default expansion to the first two child levels, and preserve deliberate folds during polling.
+- Show one visible loading/error/retry notice, including initial failures and collapsed trees; retain the last successful tree on refresh failures.
+- Prefer existing task descriptions for team labels, retain the member name in the tooltip, and explain Host-reported waiting states without treating idle as completed.
+- Limit the sidebar to ordinary sessions, ordinary child sessions and confirmed team members. Hide other subagents and their subagent branches, remove empty disclosures, and leave discovery, history, references and messaging unchanged.
+- Clarify session hierarchy with branch guides, leaf markers and consistent 28px nested indentation that follows the native workspace depth.
+- Give expand/collapse controls a separate 28×28px target and a reserved native-row gutter, with independent hover, pressed and keyboard-focus feedback.
+- Keep disclosure clicks, double-clicks, keyboard activation and drag gestures from opening, renaming or dragging the native session row; restore its layout on cleanup.
+
 ## 0.3.0-dev.20 (2026-11-01)
 
 - Use the public npm package `dsh-plugin-sessivra` so users can install by entering its package name in DSH.

@@ -70,4 +70,6 @@ export declare class ReferenceTargets {
         target: string;
         status: import("./core.js").Status;
     }>;
+    /** Explicit task admission uses the same exact reference and consent boundary as send. */
+    prepareTask(agent: Agent, target: string | undefined, selectionRevision: string | undefined, signal: AbortSignal): Promise<import("./core.js").RecipientSelection>;
 }
