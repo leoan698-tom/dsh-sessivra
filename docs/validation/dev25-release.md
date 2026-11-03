@@ -15,7 +15,9 @@
 
 ## 发布检查
 
-最终 dev.25 的检查、打包一致性和公开下载校验在发布完成后记录于 GitHub Release。既有 local.2 检查为 lint、TypeScript、构建、49/49 单元与客户端测试、81/81 集成测试通过。
+最终 dev.25 的 lint、TypeScript、构建、49/49 单元与客户端测试、81/81 集成测试通过。最终压缩包 48 个运行时文件与 local.2 一致；官方 CLI 隔离安装的 81 个分发文件全部匹配，安装后的 21/21 任务回归通过。npm 公开 latest 已解析为 dev.25；npm 与 GitHub Release 下载包 SHA-256 均为 `ab964c93f0e73074d5c15aedf78c0c66ea78c76c4515a110cf4e30ee15034aae`。从公开 npm 指定版本安装后，81 个文件再次核对一致。
+
+DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装 dev.20；使用上面的固定版本可明确选择 dev.25，安装后核对版本。无需关闭全局保护。 已观察到裸包名在两个全新隔离 profile 选中 dev.20；新 metadata 内 latest 为 dev.25，排除旧缓存解释。捆绑 pnpm 11.28.5 的实现默认 `minimum-release-age: 24 * 60`。显式版本安装成功，只在测试 profile 记录该准确版本的例外；用户日常 profile 未修改。
 
 ## 边界
 

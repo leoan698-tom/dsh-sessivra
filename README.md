@@ -6,7 +6,7 @@ Sessivra 是 DSH 的会话通信与任务协作插件。用原生 `@会话` 选�
 
 **dev.25 新增受管任务协作，并包含侧栏改进及 dev.24.local.2 的全部修复。**同一执行会话的后续任务会排队，前一项须由协调会话检查产物并显式验收；需求调整在当前工具结束后的安全边界采用。支持上下文引用、关联回复和会话树，限同一 Host、同一 profile。
 
-> 安装包名：`dsh-plugin-sessivra`。在 DSH「插件 → 添加插件」中只填包名；终端命令见下方，桌面使用 `desktop`，Web 使用 `web`。
+> 当前版本安装输入：`dsh-plugin-sessivra@0.3.0-dev.25`。在 DSH「插件 → 添加插件」中只填这个包版本；终端命令见下方，桌面使用 `desktop`，Web 使用 `web`。
 
 [开始使用](#开始使用) · [使用示例](#使用示例) · [安装与卸载](docs/OPERATIONS.md) · [已知问题](docs/KNOWN_ISSUES.md) · [反馈问题](https://github.com/leoan698-tom/dsh-sessivra/issues)
 
@@ -72,8 +72,10 @@ Sessivra 是 DSH 的会话通信与任务协作插件。用原生 `@会话` 选�
 打开「插件 → 添加插件」，选择 npm 官方源，输入框只填写：
 
 ```text
-dsh-plugin-sessivra
+dsh-plugin-sessivra@0.3.0-dev.25
 ```
+
+DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装 dev.20；使用上面的固定版本可明确选择 dev.25，安装后核对版本。无需关闭全局保护。
 
 点击「安装」，完成后按界面提示重启或重新加载，确认版本为 `0.3.0-dev.25` 且插件已启用。这里只填写包名，不加引号，不粘贴终端命令。
 

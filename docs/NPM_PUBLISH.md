@@ -9,8 +9,10 @@ npm 公开版本以 [registry 元数据](https://registry.npmjs.org/dsh-plugin-s
 在 DSH「插件 → 添加插件」中输入：
 
 ```text
-dsh-plugin-sessivra
+dsh-plugin-sessivra@0.3.0-dev.25
 ```
+
+DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装 dev.20；使用上面的固定版本可明确选择 dev.25，安装后核对版本。无需关闭全局保护。
 
 选择 npm 官方源，点击「安装」，按界面提示重新加载或重启。包名输入框不填写终端命令。预发布版本号应在安装确认与插件列表中可见。
 

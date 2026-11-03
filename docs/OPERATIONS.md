@@ -11,8 +11,10 @@
 在「插件 → 添加插件」输入框中，选择 npm 官方源，只填写包名，不加引号：
 
 ```text
-dsh-plugin-sessivra
+dsh-plugin-sessivra@0.3.0-dev.25
 ```
+
+DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装 dev.20；使用上面的固定版本可明确选择 dev.25，安装后核对版本。无需关闭全局保护。
 
 点击「安装」，完成后按界面提示重启或重新加载。若出现 `not a package name the registry accepts`，先检查是否误把整条 `dsh plugin ...` 终端命令粘贴到了输入框。
 
@@ -23,7 +25,7 @@ dsh-plugin-sessivra
 正常退出使用目标 profile 的 DSH。安装命令使用官方 bundle 机制：
 
 ```sh
-dsh plugin --profile desktop add "dsh-plugin-sessivra"
+dsh plugin --profile desktop add "dsh-plugin-sessivra@0.3.0-dev.25"
 ```
 
 或者安装 Release 压缩包：
