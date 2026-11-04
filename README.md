@@ -1,16 +1,24 @@
 # DSH Sessivra
 
-**让 DSH 会话协作完成任务：发消息、同步进展、共享问题与裁决，检查结果后再放行后续工作。**
+**中文** · [English](README.en.md)
 
-Sessivra 是 DSH 的会话通信与任务协作插件。用原生 `@会话` 选择已有对象，或让主会话创建普通子会话，再用自然语言交代目标和验收条件。会话保持独立，消息、任务版本、共同决定和结果可以关联回主会话。
+**把子会话的任务结果收回主会话，检查完成后再安排下一步。**
 
-**dev.25 新增受管任务协作，并包含侧栏改进及 dev.24.local.2 的全部修复。**同一执行会话的后续任务会排队，前一项须由协调会话检查产物并显式验收；需求调整在当前工具结束后的安全边界采用。支持上下文引用、关联回复和会话树，限同一 Host、同一 profile。
+在 DSH 里开了几个会话干活，结果还要自己来回复制、追问进度？Sessivra 让主会话交办任务，收回普通子会话的问题和产物，读取并验收后再放行同一子会话的后续任务。普通子会话仍能独立打开和继续使用。
 
-> 当前版本安装输入：`dsh-plugin-sessivra@0.3.0-dev.25`。在 DSH「插件 → 添加插件」中只填这个包版本；终端命令见下方，桌面使用 `desktop`，Web 使用 `web`。
+**当前为 dev.25 预发布，兼容 DSH 0.2.1-rc.5 / Node.js 24+，限同一 Host/profile。**非官方项目，由社区成员独立开发和维护。
 
-[开始使用](#开始使用) · [使用示例](#使用示例) · [安装与卸载](docs/OPERATIONS.md) · [已知问题](docs/KNOWN_ISSUES.md) · [反馈问题](https://github.com/leoan698-tom/dsh-sessivra/issues)
+[![60 秒真实任务协作演示](docs/media/sessivra-dev25-cover-zh.png)](https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.25/Sessivra-dev25-real-task-demo-zh-voice.mp4)
 
-非官方项目，由社区成员独立开发和维护。兼容 **DSH 0.2.1-rc.5 / Node.js 24+**。
+[中文配音视频](https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.25/Sessivra-dev25-real-task-demo-zh-voice.mp4) · [English video](https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.25/Sessivra-dev25-real-task-demo-en.mp4) · [运行说明与素材包](docs/DEMO_DEV25.md)
+
+真实模型、示例需求、分段实录剪辑，含等待压缩、定格与 AI 旁白。主会话实际读取产物，第一项验收后第二项才开始调度。运行出现过一次回合耗尽后自动恢复、五次工具调用被拒，说明中均已披露；尚不代表独立用户试用或任意场景可靠性。
+
+> 在 DSH「插件 → 添加插件」的 npm 输入框只填写：`dsh-plugin-sessivra@0.3.0-dev.25`。完整终端命令见下方，桌面使用 `desktop`，Web 使用 `web`。
+
+想找 **5 位已经在用 DSH 主子会话的朋友**，用自己的一份小需求或方案试一次。欢迎在[现有展示帖](https://github.com/deepseek-ai/deepseek-harness/discussions/11837)留言：哪里卡住、产物是否有用、下次是否还会用。中英文反馈均可，不需要提供私密项目文件或完整聊天记录。
+
+[开始使用](#开始使用) · [使用示例](#使用示例) · [English quick start](README.en.md#quick-start) · [已知问题](docs/KNOWN_ISSUES.md) · [反馈问题](https://github.com/leoan698-tom/dsh-sessivra/issues)
 
 ## 把主子会话的工作连接起来
 
@@ -90,7 +98,7 @@ DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布�
 
 ```sh
 dsh --version
-dsh plugin --profile desktop add dsh-plugin-sessivra
+dsh plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.25
 ```
 
 3. 重启 DSH，在插件列表确认启用，然后在输入框键入 `@` 选择一个已有会话。
@@ -98,7 +106,7 @@ dsh plugin --profile desktop add dsh-plugin-sessivra
 Windows 桌面版未配置 PATH 时，使用安装目录内的 CLI，将下面的路径换成实际位置：
 
 ```powershell
-& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add dsh-plugin-sessivra
+& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.25
 ```
 
 需要固定版本时使用 `dsh-plugin-sessivra@0.3.0-dev.25`。Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
@@ -181,3 +189,4 @@ npm pack
 反馈时请提供 DSH 版本、插件版本、操作系统、复现步骤、预期和实际结果；截图请先隐去私密信息。
 
 [安装、升级和卸载](docs/OPERATIONS.md) · [功能说明](docs/COLLABORATION_0_3_DEV15.md) · [架构](docs/ARCHITECTURE.md) · [变更记录](CHANGELOG.md) · [第三方声明](THIRD_PARTY_NOTICES.md) · [MIT License](LICENSE)
+
