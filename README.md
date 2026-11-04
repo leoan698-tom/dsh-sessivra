@@ -18,7 +18,7 @@
 
 想找 **5 位已经在用 DSH 主子会话的朋友**，用自己的一份小需求或方案试一次。欢迎在[现有展示帖](https://github.com/deepseek-ai/deepseek-harness/discussions/11837)留言：哪里卡住、产物是否有用、下次是否还会用。中英文反馈均可，不需要提供私密项目文件或完整聊天记录。
 
-[开始使用](#开始使用) · [使用示例](#使用示例) · [English quick start](README.en.md#quick-start) · [已知问题](docs/KNOWN_ISSUES.md) · [反馈问题](https://github.com/leoan698-tom/dsh-sessivra/issues)
+[开始使用](#开始使用) · [试跑一个小任务](#试跑一个小任务) · [使用示例](#使用示例) · [English quick start](README.en.md#quick-start) · [已知问题](docs/KNOWN_ISSUES.md) · [反馈问题](https://github.com/leoan698-tom/dsh-sessivra/issues)
 
 ## 把主子会话的工作连接起来
 
@@ -112,6 +112,35 @@ Windows 桌面版未配置 PATH 时，使用安装目录内的 CLI，将下面�
 需要固定版本时使用 `dsh-plugin-sessivra@0.3.0-dev.25`。Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
 
 [npm 包页面](https://www.npmjs.com/package/dsh-plugin-sessivra) · [GitHub Release 与离线安装包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.25) · [升级与回退](docs/RENAMING.md)
+
+## 试跑一个小任务
+
+安装完成后，在一个空工作目录中创建 `需求.md`，复制这份演示需求：
+
+```text
+居民登录后可以报名社区活动，填写姓名和联系电话。
+每场活动有名额上限和报名截止时间；报名成功后保存记录。
+居民可以查看报名，并在活动开始前取消。
+管理员可以查看报名名单。
+异常、重复操作、名额变化的规则尚未明确。
+本次只检查需求，不开发页面、不连接真实系统。
+```
+
+在 DSH 中打开这个目录，把下面的要求发给主会话：
+
+```text
+用 Sessivra 创建一个普通子会话，检查需求.md 的遗漏，
+把原文依据、缺失规则、建议和可验证条件写入需求检查.md。
+未明确的业务规则保留待确认。
+
+再为同一个子会话排队一项任务：根据检查结果生成验收清单.md。
+由你读取实际文件并逐项检查；第一项等我确认后再正式验收，
+之后才放行后续任务。
+```
+
+读完主会话返回的检查结果，确认符合要求后再回复“确认验收”，观察后续任务是否才开始。先用这个示例熟悉流程，再换成自己的一份小需求，判断产物是否有用。这里练习的是需求检查和草稿清单；模型生成的建议仍需人判断。
+
+遇到问题，可以在[现有展示帖](https://github.com/deepseek-ai/deepseek-harness/discussions/11837)只写卡住的步骤、DSH/插件版本和预期结果；不必公开私密项目文件或完整聊天记录。
 
 ## 使用示例
 

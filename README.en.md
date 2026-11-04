@@ -36,20 +36,33 @@ If you previously installed the scoped Sessivra package, Agent Hub, or the old m
 
 ## Try one small task
 
-Put a short requirements document in a DSH workspace. In the main chat, adapt this request to your file:
+After installation, create an empty working folder and save this example as `requirements.md`:
+
+```text
+Signed-in residents can register for community events using their name
+and contact phone number. Each event has a capacity and a registration
+deadline. Successful registrations are saved. Residents can view their
+registrations and cancel before an event starts. Administrators can view
+the registration list. Error handling, duplicate actions and capacity
+changes are not yet defined. Review this brief only; do not implement
+pages or connect to a real system.
+```
+
+Open that folder in DSH and send this request to the main chat:
 
 ```text
 Use Sessivra to create an ordinary child session to review requirements.md.
-Ask it to write a gap review citing the source, missing rules, suggestions,
+Ask it to write review.md citing the source, missing rules, suggestions,
 and verifiable acceptance conditions. Keep undefined business rules marked
 as pending human confirmation.
 
 Queue a second task for the same child session: turn the review into a draft
-acceptance checklist. Keep it queued until the first task is accepted.
+acceptance-checklist.md. Keep it queued until the first task is accepted.
 Read and check the actual files in this main session. Ask me before formally
 accepting the first task and releasing the follow-up.
 ```
 
+Use this example to learn the flow, then try a small brief of your own.
 Inspect the returned review. If it meets your criteria, confirm acceptance in the main chat and check that the follow-up starts afterwards. Judge the usefulness of the files yourself; delivery status or a model's completion claim does not establish correctness.
 
 We are looking for **five DSH users** to try one small task of their own. If you try it, [reply in the project discussion](https://github.com/deepseek-ai/deepseek-harness/discussions/11837) with where you got stuck, whether the result was useful, and whether you would use it again. Chinese and English feedback are welcome. No private project files or full chat logs are needed.
