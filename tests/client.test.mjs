@@ -75,7 +75,7 @@ test('browser bundle leaves native file and session references as the only visib
       sessionMessenger:{},
       sessionCollaboration:{candidates:async()=>{throw Error('Native reference source owns discovery');}},
     },
-    slots:{inject:(_key,register)=>register(),register:(entry,component)=>{entries.push({entry,component});return()=>{};}},
+    slots:{subscribe:()=>()=>{},entriesOfSlot:()=>[],inject:(_key,register)=>register(),register:(entry,component)=>{entries.push({entry,component});return()=>{};}},
     inputTriggers:{registerSource(value){source=value;sources.push(value);return()=>{source=undefined;};}},
     effect:factory=>factory(),
   };

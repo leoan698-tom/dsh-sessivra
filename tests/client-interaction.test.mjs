@@ -22,7 +22,7 @@ test('native workspace stays registered; row navigation uses original ordinary a
     remote:{$mount:async()=>{},sessionMessenger:{selectRecipient:async(...args)=>{selected.push(args);return{ok:true};}},sessionCollaboration:{candidates:async()=>({ok:true,value:[]})}},
     uiWorkspace:{openSession:id=>opened.push(id),pinSession:async id=>operations.push(['pin',id]),unpinSession:async id=>operations.push(['unpin',id]),archiveSession:async(...args)=>operations.push(['archive',...args])},
     sessions:{using:async(id,options,fn)=>{operations.push(['using',id,options]);return fn({binding:{session:{rename:async title=>{operations.push(['rename',title]);return{ok:true};}}}});}},
-    slots:{inject:(_name,register)=>register(),register:(entry,component)=>{const row={entry,component};active.add(row);return()=>active.delete(row);}},
+    slots:{subscribe:()=>()=>{},entriesOfSlot:()=>[],inject:(_name,register)=>register(),register:(entry,component)=>{const row={entry,component};active.add(row);return()=>active.delete(row);}},
     inputTriggers:{registerSource:()=>()=>{}},effect:fn=>disposals.push(fn()),
   };
   ctx.inject=async(_deps,fn)=>fn(ctx);

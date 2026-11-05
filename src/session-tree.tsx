@@ -269,7 +269,7 @@ export function NativeSessionChildren({ sessionId, store, openSession, currentId
     const expanded = store.isExpanded(child.id), selected = currentId === child.id;
     const display = treePresentation(child, statuses?.get(child.id), snapshot.aliases.get(child.id));
     return <div key={child.id} role="listitem" className="dshsm-tree-branch">
-      <div className="dshsm-tree-row" data-session-id={child.id} data-selected={selected}>
+      <div className="dshsm-tree-row" data-session-id={child.id} data-selected={selected} draggable={!child.subagent || child.openable} onDragStart={event => { event.stopPropagation(); event.dataTransfer.setData('text/plain', child.id); event.dataTransfer.effectAllowed = 'copy'; }}>
         {child.children.length ? <TreeToggle className="dshsm-tree-toggle" label={display.label} expanded={expanded} onToggle={() => store.toggle(child.id)} /> : <span className="dshsm-tree-spacer" aria-hidden="true" />}
         <button type="button" className="dshsm-tree-name" disabled={child.subagent && !child.openable} aria-current={selected ? 'page' : undefined} aria-label={`${child.subagent && !child.openable ? child.note ?? '暂不可打开' : '打开会话'}：${display.label}`} title={display.title} onClick={event => { event.stopPropagation(); openSession(child); }}>
           <TreeLabel label={display.label} />{pinnedIds?.has(child.id) && <span className="dshsm-tree-pin" title="已置顶">置顶</span>}{child.subagent && <span className="dshsm-tree-member">队员</span>}{display.state && <span className="dshsm-tree-status" data-attention={display.waiting} title={display.state}>{display.state === '需先打开父会话' ? '需开父会话' : display.state}</span>}

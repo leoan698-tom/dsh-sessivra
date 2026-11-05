@@ -14878,11 +14878,11 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
     const children = row.ownerDocument.createElement("div");
     children.className = "dshsm-native-children";
     const mounted = { sessionId, row, children };
-    const position = () => {
+    const position2 = () => {
       if (row.isConnected && row.nextSibling !== children) row.after(children);
     };
-    position();
-    const observer = new MutationObserver(position);
+    position2();
+    const observer = new MutationObserver(position2);
     if (row.parentElement) observer.observe(row.parentElement, { childList: true });
     setTarget(mounted);
     const detach = store.attach(mounted);
@@ -14945,7 +14945,11 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
     const expanded2 = store.isExpanded(child.id), selected = currentId === child.id;
     const display = treePresentation(child, statuses?.get(child.id), snapshot.aliases.get(child.id));
     return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
+        event.stopPropagation();
+        event.dataTransfer.setData("text/plain", child.id);
+        event.dataTransfer.effectAllowed = "copy";
+      }, children: [
         child.children.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TreeToggle, { className: "dshsm-tree-toggle", label: display.label, expanded: expanded2, onToggle: () => store.toggle(child.id) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-spacer", "aria-hidden": "true" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dshsm-tree-name", disabled: child.subagent && !child.openable, "aria-current": selected ? "page" : void 0, "aria-label": `${child.subagent && !child.openable ? child.note ?? "\u6682\u4E0D\u53EF\u6253\u5F00" : "\u6253\u5F00\u4F1A\u8BDD"}\uFF1A${display.label}`, title: display.title, onClick: (event) => {
           event.stopPropagation();
@@ -15422,16 +15426,822 @@ function ParentUnavailableComposer({ store, openSession, matched, Button: Button
   ] });
 }
 
+// src/session-views.tsx
+var import_react7 = require("react");
+var import_react_dom4 = require("react-dom");
+
+// src/split-layout.ts
+var MAIN_PANE = "$main";
+var mainLayout = () => ({ kind: "pane", id: MAIN_PANE });
+var clampRatio = (ratio) => Number.isFinite(ratio) ? Math.max(0.1, Math.min(0.9, ratio)) : 0.5;
+function paneIds(node) {
+  return node.kind === "pane" ? [node.id] : [...paneIds(node.first), ...paneIds(node.second)];
+}
+function removePane(node, id) {
+  if (node.kind === "pane") return node.id === id ? void 0 : node;
+  const first = removePane(node.first, id), second = removePane(node.second, id);
+  return !first ? second : !second ? first : first === node.first && second === node.second ? node : { ...node, first, second };
+}
+function promotePane(node, id) {
+  if (id === MAIN_PANE || !paneIds(node).includes(id)) return node;
+  const rename = (branch) => branch.kind === "pane" ? branch.id === id ? { ...branch, id: MAIN_PANE } : branch : { ...branch, first: rename(branch.first), second: rename(branch.second) };
+  return rename(removePane(node, MAIN_PANE) ?? node);
+}
+function dockPane(node, source, target, edge, splitId) {
+  if (source === target || !paneIds(node).includes(target)) return node;
+  const pruned = removePane(node, source) ?? node;
+  const insert = (branch) => {
+    if (branch.kind === "split") return { ...branch, first: insert(branch.first), second: insert(branch.second) };
+    if (branch.id !== target) return branch;
+    const added = { kind: "pane", id: source }, before = edge === "left" || edge === "top";
+    return {
+      kind: "split",
+      id: splitId,
+      axis: edge === "left" || edge === "right" ? "x" : "y",
+      ratio: 0.5,
+      first: before ? added : branch,
+      second: before ? branch : added
+    };
+  };
+  return insert(pruned);
+}
+function resizeSplit(node, id, ratio) {
+  if (node.kind === "pane") return node;
+  if (node.id === id) return { ...node, ratio: clampRatio(ratio) };
+  return { ...node, first: resizeSplit(node.first, id, ratio), second: resizeSplit(node.second, id, ratio) };
+}
+function splitGeometry(node, width, height) {
+  const panes = /* @__PURE__ */ new Map();
+  const dividers = [];
+  const walk = (branch, rect) => {
+    if (branch.kind === "pane") {
+      panes.set(branch.id, rect);
+      return;
+    }
+    const horizontal = branch.axis === "x", length = horizontal ? rect.width : rect.height;
+    const gap = Math.min(6, length), available = Math.max(0, length - gap), first = available * clampRatio(branch.ratio);
+    dividers.push({ node: branch, parent: rect, rect: horizontal ? { ...rect, x: rect.x + first, width: gap } : { ...rect, y: rect.y + first, height: gap } });
+    walk(branch.first, horizontal ? { ...rect, width: first } : { ...rect, height: first });
+    walk(branch.second, horizontal ? { ...rect, x: rect.x + first + gap, width: available - first } : { ...rect, y: rect.y + first + gap, height: available - first });
+  };
+  walk(node, { x: 0, y: 0, width: Math.max(0, width), height: Math.max(0, height) });
+  return { panes, dividers };
+}
+function nearestEdge(rect, x, y) {
+  const nx = (x - rect.x) / Math.max(1, rect.width), ny = (y - rect.y) / Math.max(1, rect.height);
+  return [["left", nx], ["right", 1 - nx], ["top", ny], ["bottom", 1 - ny]].sort((a, b) => a[1] - b[1])[0][0];
+}
+function edgePreview(rect, edge) {
+  return edge === "left" ? { ...rect, width: rect.width / 2 } : edge === "right" ? { ...rect, x: rect.x + rect.width / 2, width: rect.width / 2 } : edge === "top" ? { ...rect, height: rect.height / 2 } : { ...rect, y: rect.y + rect.height / 2, height: rect.height / 2 };
+}
+
+// src/compact-headers.tsx
+var import_react6 = __toESM(require("react"), 1);
+var import_react_dom3 = require("react-dom");
+var import_jsx_runtime6 = require("react/jsx-runtime");
+var css = `
+[data-sessivra-compact]{height:40px!important;min-height:40px!important;padding:4px 12px!important;overflow:hidden}
+[data-sessivra-compact] [data-sessivra-tab-row]{display:none!important}
+[data-sessivra-compact] [data-conversation-header-corner]{margin-right:0!important}
+[data-sessivra-compact] nav[aria-label]{min-width:0}
+.sessivra-header-menu{display:inline-flex;align-items:center;flex:none}
+.sessivra-header-menu button.sessivra-pane-close{width:24px;height:28px}
+`;
+function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
+  const [open, setOpen] = (0, import_react6.useState)(false);
+  const registry2 = (0, import_react6.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
+  const native = sessionId ? registry2.get(sessionId) : void 0;
+  const views = native?.views ?? seat.tabs.map((tab, index) => ({ id: String(index), label: tab.textContent?.trim() ?? "" }));
+  if (!views.length) return null;
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+    Menu2,
+    {
+      open,
+      portal: true,
+      autoFocus: true,
+      align: "start",
+      onClose: () => setOpen(false),
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
+      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", {}) })),
+      onSelect: (id) => {
+        setOpen(false);
+        if (native) native.selectView(id);
+        else seat.tabs[Number(id)]?.click();
+      }
+    }
+  ) });
+}
+function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, current }) {
+  const [seats, setSeats] = (0, import_react6.useState)([]);
+  (0, import_react6.useLayoutEffect)(() => {
+    const markedHeaders = /* @__PURE__ */ new Set(), markedTabs = /* @__PURE__ */ new Set();
+    const scan = () => {
+      const headers = [...host.querySelectorAll("[data-sessivra-main-header],.sessivra-pane-native-header header")];
+      const next = headers.flatMap((header) => {
+        const corner = header.querySelector("[data-conversation-header-corner]");
+        if (!corner) return [];
+        header.dataset.sessivraCompact = "";
+        markedHeaders.add(header);
+        const tabs = [...header.querySelectorAll("[data-conversation-tabs] [role=tab]")];
+        const row = header.querySelector("[data-conversation-tabs]")?.parentElement;
+        if (row) {
+          row.dataset.sessivraTabRow = "";
+          markedTabs.add(row);
+        }
+        return [{ header, id: header.closest("[data-sessivra-pane]")?.dataset.sessivraPane ?? MAIN_PANE, menu: header.querySelector("nav[aria-label]"), corner, tabs }];
+      });
+      setSeats((previous) => previous.length === next.length && next.every((seat, index) => {
+        const old = previous[index];
+        return old.header === seat.header && old.menu === seat.menu && old.corner === seat.corner && old.id === seat.id && old.tabs.length === seat.tabs.length && old.tabs.every((tab, index2) => tab === seat.tabs[index2]);
+      }) ? previous : next);
+    };
+    scan();
+    const observer = new MutationObserver(scan);
+    observer.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-sessivra-main-header"] });
+    return () => {
+      observer.disconnect();
+      for (const header of markedHeaders) delete header.dataset.sessivraCompact;
+      for (const row of markedTabs) delete row.dataset.sessivraTabRow;
+    };
+  }, [host]);
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("style", { children: css }),
+    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_react6.default.Fragment, { children: [
+      seat.menu && (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime6.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
+      (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }, onClick: (event) => {
+        event.stopPropagation();
+        close(seat.id);
+      }, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
+    ] }, seat.id))
+  ] });
+}
+
+// src/session-views.tsx
+var import_jsx_runtime7 = require("react/jsx-runtime");
+function SessionViewContent(props) {
+  const session = props.useSession((value) => value);
+  const conversation = props.useConversation((value) => value);
+  const blank = props.useSessions((value) => value.byId[props.sessionId]?.blank);
+  const active = conversation.activeTargets.size > 0 || !session.blank && !session.awaitingFirstTurn || session.running;
+  const pending = session.subagent?.address.mode === "continuable" && session.subagent.parentAvailable === void 0;
+  const settling = !active && session.openState === "loading" && blank !== true || pending;
+  const hero = !active && (session.openState === "open" || blank === true);
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_jsx_runtime7.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
+}
+function createSessionViews(sessions) {
+  let snapshot = [];
+  const listeners = /* @__PURE__ */ new Set();
+  const emit = () => {
+    for (const listener of listeners) listener();
+  };
+  const close = (id) => {
+    const removed = snapshot.find((pane) => pane.id === id);
+    snapshot = snapshot.filter((pane) => pane.id !== id);
+    removed?.reference.release();
+    emit();
+  };
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    open(target, label) {
+      const id = typeof target === "string" ? target : target.childSessionId;
+      if (snapshot.some((pane) => pane.id === id)) return id;
+      const reference = sessions.retain(target, { source: "sessivraView" });
+      snapshot = [...snapshot, { id, label, reference, ready: false }];
+      emit();
+      void reference.ready.then(() => {
+        snapshot = snapshot.map((pane) => pane.reference === reference ? { ...pane, ready: true } : pane);
+        emit();
+      }, () => {
+        snapshot = snapshot.map((pane) => pane.reference === reference ? { ...pane, error: "\u4F1A\u8BDD\u6253\u5F00\u5931\u8D25\uFF0C\u8BF7\u5173\u95ED\u540E\u91CD\u65B0\u6253\u5F00" } : pane);
+        emit();
+      });
+      return id;
+    },
+    close,
+    dispose() {
+      const old = snapshot;
+      snapshot = [];
+      old.forEach((pane) => pane.reference.release());
+      emit();
+      listeners.clear();
+    }
+  };
+}
+var styles2 = `
+[data-sessivra-views]{display:flex!important;flex-direction:column;position:relative!important;min-height:0;isolation:isolate;overflow:hidden}
+[data-sessivra-views]>[data-conversation-content]{position:absolute!important;left:var(--sessivra-main-left,0px)!important;top:var(--sessivra-main-top,0px)!important;width:var(--sessivra-main-width,100%)!important;height:var(--sessivra-main-height,0px)!important;min-width:0!important;min-height:0!important;max-width:none!important;box-sizing:border-box;z-index:1;overflow:hidden}
+[data-sessivra-views][data-sessivra-split=true] [data-sessivra-main-header]{position:absolute!important;left:var(--sessivra-main-left,0px);top:var(--sessivra-header-top,0px);width:var(--sessivra-main-width,100%);min-width:0;box-sizing:border-box;z-index:4}
+[data-sessivra-visible=true]{background:var(--dsw-alias-interactive-bg-hover)!important}
+.sessivra-pane:focus-visible,.sessivra-pane-close:focus-visible,.sessivra-divider:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}
+.sessivra-canvas{flex:1;min-height:0;min-width:0;position:relative;pointer-events:none;z-index:2}
+.sessivra-pane{position:absolute;box-sizing:border-box;min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l2);overflow:hidden;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);pointer-events:auto}
+.sessivra-pane-header{position:relative;flex:none;min-width:0;min-height:40px;cursor:grab}
+.sessivra-pane-native-header{min-width:0}
+.sessivra-pane-header>.sessivra-pane-close{position:absolute;right:clamp(0px,calc(100% - 28px),8px);top:10px;width:min(28px,100%)}
+.sessivra-pane-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:13px;font-weight:500}
+.sessivra-pane-close{display:flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;padding:0;border:0;border-radius:var(--dsw-radius-sm,4px);background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.sessivra-pane-close:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.sessivra-pane-body{display:flex;flex:1;min-height:0;min-width:0;flex-direction:column}
+.sessivra-views-notice{position:absolute;top:8px;right:8px;z-index:6;pointer-events:auto;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);padding:8px 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px}
+.sessivra-divider{position:absolute;pointer-events:auto;background:var(--dsw-alias-border-l2);touch-action:none;user-select:none;z-index:3}
+.sessivra-divider[data-axis=x]{cursor:col-resize}.sessivra-divider[data-axis=y]{cursor:row-resize}
+.sessivra-divider:hover,.sessivra-divider:focus-visible,.sessivra-divider[data-resizing=true]{background:var(--dsw-focus-ring-color)}
+.sessivra-drop-preview{position:absolute;z-index:5;pointer-events:none;border:3px solid #3b82f6;box-sizing:border-box;background:transparent;border-radius:4px;box-shadow:0 0 0 1px rgb(59 130 246 / 20%)}
+`;
+var position = (rect) => ({ left: rect.x, top: rect.y, width: rect.width, height: rect.height });
+function SessionViews(props) {
+  const panes = (0, import_react7.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
+  (0, import_react7.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  const listedCurrent = props.useSessions((list) => Object.values(list.byId).find((row) => (row.retainedBy.mainView ?? 0) > 0)?.id);
+  const [nativeCurrent, setNativeCurrent] = (0, import_react7.useState)();
+  const current = listedCurrent ?? nativeCurrent;
+  const panel = props.usePanelInfo((info) => info.activePanelId);
+  const [host, setHost] = (0, import_react7.useState)();
+  const [canvas, setCanvas] = (0, import_react7.useState)(null);
+  const [size, setSize] = (0, import_react7.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
+  const [layout, setLayout] = (0, import_react7.useState)(mainLayout);
+  const [notice, setNotice] = (0, import_react7.useState)("");
+  const [preview, setPreview] = (0, import_react7.useState)();
+  const drag = (0, import_react7.useRef)({ consumed: false });
+  const resize = (0, import_react7.useRef)();
+  const pointerDock = (0, import_react7.useRef)();
+  const suppressClick = (0, import_react7.useRef)(0);
+  const splitSerial = (0, import_react7.useRef)(0);
+  const promotion = (0, import_react7.useRef)();
+  const [promoting, setPromoting] = (0, import_react7.useState)();
+  const labelFor = (id) => props.store.getSnapshot().nodes.get(id === MAIN_PANE ? current ?? "" : id)?.label ?? panes.find((pane) => pane.id === id)?.label ?? "\u4F1A\u8BDD";
+  const close = (id) => {
+    if (id !== MAIN_PANE) {
+      props.views.close(id);
+      return;
+    }
+    const replacement = panes.find((pane) => pane.ready && !pane.error) ?? panes[0];
+    if (!replacement) {
+      props.startSession();
+      return;
+    }
+    promotion.current = { closed: current ?? "", replacement: replacement.id };
+    setPromoting(replacement.id);
+  };
+  (0, import_react7.useEffect)(() => {
+    if (!promoting || promotion.current?.replacement !== promoting) return;
+    const node = props.store.getSnapshot().nodes.get(promoting);
+    props.selectSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: node.id, mode: node.subagentMode } : promoting);
+    const timer = window.setTimeout(() => {
+      if (promotion.current?.replacement !== promoting) return;
+      promotion.current = void 0;
+      setPromoting(void 0);
+      setNotice("\u4F1A\u8BDD\u5207\u6362\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5\u5173\u95ED\u89C6\u56FE");
+    }, 1e4);
+    return () => window.clearTimeout(timer);
+  }, [promoting, props.selectSession, props.store]);
+  const geometry = (0, import_react7.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
+  const focus = (id) => queueMicrotask(() => [...document.querySelectorAll("[data-sessivra-pane]")].find((element) => element.dataset.sessivraPane === id)?.focus());
+  const dock = (id, destination, edge) => {
+    const source = id === current ? MAIN_PANE : id;
+    if (source === destination) return;
+    if (!paneIds(layout).includes(destination)) return;
+    if (source !== MAIN_PANE) {
+      const existing = panes.find((pane) => pane.id === source);
+      const node = props.store.getSnapshot().nodes.get(source);
+      if (!existing && (!node || node.subagent && !node.openable)) return;
+      try {
+        if (!existing && node) props.views.open(node.subagent ? { parentSessionId: node.parentId, childSessionId: node.id, mode: node.subagentMode } : node.id, node.label);
+      } catch (error51) {
+        setNotice(error51 instanceof Error ? error51.message : "\u65E0\u6CD5\u6253\u5F00\u89C6\u56FE");
+        return;
+      }
+    }
+    const splitId = `split-${++splitSerial.current}`;
+    setLayout((previous) => dockPane(previous, source, destination, edge, splitId));
+    setNotice("");
+    focus(source);
+  };
+  (0, import_react7.useEffect)(() => {
+    let mounted;
+    const scan = () => {
+      const content = [...document.querySelectorAll("[data-conversation-content]")].find((element) => !element.closest("[data-sessivra-pane]") && element.parentElement?.hasAttribute("data-phase"));
+      setNativeCurrent(content?.dataset.conversationSession);
+      if (mounted?.isConnected && content?.parentElement === mounted) return;
+      mounted = content?.parentElement ?? void 0;
+      setHost((previous) => previous === mounted ? previous : mounted);
+    };
+    const observer = new MutationObserver(scan);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-conversation-session"] });
+    scan();
+    return () => observer.disconnect();
+  }, []);
+  (0, import_react7.useLayoutEffect)(() => {
+    if (!host || panel !== null) return;
+    host.dataset.sessivraViews = "true";
+    return () => {
+      delete host.dataset.sessivraViews;
+      for (const name of ["left", "top", "width", "height"]) host.style.removeProperty(`--sessivra-main-${name}`);
+    };
+  }, [host, panel]);
+  (0, import_react7.useLayoutEffect)(() => {
+    if (!host || panel !== null) return;
+    const header = host.querySelector(':scope > [data-slot="conversation.header"] header') ?? host.querySelector(":scope > header");
+    host.dataset.sessivraSplit = String(panes.length > 0);
+    if (header) {
+      header.dataset.sessivraMainHeader = "";
+      header.dataset.viewSource = MAIN_PANE;
+      header.draggable = panes.length > 0;
+    }
+    return () => {
+      delete host.dataset.sessivraSplit;
+      if (header) {
+        delete header.dataset.sessivraMainHeader;
+        delete header.dataset.viewSource;
+        header.removeAttribute("draggable");
+      }
+    };
+  }, [host, panel, panes.length, current]);
+  (0, import_react7.useEffect)(() => {
+    const visible = new Set(panel === null ? [current, ...panes.map((pane) => pane.id)] : []);
+    const marked = /* @__PURE__ */ new Set();
+    const sync = () => {
+      for (const row of document.querySelectorAll("[data-row-key],[data-session-id]")) {
+        const id = row.dataset.rowKey?.replace(/^session:/, "") ?? row.dataset.sessionId;
+        if (id && visible.has(id)) {
+          if (row.dataset.sessivraVisible !== "true") row.dataset.sessivraVisible = "true";
+          marked.add(row);
+        } else if (marked.delete(row)) delete row.dataset.sessivraVisible;
+      }
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { subtree: true, childList: true });
+    return () => {
+      observer.disconnect();
+      for (const row of marked) delete row.dataset.sessivraVisible;
+    };
+  }, [current, panes, panel]);
+  (0, import_react7.useLayoutEffect)(() => {
+    if (!canvas || !host) return;
+    const measure = () => {
+      const rect = canvas.getBoundingClientRect(), outer = host.getBoundingClientRect();
+      const next = { width: rect.width, height: rect.height, x: rect.left - outer.left - host.clientLeft, y: rect.top - outer.top - host.clientTop, header: host.querySelector("[data-sessivra-main-header]")?.getBoundingClientRect().height ?? 0 };
+      setSize((previous) => Object.keys(next).every((key) => next[key] === previous[key]) ? previous : next);
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? void 0 : new ResizeObserver(measure);
+    observer?.observe(canvas);
+    observer?.observe(host);
+    const header = host.querySelector("[data-sessivra-main-header]");
+    if (header) observer?.observe(header);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [canvas, host, panes.length, current]);
+  (0, import_react7.useLayoutEffect)(() => {
+    if (!host || panel !== null) return;
+    const rect = geometry.panes.get(MAIN_PANE);
+    if (!rect) return;
+    const header = panes.length ? Math.min(size.header, rect.height) : 0;
+    host.style.setProperty("--sessivra-header-top", `${rect.y + size.y}px`);
+    for (const [name, value] of Object.entries({ left: rect.x + size.x, top: rect.y + size.y + header, width: rect.width, height: rect.height - header })) host.style.setProperty(`--sessivra-main-${name}`, `${value}px`);
+    return () => {
+      host.style.removeProperty("--sessivra-header-top");
+    };
+  }, [host, panel, geometry, size.x, size.y, size.header, panes.length]);
+  (0, import_react7.useEffect)(() => {
+    const retained = new Set(panes.map((pane) => pane.id));
+    setLayout((previous) => paneIds(previous).filter((id) => id !== MAIN_PANE && !retained.has(id)).reduce((next, id) => removePane(next, id) ?? mainLayout(), previous));
+  }, [panes]);
+  (0, import_react7.useLayoutEffect)(() => {
+    if (current && promotion.current?.replacement === current) {
+      setLayout((previous) => promotePane(previous, current));
+      promotion.current = void 0;
+      setPromoting(void 0);
+    } else if (promotion.current && current !== promotion.current.closed) {
+      promotion.current = void 0;
+      setPromoting(void 0);
+    }
+    if (current) props.views.close(current);
+  }, [current, props.views]);
+  (0, import_react7.useEffect)(() => {
+    if (!host || !canvas || panel !== null) return;
+    const hit = (event) => {
+      const bounds = canvas.getBoundingClientRect(), x = event.clientX - bounds.left, y = event.clientY - bounds.top;
+      const entry = [...geometry.panes].find(([, rect]) => x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height);
+      return entry ? { target: entry[0], edge: nearestEdge(entry[1], x, y) } : void 0;
+    };
+    const composerAt = (event) => {
+      const element = document.elementFromPoint?.(event.clientX, event.clientY) ?? (event.target instanceof Element ? event.target : null);
+      const composer = element?.closest("[data-composer-card],[data-composer-input]");
+      if (!composer || !host.contains(composer)) return void 0;
+      const pane = composer.closest("[data-sessivra-pane]");
+      return pane?.dataset.sessivraPane ?? current;
+    };
+    const place = (source, event) => {
+      const target = composerAt(event);
+      if (target) {
+        const id = source === MAIN_PANE ? current : source;
+        const label = id && (props.store.getSnapshot().nodes.get(id)?.label ?? panes.find((pane) => pane.id === id)?.label);
+        if (!id || !label || !props.referenceDrop.insert(target, id, label)) setNotice("\u5F53\u524D\u8F93\u5165\u6846\u6682\u65F6\u65E0\u6CD5\u63D2\u5165\u5F15\u7528\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+        else setNotice("");
+        return true;
+      }
+      const location = hit(event);
+      if (!location) return false;
+      dock(source, location.target, location.edge);
+      return true;
+    };
+    const sourceAt = (event) => {
+      const element = event.target instanceof Element ? event.target.closest("[data-view-source],[data-session-id],[data-row-key]") : null;
+      const id = element?.dataset.viewSource ?? element?.dataset.sessionId ?? element?.dataset.rowKey?.replace(/^session:/, "");
+      return id && (id === MAIN_PANE || props.store.getSnapshot().nodes.has(id) || panes.some((pane) => pane.id === id)) ? id : void 0;
+    };
+    const pointerDown = (event) => {
+      if (event.button !== 0 || event.target instanceof Element && event.target.closest("button:not([data-view-source]),input,select,textarea,[contenteditable=true]")) return;
+      const source = sourceAt(event);
+      pointerDock.current = source ? { source, x: event.clientX, y: event.clientY, overCanvas: false } : void 0;
+    };
+    const pointerMove = (event) => {
+      const active = pointerDock.current;
+      if (!active || !(event.buttons & 1) || Math.hypot(event.clientX - active.x, event.clientY - active.y) < 8) return;
+      const location = hit(event);
+      active.overCanvas = Boolean(location);
+      if (location && !composerAt(event)) setPreview((previous) => previous?.target === location.target && previous.edge === location.edge ? previous : location);
+      else setPreview(void 0);
+    };
+    const pointerUp = (event) => {
+      const active = pointerDock.current;
+      pointerDock.current = void 0;
+      if (!active?.overCanvas || Math.hypot(event.clientX - active.x, event.clientY - active.y) < 8) return;
+      const location = hit(event);
+      if (!location) return;
+      event.preventDefault();
+      suppressClick.current = performance.now() + 200;
+      place(active.source, event);
+      drag.current = { consumed: true };
+      setPreview(void 0);
+    };
+    const pointerCancel = () => {
+      pointerDock.current = void 0;
+      setPreview(void 0);
+    };
+    const click = (event) => {
+      if (performance.now() < suppressClick.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressClick.current = 0;
+      }
+    };
+    const start = (event) => {
+      if (pointerDock.current?.overCanvas) {
+        event.preventDefault();
+        event.stopPropagation();
+        drag.current = { consumed: false };
+        return;
+      }
+      pointerDock.current = void 0;
+      const element = event.target instanceof Element ? event.target.closest("[data-view-source],[data-session-id],[data-row-key]") : null;
+      const id = element?.dataset.viewSource ?? element?.dataset.sessionId ?? element?.dataset.rowKey?.replace(/^session:/, "");
+      drag.current = { source: id && (id === MAIN_PANE || props.store.getSnapshot().nodes.has(id) || panes.some((pane) => pane.id === id)) ? id : void 0, consumed: false };
+    };
+    const over = (event) => {
+      if (!drag.current.source) return;
+      const location = hit(event);
+      if (!location) {
+        setPreview(void 0);
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
+      if (composerAt(event)) setPreview(void 0);
+      else setPreview((previous) => previous?.target === location.target && previous.edge === location.edge ? previous : location);
+    };
+    const drop = (event) => {
+      const location = hit(event), source = drag.current.source;
+      if (!source || !location) return;
+      event.preventDefault();
+      event.stopPropagation();
+      drag.current.consumed = true;
+      place(source, event);
+      setPreview(void 0);
+    };
+    const end = (event) => {
+      if (!drag.current.consumed && drag.current.source) {
+        const location = hit(event), underPointer = document.elementFromPoint?.(event.clientX, event.clientY);
+        if (location && (!underPointer || host.contains(underPointer))) place(drag.current.source, event);
+      }
+      drag.current = { consumed: false };
+      setPreview(void 0);
+    };
+    const leave = (event) => {
+      if (!(event.relatedTarget instanceof Node) || !host.contains(event.relatedTarget)) setPreview(void 0);
+    };
+    const escape = (event) => {
+      if (event.key === "Escape") {
+        drag.current.source = void 0;
+        pointerDock.current = void 0;
+        setPreview(void 0);
+      }
+    };
+    document.addEventListener("pointerdown", pointerDown, true);
+    document.addEventListener("pointermove", pointerMove, true);
+    document.addEventListener("pointerup", pointerUp, true);
+    document.addEventListener("pointercancel", pointerCancel, true);
+    document.addEventListener("click", click, true);
+    document.addEventListener("dragstart", start, true);
+    document.addEventListener("dragend", end, true);
+    document.addEventListener("keydown", escape);
+    host.addEventListener("dragover", over, true);
+    host.addEventListener("drop", drop, true);
+    host.addEventListener("dragleave", leave);
+    return () => {
+      document.removeEventListener("pointerdown", pointerDown, true);
+      document.removeEventListener("pointermove", pointerMove, true);
+      document.removeEventListener("pointerup", pointerUp, true);
+      document.removeEventListener("pointercancel", pointerCancel, true);
+      document.removeEventListener("click", click, true);
+      document.removeEventListener("dragstart", start, true);
+      document.removeEventListener("dragend", end, true);
+      document.removeEventListener("keydown", escape);
+      host.removeEventListener("dragover", over, true);
+      host.removeEventListener("drop", drop, true);
+      host.removeEventListener("dragleave", leave);
+    };
+  }, [host, canvas, panel, current, panes, layout, geometry, props.store, props.views, props.referenceDrop]);
+  const setRatio = (id, ratio) => setLayout((previous) => resizeSplit(previous, id, ratio));
+  const cancelResize = () => {
+    if (resize.current) {
+      setRatio(resize.current.id, resize.current.ratio);
+      resize.current = void 0;
+    }
+  };
+  const previewSource = drag.current.source ?? pointerDock.current?.source;
+  if (!host || panel !== null) return null;
+  return (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: styles2 }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
+      notice && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
+      panes.map((pane) => {
+        const rect = geometry.panes.get(pane.id);
+        if (!rect) return null;
+        return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
+            event.dataTransfer.setData("text/plain", pane.id);
+            event.dataTransfer.effectAllowed = "move";
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
+            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
+        ] }, pane.id);
+      }),
+      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+        "div",
+        {
+          role: "separator",
+          tabIndex: 0,
+          "aria-label": `\u8C03\u6574\u5206\u9694\u7EBF ${index + 1}`,
+          "aria-orientation": node.axis === "x" ? "vertical" : "horizontal",
+          "aria-valuemin": 10,
+          "aria-valuemax": 90,
+          "aria-valuenow": Math.round(node.ratio * 100),
+          className: "sessivra-divider",
+          "data-axis": node.axis,
+          "data-split-id": node.id,
+          style: position(rect),
+          onPointerDown: (event) => {
+            if (event.button !== 0 || !canvas) return;
+            event.preventDefault();
+            event.currentTarget.focus();
+            event.currentTarget.setPointerCapture?.(event.pointerId);
+            const bounds = canvas.getBoundingClientRect();
+            resize.current = { id: node.id, pointer: event.pointerId, axis: node.axis, start: node.axis === "x" ? bounds.left + parent.x : bounds.top + parent.y, length: Math.max(1, (node.axis === "x" ? parent.width : parent.height) - 6), ratio: node.ratio };
+          },
+          onPointerMove: (event) => {
+            const active = resize.current;
+            if (active?.pointer === event.pointerId) setRatio(active.id, ((active.axis === "x" ? event.clientX : event.clientY) - active.start - 3) / active.length);
+          },
+          onPointerUp: (event) => {
+            if (resize.current?.pointer === event.pointerId) {
+              resize.current = void 0;
+              event.currentTarget.releasePointerCapture?.(event.pointerId);
+            }
+          },
+          onPointerCancel: cancelResize,
+          onLostPointerCapture: () => {
+            resize.current = void 0;
+          },
+          onKeyDown: (event) => {
+            if (event.key === "Escape") {
+              cancelResize();
+              return;
+            }
+            const keys = node.axis === "x" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+            if (keys.includes(event.key) || ["Home", "End"].includes(event.key)) {
+              event.preventDefault();
+              setRatio(node.id, event.key === "Home" ? 0.1 : event.key === "End" ? 0.9 : node.ratio + (event.key === keys[0] ? -1 : 1) * (event.shiftKey ? 0.1 : 0.02));
+            }
+          }
+        },
+        node.id
+      )),
+      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
+    ] })
+  ] }), host);
+}
+
+// src/native-pane-header.tsx
+var import_jsx_runtime8 = require("react/jsx-runtime");
+function mirrorNativePaneHeader(slots) {
+  let disposed = false, queued = false;
+  let cleanup = [];
+  const rebuild = () => {
+    if (disposed) return;
+    cleanup.reverse().forEach((dispose) => dispose());
+    cleanup = [];
+    const watched = /* @__PURE__ */ new Set();
+    const mirror = (source, target) => {
+      if (!watched.has(source)) {
+        watched.add(source);
+        cleanup.push(slots.subscribe(source, () => {
+          if (queued || disposed) return;
+          queued = true;
+          queueMicrotask(() => {
+            queued = false;
+            rebuild();
+          });
+        }));
+      }
+      for (const entry of slots.entriesOfSlot(source)) {
+        const children = {};
+        const names = /* @__PURE__ */ new Map();
+        for (const [name, spec] of Object.entries(entry.children ?? {})) {
+          const alias = `sessivra.pane-header.${name}`;
+          names.set(name, alias);
+          children[alias] = spec;
+        }
+        const Component = entry.component;
+        const Occurrence = (props) => {
+          const render = (method) => (name, ...args) => {
+            const alias = names.get(name);
+            if (!alias) throw new Error(`Undeclared native header child: ${name}`);
+            return props[method](alias, ...args);
+          };
+          return /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
+        };
+        cleanup.push(slots.register({
+          name: target,
+          ...entry.options,
+          ...entry.inject ? { inject: entry.inject } : {},
+          ...entry.store ? { store: entry.store } : {},
+          ...entry.locale ? { locale: entry.locale } : {},
+          ...entry.select ? { select: entry.select } : {},
+          ...names.size ? { children } : {}
+        }, Occurrence));
+        for (const [name, alias] of names) mirror(name, alias);
+      }
+    };
+    mirror("conversation.header", "sessivra.conversation.header");
+  };
+  rebuild();
+  return () => {
+    disposed = true;
+    cleanup.reverse().forEach((dispose) => dispose());
+    cleanup = [];
+  };
+}
+
+// src/header-views.tsx
+var import_react8 = require("react");
+function createHeaderViews() {
+  let snapshot = /* @__PURE__ */ new Map();
+  const listeners = /* @__PURE__ */ new Set();
+  const emit = () => {
+    for (const listener of listeners) listener();
+  };
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    register(id, state) {
+      snapshot = new Map(snapshot).set(id, state);
+      emit();
+      return () => {
+        if (snapshot.get(id) === state) {
+          snapshot = new Map(snapshot);
+          snapshot.delete(id);
+          emit();
+        }
+      };
+    }
+  };
+}
+function HeaderViewsBridge(props) {
+  const views = props.useConversationViews((views2) => views2), current = props.useStore((state) => state.view);
+  (0, import_react8.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
+  return null;
+}
+function wireHeaderViews(slots, headerViews) {
+  let remove;
+  const bind = () => {
+    remove?.();
+    remove = void 0;
+    const native = slots.entriesOfSlot("conversation.session.header")[0];
+    if (!native?.store || !native.inject) return;
+    const inject2 = native.inject;
+    remove = slots.register({
+      name: "conversation.session.header.actions",
+      id: "sessivra-header-views",
+      store: native.store,
+      inject: (...args) => ({ ...inject2(...args), headerViews })
+    }, HeaderViewsBridge);
+  };
+  bind();
+  const unsubscribe = slots.subscribe("conversation.session.header", bind);
+  return () => {
+    unsubscribe();
+    remove?.();
+  };
+}
+
+// src/session-reference-drop.tsx
+var import_react9 = require("react");
+function createSessionReferenceDrop() {
+  const inputs = /* @__PURE__ */ new Map();
+  return {
+    register(id, actions, input) {
+      const insert = (source, label) => {
+        const encoded = btoa(Array.from(new TextEncoder().encode(JSON.stringify(source)), (byte) => String.fromCharCode(byte)).join("")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
+        const mention = `@[${label.replace(/[\\\[\]]/g, "\\$&")}](dsh-session:${encoded})`;
+        const selection = actions.captureInsertion();
+        const inserted = input.insertReference({ source: "reference", ref: mention, label, appearance: "session", clipboardText: mention }, { ...selection, start: selection.end });
+        if (inserted) {
+          actions.persistDraft();
+          input.focus();
+        }
+        return inserted;
+      };
+      inputs.set(id, insert);
+      return () => {
+        if (inputs.get(id) === insert) inputs.delete(id);
+      };
+    },
+    insert(target, source, label) {
+      return inputs.get(target)?.(source, label) ?? false;
+    }
+  };
+}
+function SessionReferenceDropInput(props) {
+  (0, import_react9.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
+  return null;
+}
+
 // src/client.tsx
 var inject = ["slots", "remote"];
 async function apply(ctx) {
   await ctx.remote.$mount(remoteContribution);
   await ctx.inject(["remote.sessionMessenger"], (remoteCtx) => {
-    remoteCtx.inject(["uiWorkspace", "sessions", "remote.sessionCollaboration"], (treeCtx) => {
+    remoteCtx.inject(["uiWorkspace", "sessions", "conversation", "remote.sessionCollaboration"], (treeCtx) => {
       const treeSlots = treeCtx.slots;
       const store = createSessionTreeStore(treeCtx.remote.sessionCollaboration);
       const dialogs = createSessionDialogStore();
       const sessions = treeCtx.sessions;
+      const views = createSessionViews(sessions);
+      const referenceDrop = createSessionReferenceDrop();
+      const headerViews = createHeaderViews();
+      treeSlots.inject("conversation.session.header.actions", () => wireHeaderViews(treeCtx.slots, headerViews));
+      treeSlots.inject("conversation.input.overlay", () => treeSlots.register({
+        name: "conversation.input.overlay",
+        id: "sessivra-reference-drop",
+        inject: (sessionId) => {
+          const binding = sessions.binding(sessionId);
+          if (!binding) throw new Error("\u4F1A\u8BDD\u8F93\u5165\u6846\u5C1A\u672A\u5C31\u7EEA");
+          return { referenceDrop, sessionInput: treeCtx.conversation.input.for(binding.ctx) };
+        }
+      }, SessionReferenceDropInput));
+      treeCtx.effect(() => () => views.dispose(), "sessivra: session views");
+      treeSlots.inject("shell.overlay", () => treeSlots.register({
+        name: "shell.overlay",
+        id: "sessivra-session-views",
+        children: { "sessivra.conversation.pane": { kind: "single", scope: "session" }, "sessivra.conversation.header": { kind: "single", scope: "session" } },
+        inject: () => ({ views, store, referenceDrop, headerViews, Menu: import_dsh_client_ui_primitives.Menu, selectSession: (target) => treeCtx.uiWorkspace.openSession(target), startSession: () => treeCtx.uiWorkspace.startSession() })
+      }, SessionViews));
+      treeSlots.inject("sessivra.conversation.pane", () => treeSlots.register({ name: "sessivra.conversation.pane" }, SessionViewContent));
+      treeSlots.inject("sessivra.conversation.header", () => mirrorNativePaneHeader(treeCtx.slots));
       const openSession = (session) => {
         if (session.subagent && !session.openable) return;
         treeCtx.uiWorkspace.openSession(session.subagent ? { parentSessionId: session.parentId, childSessionId: session.id, mode: session.subagentMode } : session.id);

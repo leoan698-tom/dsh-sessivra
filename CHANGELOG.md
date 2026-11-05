@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- Compact every pane header to one 40px row with a native-styled view menu backed by the complete scoped Host view roster. Support × close for main, additional and last views; preserve the promoted session's editor draft by unmounting its old occurrence before navigation.
+
+- Place the retained native main header inside its pane geometry and reuse the native scoped header for additional panes. Highlight all visible sessions in the sidebar, clear highlights on close or panel navigation, and preserve row handlers and native selection semantics.
+
+- Drag a session into any native composer to insert its native @ reference without splitting, sending, replacing selected draft text or changing another pane's draft. Preserve exact session identity and native reference persistence.
+
+- Remove the split toolbar and use icon-only pane close controls. Scope pane styling to plugin-owned shell classes; never restyle native conversation buttons. Add native-control computed-style parity regressions.
+
+- Add free session docking at any pane edge with nested horizontal/vertical splits, draggable dividers, per-split ratios, keyboard/slider adjustment and local branch collapse. Remove the preset equal-size layouts and the four-view limit.
+- Keep pane DOM and drafts mounted when redocking existing views, including the native main view. Add browser checks for actual four-edge drops, mixed-axis resizing, nonuniform geometry, fifth-view docking and reference release.
+- Keep the native header and main composer mounted; embedded views reuse the Host conversation factory and exact ordinary/subagent addresses, with independent references released on close.
+- Fix Windows/Electron fast drag gestures that do not complete native drop delivery; retain native sorting cleanup and cancel/outside guards.
+- Verify native desktop nested docking, horizontal/vertical resizing, redocking, local collapse and independent A/B/C model sends; retain view lifecycle regressions and isolated browser geometry checks.
+
 ## 0.3.0-dev.25 (public prerelease, 2026-11-03)
 
 - Publish the managed task coordination and sidebar improvements from dev.21 through dev.24.local.2 under the existing npm package name.
