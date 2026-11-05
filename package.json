@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-sessivra",
-  "version": "0.3.0-dev.26.local.14",
+  "version": "0.3.0-dev.26",
   "description": "DSH Sessivra: session messaging, managed task coordination with shared decisions and acceptance, context references and conversation trees.",
   "type": "module",
   "license": "MIT",
@@ -70,7 +70,10 @@
     "docs/MANAGED_TASKS.md",
     "docs/SESSION_VIEWS.md",
     "docs/validation/dev25-release.md",
-    "docs/validation/dev25-evidence.json"
+    "docs/validation/dev25-evidence.json",
+    "README.en.md",
+    "docs/validation/dev26-release.md",
+    "docs/validation/dev26-evidence.json"
   ],
   "scripts": {
     "build": "tsc && node scripts/build-client.mjs",

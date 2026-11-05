@@ -1,0 +1,48 @@
+{
+  "version": "0.3.0-dev.26",
+  "date": "2026-11-04",
+  "timezone": "America/Los_Angeles",
+  "candidate": "0.3.0-dev.26.local.14",
+  "compatibility": {
+    "dsh": "0.2.1-rc.5",
+    "node": ">=24"
+  },
+  "runtime": {
+    "files": 60,
+    "matches_desktop_candidate_after_line_ending_normalization": true,
+    "client_sha256": "a7b8a83332085e4e978dcd959a653c408aea29e047718556c9cb8a46f92a5127"
+  },
+  "checks": {
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "unit_and_client": {
+      "pass": 56,
+      "total": 56
+    },
+    "integration": {
+      "pass": 81,
+      "total": 81
+    },
+    "browser_scenarios": {
+      "pass": 11,
+      "total": 11
+    }
+  },
+  "desktop_verified": [
+    "single_row_headers",
+    "native_chat_trajectory_menu",
+    "independent_pane_view_selection",
+    "main_close_promotes_remaining_view_and_preserves_draft",
+    "last_close_returns_native_new_session",
+    "aux_close_collapses_only_its_branch",
+    "draggable_dividers",
+    "sidebar_visible_session_highlights",
+    "drag_session_into_composer_inserts_native_reference"
+  ],
+  "boundaries": [
+    "layout resets on plugin reload",
+    "no detached OS windows",
+    "native DOM bridge pinned to DSH rc.5",
+    "reference insertion alone never sends a message"
+  ]
+}

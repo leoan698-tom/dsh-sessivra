@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0-dev.26 (public prerelease, 2026-11-04)
 
 - Compact every pane header to one 40px row with a native-styled view menu backed by the complete scoped Host view roster. Support × close for main, additional and last views; preserve the promoted session's editor draft by unmounting its old occurrence before navigation.
 
@@ -10,7 +10,7 @@
 
 - Remove the split toolbar and use icon-only pane close controls. Scope pane styling to plugin-owned shell classes; never restyle native conversation buttons. Add native-control computed-style parity regressions.
 
-- Add free session docking at any pane edge with nested horizontal/vertical splits, draggable dividers, per-split ratios, keyboard/slider adjustment and local branch collapse. Remove the preset equal-size layouts and the four-view limit.
+- Add free session docking at any pane edge with nested horizontal/vertical splits, draggable dividers, per-split ratios, keyboard adjustment and local branch collapse. Remove the preset equal-size layouts and the four-view limit.
 - Keep pane DOM and drafts mounted when redocking existing views, including the native main view. Add browser checks for actual four-edge drops, mixed-axis resizing, nonuniform geometry, fifth-view docking and reference release.
 - Keep the native header and main composer mounted; embedded views reuse the Host conversation factory and exact ordinary/subagent addresses, with independent references released on close.
 - Fix Windows/Electron fast drag gestures that do not complete native drop delivery; retain native sorting cleanup and cancel/outside guards.

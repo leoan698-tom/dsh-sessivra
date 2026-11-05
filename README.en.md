@@ -6,7 +6,9 @@
 
 Sessivra is an unofficial task-coordination plugin for [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness). The main session delegates work to ordinary child sessions and receives their questions and results. Follow-up tasks for the same execution session stay queued until the current task is explicitly accepted. Child sessions remain independently accessible.
 
-**Prerelease: `0.3.0-dev.25`. Requires DSH `0.2.1-rc.5`, Node.js 24+, and sessions in the same Host/profile.** Independently developed and maintained by community members; no official endorsement.
+**Prerelease: `0.3.0-dev.26`. Requires DSH `0.2.1-rc.5`, Node.js 24+, and sessions in the same Host/profile.** Independently developed and maintained by community members; no official endorsement.
+
+**New in dev.26: free split views.** Drag sessions to any pane edge to split, resize dividers, and use compact single-row headers with Chat/Trajectory menus and × close controls. Visible sessions are highlighted in the sidebar; dropping into a composer inserts a native session reference. [Usage and validation scope](docs/SESSION_VIEWS.md).
 
 [![Watch the 60-second real-task demo](docs/media/sessivra-dev25-cover-en.png)](https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.25/Sessivra-dev25-real-task-demo-en.mp4)
 
@@ -19,20 +21,20 @@ The demo uses a real model and an example brief. It contains edited capture, sho
 In DSH, open **Plugins → Add plugin**, select the official npm source, and enter only:
 
 ```text
-dsh-plugin-sessivra@0.3.0-dev.25
+dsh-plugin-sessivra@0.3.0-dev.26
 ```
 
-Follow the restart/reload prompt and confirm the installed version is `0.3.0-dev.25` and the plugin is enabled. The package contains compiled files; no build is needed.
+Follow the restart/reload prompt and confirm the installed version is `0.3.0-dev.26` and the plugin is enabled. The package contains compiled files; no build is needed.
 
 Alternatively, exit the DSH instance using your target profile and run this in a terminal:
 
 ```sh
-dsh plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.25
+dsh plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.26
 ```
 
 Use `--profile web` for Web, or the exact profile and `DSH_HOME` used by your instance. Do not paste the full terminal command into the package-name field. Pinning the version avoids ambiguity during the host's package-release-age protection window.
 
-If you previously installed the scoped Sessivra package, Agent Hub, or the old messenger package, follow the [migration instructions](docs/RENAMING.md) before enabling this package. They must not run together. [Release and offline package](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.25).
+If you previously installed the scoped Sessivra package, Agent Hub, or the old messenger package, follow the [migration instructions](docs/RENAMING.md) before enabling this package. They must not run together. [Release and offline package](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.26).
 
 ## Try one small task
 
@@ -78,4 +80,4 @@ We are looking for **five DSH users** to try one small task of their own. If you
 
 The public release passed 49 unit/client tests and 81 integration tests. The separate demo passed 19 run-evidence checks. These denominators describe specific checks, not general model reliability.
 
-[Managed tasks and recovery](docs/MANAGED_TASKS.md) · [Release verification](docs/validation/dev25-release.md) · [Known issues](docs/KNOWN_ISSUES.md) · [Install/uninstall](docs/OPERATIONS.md) · [MIT License](LICENSE)
+[Managed tasks and recovery](docs/MANAGED_TASKS.md) · [Release verification](docs/validation/dev26-release.md) · [Known issues](docs/KNOWN_ISSUES.md) · [Install/uninstall](docs/OPERATIONS.md) · [MIT License](LICENSE)
