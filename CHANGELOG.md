@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0-dev.27
+
+- Add Task Center (任务中心) to the DSH sidebar for creating managed tasks, answering shared questions, reviewing results and browsing archived tasks.
+- Show the submitted outcome and current acceptance status at the top of task details. Render Markdown reports, including tables, with the native DSH reader and offer a source view.
+- Support DSH 0.2.1-rc.5 and 0.2.2-rc.1.
+
+## 0.3.0-dev.27.local.7 (local desktop)
+
+- Renamed the sidebar entry and page to 协作任务. The manager now uses the DSH theme, native task-page spacing and tabs, and a separate detail pane with inline file previews.
+
+## 0.3.0-dev.27.local.6 (local desktop)
+
+- The global panel starts across all workspaces. A slow session lookup no longer inserts a workspace filter after you open history.
+- History opens with the review decision, checked criteria, deliverable files and shared answers. Search stays visible; advanced filters, session links and execution details expand on demand.
+- Archive previews also recognize a file submitted as a plain result-evidence path. The same access, directory, file-type and size checks apply.
+
+## 0.3.0-dev.27.local.4 (local candidate)
+
+- Add the owner task panel for creating work, acting on shared questions, reviewing individual acceptance criteria against evidence, and controlling existing managed tasks.
+- Keep a durable owner-command receipt and reject stale writes. Archive terminal tasks with their decisions and deliveries into a separate history store.
+- Give the panel its own sidebar entry and Gateway namespace. Exclude Superagent router and worker sessions from Sessivra task handling.
+
 ## 0.3.0-dev.26 (public prerelease, 2026-11-04)
 
 - Compact every pane header to one 40px row with a native-styled view menu backed by the complete scoped Host view roster. Support × close for main, additional and last views; preserve the promoted session's editor draft by unmounting its old occurrence before navigation.

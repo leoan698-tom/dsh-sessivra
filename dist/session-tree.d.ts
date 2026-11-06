@@ -55,6 +55,7 @@ export interface NativeTreeProps {
     currentId?: string;
     statuses?: ReadonlyMap<string, TreeStatus>;
     pinnedIds?: ReadonlySet<string>;
+    openTask?(id: string): void;
     renderActions?(session: TreeSession): React.ReactNode;
 }
 export declare function treePresentation(child: TreeSession, status?: TreeStatus, alias?: string): {
@@ -63,5 +64,5 @@ export declare function treePresentation(child: TreeSession, status?: TreeStatus
     waiting: boolean;
     title: string;
 };
-export declare function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions }: NativeTreeProps): React.JSX.Element;
+export declare function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions, openTask }: NativeTreeProps): React.JSX.Element;
 export {};

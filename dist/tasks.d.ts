@@ -1,10 +1,21 @@
 import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent';
 import { type UserMessage } from '@deepseek-ai/dsh-llm';
-import type { TaskState } from './task-schema.js';
+import type { ArchivedTask, Task, TaskState } from './task-schema.js';
 import type { TaskTransport } from './task-transport.js';
 export interface TaskStore {
     read(): TaskState;
     write(state: TaskState): Promise<void>;
+}
+export interface TaskArchive {
+    get(id: string): ArchivedTask | undefined;
+    entries(): IterableIterator<[string, ArchivedTask]>;
+    put(id: string, item: ArchivedTask): Promise<void>;
+}
+export interface PanelAction {
+    operationId: string;
+    fingerprint: string;
+    taskId: string;
+    expected: string;
 }
 export interface RequiredQuestion {
     topic: string;
@@ -41,13 +52,14 @@ export declare class Tasks {
     private store;
     readonly transport: TaskTransport;
     private clock;
+    private archive?;
     private tail;
     private closed;
     private manual;
     private activeExecution;
     private admittedUserMessage;
     lastBackgroundError?: string;
-    constructor(store: TaskStore, transport: TaskTransport, clock?: () => number);
+    constructor(store: TaskStore, transport: TaskTransport, clock?: () => number, archive?: TaskArchive | undefined);
     private serial;
     private state;
     private save;
@@ -62,9 +74,11 @@ export declare class Tasks {
     private lane;
     private resourcesBlocked;
     private view;
-    exists(owner: string, requestId: string): boolean;
-    authorizeParticipant(agent: Agent, target: string, scopeId?: string): Promise<boolean>;
-    assign(agent: Agent, input: Assignment): Promise<{
+    panelItem(state: TaskState, task: Task): {
+        actions: string[];
+        uncertain: boolean;
+        queueReason: string | null;
+        token: string;
         runtime: string;
         sampledAt: number;
         adopted: boolean;
@@ -130,7 +144,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -163,7 +177,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -181,6 +195,8 @@ export declare class Tasks {
             revision: number;
             detail: string;
         }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -194,6 +210,719 @@ export declare class Tasks {
             evidence: string[];
             by: string;
             at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
+        } | undefined;
+        reason?: string | undefined;
+        pendingUserMessage?: string | undefined;
+    };
+    panelTasks(): {
+        actions: string[];
+        uncertain: boolean;
+        queueReason: string | null;
+        token: string;
+        runtime: string;
+        sampledAt: number;
+        adopted: boolean;
+        questions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        decisions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        deliveries: {
+            id: string;
+            taskId: string;
+            target: string;
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            revision: number;
+            decisionRevision: number;
+            messageId: string;
+            text: string;
+            createdAt: number;
+            status: "dispatching" | "delivered" | "uncertain" | "blocked" | "pending" | "observed" | "superseded";
+            questionId?: string | undefined;
+            reason?: string | undefined;
+        }[];
+        completionMeaning: string;
+        id: string;
+        requestHash: string;
+        scopeId: string;
+        title: string;
+        coordinator: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        assignee: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        grantAt: number;
+        goal: string;
+        acceptance: string[];
+        resources: string[];
+        revision: number;
+        appliedRevision: number;
+        decisionRevision: number;
+        appliedDecisionRevision: number;
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        createdAt: number;
+        updatedAt: number;
+        checkpoint: {
+            summary: string;
+            done: string[];
+            remaining: string[];
+            artifacts: string[];
+            at: number;
+        };
+        questionIds: string[];
+        history: {
+            at: number;
+            actor: string;
+            action: string;
+            revision: number;
+            detail: string;
+        }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
+        result?: {
+            summary: string;
+            evidence: string[];
+            revision: number;
+            decisionRevision: number;
+            at: number;
+        } | undefined;
+        review?: {
+            accepted: boolean;
+            explanation: string;
+            evidence: string[];
+            by: string;
+            at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
+        } | undefined;
+        reason?: string | undefined;
+        pendingUserMessage?: string | undefined;
+    }[];
+    panelDetail(id: string): {
+        actions: string[];
+        uncertain: boolean;
+        queueReason: string | null;
+        token: string;
+        runtime: string;
+        sampledAt: number;
+        adopted: boolean;
+        questions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        decisions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        deliveries: {
+            id: string;
+            taskId: string;
+            target: string;
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            revision: number;
+            decisionRevision: number;
+            messageId: string;
+            text: string;
+            createdAt: number;
+            status: "dispatching" | "delivered" | "uncertain" | "blocked" | "pending" | "observed" | "superseded";
+            questionId?: string | undefined;
+            reason?: string | undefined;
+        }[];
+        completionMeaning: string;
+        id: string;
+        requestHash: string;
+        scopeId: string;
+        title: string;
+        coordinator: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        assignee: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        grantAt: number;
+        goal: string;
+        acceptance: string[];
+        resources: string[];
+        revision: number;
+        appliedRevision: number;
+        decisionRevision: number;
+        appliedDecisionRevision: number;
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        createdAt: number;
+        updatedAt: number;
+        checkpoint: {
+            summary: string;
+            done: string[];
+            remaining: string[];
+            artifacts: string[];
+            at: number;
+        };
+        questionIds: string[];
+        history: {
+            at: number;
+            actor: string;
+            action: string;
+            revision: number;
+            detail: string;
+        }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
+        result?: {
+            summary: string;
+            evidence: string[];
+            revision: number;
+            decisionRevision: number;
+            at: number;
+        } | undefined;
+        review?: {
+            accepted: boolean;
+            explanation: string;
+            evidence: string[];
+            by: string;
+            at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
+        } | undefined;
+        reason?: string | undefined;
+        pendingUserMessage?: string | undefined;
+    } | undefined;
+    archivedTask(id: string): {
+        task: {
+            id: string;
+            requestHash: string;
+            scopeId: string;
+            title: string;
+            coordinator: {
+                id: string;
+                cwd: string;
+                child: boolean;
+            };
+            assignee: {
+                id: string;
+                cwd: string;
+                child: boolean;
+            };
+            grantAt: number;
+            goal: string;
+            acceptance: string[];
+            resources: string[];
+            revision: number;
+            appliedRevision: number;
+            decisionRevision: number;
+            appliedDecisionRevision: number;
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+            createdAt: number;
+            updatedAt: number;
+            checkpoint: {
+                summary: string;
+                done: string[];
+                remaining: string[];
+                artifacts: string[];
+                at: number;
+            };
+            questionIds: string[];
+            history: {
+                at: number;
+                actor: string;
+                action: string;
+                revision: number;
+                detail: string;
+            }[];
+            panelReceipts?: Record<string, string> | undefined;
+            scopeLabel?: string | undefined;
+            result?: {
+                summary: string;
+                evidence: string[];
+                revision: number;
+                decisionRevision: number;
+                at: number;
+            } | undefined;
+            review?: {
+                accepted: boolean;
+                explanation: string;
+                evidence: string[];
+                by: string;
+                at: number;
+                resultId?: string | undefined;
+                checked?: boolean[] | undefined;
+            } | undefined;
+            reason?: string | undefined;
+            pendingUserMessage?: string | undefined;
+        };
+        questions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        events: {
+            id: string;
+            taskId: string;
+            target: string;
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            revision: number;
+            decisionRevision: number;
+            messageId: string;
+            text: string;
+            createdAt: number;
+            status: "dispatching" | "delivered" | "uncertain" | "blocked" | "pending" | "observed" | "superseded";
+            questionId?: string | undefined;
+            reason?: string | undefined;
+        }[];
+        archivedAt: number;
+    } | undefined;
+    panelHistory(): {
+        task: {
+            id: string;
+            requestHash: string;
+            scopeId: string;
+            title: string;
+            coordinator: {
+                id: string;
+                cwd: string;
+                child: boolean;
+            };
+            assignee: {
+                id: string;
+                cwd: string;
+                child: boolean;
+            };
+            grantAt: number;
+            goal: string;
+            acceptance: string[];
+            resources: string[];
+            revision: number;
+            appliedRevision: number;
+            decisionRevision: number;
+            appliedDecisionRevision: number;
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+            createdAt: number;
+            updatedAt: number;
+            checkpoint: {
+                summary: string;
+                done: string[];
+                remaining: string[];
+                artifacts: string[];
+                at: number;
+            };
+            questionIds: string[];
+            history: {
+                at: number;
+                actor: string;
+                action: string;
+                revision: number;
+                detail: string;
+            }[];
+            panelReceipts?: Record<string, string> | undefined;
+            scopeLabel?: string | undefined;
+            result?: {
+                summary: string;
+                evidence: string[];
+                revision: number;
+                decisionRevision: number;
+                at: number;
+            } | undefined;
+            review?: {
+                accepted: boolean;
+                explanation: string;
+                evidence: string[];
+                by: string;
+                at: number;
+                resultId?: string | undefined;
+                checked?: boolean[] | undefined;
+            } | undefined;
+            reason?: string | undefined;
+            pendingUserMessage?: string | undefined;
+        };
+        questions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        events: {
+            id: string;
+            taskId: string;
+            target: string;
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            revision: number;
+            decisionRevision: number;
+            messageId: string;
+            text: string;
+            createdAt: number;
+            status: "dispatching" | "delivered" | "uncertain" | "blocked" | "pending" | "observed" | "superseded";
+            questionId?: string | undefined;
+            reason?: string | undefined;
+        }[];
+        archivedAt: number;
+    }[];
+    panelOperation(id: string): {
+        id: string;
+    } | null;
+    panelLookup(id: string): {
+        id: string;
+        requestHash: string;
+        scopeId: string;
+        title: string;
+        coordinator: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        assignee: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        grantAt: number;
+        goal: string;
+        acceptance: string[];
+        resources: string[];
+        revision: number;
+        appliedRevision: number;
+        decisionRevision: number;
+        appliedDecisionRevision: number;
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        createdAt: number;
+        updatedAt: number;
+        checkpoint: {
+            summary: string;
+            done: string[];
+            remaining: string[];
+            artifacts: string[];
+            at: number;
+        };
+        questionIds: string[];
+        history: {
+            at: number;
+            actor: string;
+            action: string;
+            revision: number;
+            detail: string;
+        }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
+        result?: {
+            summary: string;
+            evidence: string[];
+            revision: number;
+            decisionRevision: number;
+            at: number;
+        } | undefined;
+        review?: {
+            accepted: boolean;
+            explanation: string;
+            evidence: string[];
+            by: string;
+            at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
+        } | undefined;
+        reason?: string | undefined;
+        pendingUserMessage?: string | undefined;
+    };
+    private panelCheck;
+    private removeArchived;
+    archiveTask(op: PanelAction): Promise<void>;
+    exists(owner: string, requestId: string): boolean;
+    authorizeParticipant(agent: Agent, target: string, scopeId?: string): Promise<boolean>;
+    assign(agent: Agent, input: Assignment, operator?: {
+        scopeLabel?: string;
+        fingerprint: string;
+    }): Promise<{
+        runtime: string;
+        sampledAt: number;
+        adopted: boolean;
+        questions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        decisions: {
+            id: string;
+            scopeId: string;
+            coordinator: string;
+            topic: string;
+            context: string;
+            question: string;
+            options: string[];
+            taskIds: string[];
+            status: "open" | "awaiting-user" | "resolved";
+            version: number;
+            createdAt: number;
+            updatedAt: number;
+            previous: {
+                answer: string;
+                version: number;
+                at: number;
+            }[];
+            decision?: {
+                answer: string;
+                authority: "user" | "coordinator";
+                actor: string;
+                at: number;
+                userMessageId?: string | undefined;
+                userQuote?: string | undefined;
+            } | undefined;
+            presentationRequestedAt?: number | undefined;
+            mergedInto?: string | undefined;
+        }[];
+        deliveries: {
+            id: string;
+            taskId: string;
+            target: string;
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            revision: number;
+            decisionRevision: number;
+            messageId: string;
+            text: string;
+            createdAt: number;
+            status: "dispatching" | "delivered" | "uncertain" | "blocked" | "pending" | "observed" | "superseded";
+            questionId?: string | undefined;
+            reason?: string | undefined;
+        }[];
+        completionMeaning: string;
+        id: string;
+        requestHash: string;
+        scopeId: string;
+        title: string;
+        coordinator: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        assignee: {
+            id: string;
+            cwd: string;
+            child: boolean;
+        };
+        grantAt: number;
+        goal: string;
+        acceptance: string[];
+        resources: string[];
+        revision: number;
+        appliedRevision: number;
+        decisionRevision: number;
+        appliedDecisionRevision: number;
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        createdAt: number;
+        updatedAt: number;
+        checkpoint: {
+            summary: string;
+            done: string[];
+            remaining: string[];
+            artifacts: string[];
+            at: number;
+        };
+        questionIds: string[];
+        history: {
+            at: number;
+            actor: string;
+            action: string;
+            revision: number;
+            detail: string;
+        }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
+        result?: {
+            summary: string;
+            evidence: string[];
+            revision: number;
+            decisionRevision: number;
+            at: number;
+        } | undefined;
+        review?: {
+            accepted: boolean;
+            explanation: string;
+            evidence: string[];
+            by: string;
+            at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
         } | undefined;
         reason?: string | undefined;
         pendingUserMessage?: string | undefined;
@@ -264,7 +993,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -297,7 +1026,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -315,6 +1044,8 @@ export declare class Tasks {
             revision: number;
             detail: string;
         }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -328,6 +1059,8 @@ export declare class Tasks {
             evidence: string[];
             by: string;
             at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
         } | undefined;
         reason?: string | undefined;
         pendingUserMessage?: string | undefined;
@@ -340,7 +1073,7 @@ export declare class Tasks {
             title: string;
             coordinator: string;
             assignee: string;
-            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
             revision: number;
             appliedRevision: number;
             decisionRevision: number;
@@ -361,7 +1094,8 @@ export declare class Tasks {
         goal: string;
         acceptance: string[];
         explanation: string;
-    }): Promise<{
+        title?: string;
+    }, op?: PanelAction): Promise<{
         runtime: string;
         sampledAt: number;
         adopted: boolean;
@@ -427,7 +1161,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -460,7 +1194,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -478,6 +1212,8 @@ export declare class Tasks {
             revision: number;
             detail: string;
         }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -491,6 +1227,8 @@ export declare class Tasks {
             evidence: string[];
             by: string;
             at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
         } | undefined;
         reason?: string | undefined;
         pendingUserMessage?: string | undefined;
@@ -561,7 +1299,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -594,7 +1332,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -612,6 +1350,8 @@ export declare class Tasks {
             revision: number;
             detail: string;
         }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -625,6 +1365,8 @@ export declare class Tasks {
             evidence: string[];
             by: string;
             at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
         } | undefined;
         reason?: string | undefined;
         pendingUserMessage?: string | undefined;
@@ -735,7 +1477,7 @@ export declare class Tasks {
                 id: string;
                 taskId: string;
                 target: string;
-                kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+                kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
                 revision: number;
                 decisionRevision: number;
                 messageId: string;
@@ -768,7 +1510,7 @@ export declare class Tasks {
             appliedRevision: number;
             decisionRevision: number;
             appliedDecisionRevision: number;
-            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
             createdAt: number;
             updatedAt: number;
             checkpoint: {
@@ -786,6 +1528,8 @@ export declare class Tasks {
                 revision: number;
                 detail: string;
             }[];
+            panelReceipts?: Record<string, string> | undefined;
+            scopeLabel?: string | undefined;
             result?: {
                 summary: string;
                 evidence: string[];
@@ -799,6 +1543,8 @@ export declare class Tasks {
                 evidence: string[];
                 by: string;
                 at: number;
+                resultId?: string | undefined;
+                checked?: boolean[] | undefined;
             } | undefined;
             reason?: string | undefined;
             pendingUserMessage?: string | undefined;
@@ -918,7 +1664,7 @@ export declare class Tasks {
         authority: 'coordinator' | 'user';
         userMessageId?: string;
         userQuote?: string;
-    }): Promise<{
+    }, op?: PanelAction): Promise<{
         question: {
             id: string;
             scopeId: string;
@@ -990,7 +1736,9 @@ export declare class Tasks {
         accepted: boolean;
         explanation: string;
         evidence: string[];
-    }): Promise<{
+        remaining?: string[];
+        checked?: boolean[];
+    }, op?: PanelAction): Promise<{
         runtime: string;
         sampledAt: number;
         adopted: boolean;
@@ -1056,7 +1804,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1089,7 +1837,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -1107,6 +1855,8 @@ export declare class Tasks {
             revision: number;
             detail: string;
         }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -1120,6 +1870,8 @@ export declare class Tasks {
             evidence: string[];
             by: string;
             at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
         } | undefined;
         reason?: string | undefined;
         pendingUserMessage?: string | undefined;
@@ -1129,7 +1881,7 @@ export declare class Tasks {
         revision: number;
         action: 'pause' | 'resume' | 'cancel';
         reason: string;
-    }): Promise<{
+    }, op?: PanelAction): Promise<{
         runtime: string;
         sampledAt: number;
         adopted: boolean;
@@ -1195,7 +1947,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1228,7 +1980,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -1246,6 +1998,8 @@ export declare class Tasks {
             revision: number;
             detail: string;
         }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -1259,6 +2013,8 @@ export declare class Tasks {
             evidence: string[];
             by: string;
             at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
         } | undefined;
         reason?: string | undefined;
         pendingUserMessage?: string | undefined;
@@ -1269,7 +2025,7 @@ export declare class Tasks {
     preStep(agent: Agent, messages: UserMessage[], next: () => Promise<PreStepDecision>): Promise<PreStepDecision>;
     guard(agent: Agent, name: string): string | undefined;
     idle(agent: Agent): Promise<void>;
-    reconcile(agent: Agent, id: string): Promise<{
+    reconcile(agent: Agent, id: string, op?: PanelAction): Promise<{
         runtime: string;
         sampledAt: number;
         adopted: boolean;
@@ -1335,7 +2091,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1368,7 +2124,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -1386,6 +2142,8 @@ export declare class Tasks {
             revision: number;
             detail: string;
         }[];
+        panelReceipts?: Record<string, string> | undefined;
+        scopeLabel?: string | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -1399,6 +2157,8 @@ export declare class Tasks {
             evidence: string[];
             by: string;
             at: number;
+            resultId?: string | undefined;
+            checked?: boolean[] | undefined;
         } | undefined;
         reason?: string | undefined;
         pendingUserMessage?: string | undefined;
@@ -1407,7 +2167,7 @@ export declare class Tasks {
     busyTask(target: string): string | undefined;
     progressSummary(agent: Agent, target: string): {
         taskId: string;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         revision: number;
         appliedRevision: number;
         decisionRevision: number;
@@ -1420,7 +2180,7 @@ export declare class Tasks {
     treeSummary(sessionId: string): {
         id: string;
         title: string;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
         label: string;
         revision: number;
         appliedRevision: number;

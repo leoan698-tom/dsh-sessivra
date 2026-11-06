@@ -1,10 +1,19 @@
 # Sessivra 主子会话任务协作
 
-当前公开预发布包：`dsh-plugin-sessivra-0.3.0-dev.25.tgz`。兼容 **DSH 0.2.1-rc.5 / Node.js 24+**。包内包含编译后的服务端与客户端；使用者无需构建。npm 包名为 `dsh-plugin-sessivra`。
+dev.27 在 DSH 侧栏提供「任务中心」，可集中办理已有的受管任务。支持 **DSH 0.2.1-rc.5 或 0.2.2-rc.1，Node.js 24+**。包内包含编译后的服务端与客户端；使用者无需构建。npm 包名为 `dsh-plugin-sessivra`。
 
 local.1 修复未开始任务的待办版本同步及后续任务计数；local.2 修复用户新答复首个模型请求中的当前消息 ID。现有任务、会话和决定保留。dev.25 包含这三处修复。桌面验收摘要及发布核验见[验证记录](validation/dev25-release.md)，原始本地日志不随包发布。
 
 ## 在主会话里使用
+
+打开侧栏「任务中心」即可办理任务。
+
+1. 点「新建任务」，选择协调会话和执行会话，或指定工作目录新建协调会话、创建普通子会话。填写目标和至少一条验收条件。相关任务可以放入同一协作组，填写相同的前置问题、条件和选项。
+2. 打开「待处理」。同组相同问题集中显示一次，答复后相关任务按原有队列和资源条件继续。进入详情可查看检查点、要求版本、等待原因和两个会话的入口。
+3. 任务提交结果后，可预览工作目录内有记录的文本产物，其他产物按路径到原工作目录查看。逐项勾选验收条件并记录核验证据；退回时填写剩余工作。
+4. 暂停、继续、取消和检查投递按当前任务状态提供。对投递结果拿不准时先回查同一会话，再决定如何处理。终态任务可归档，随后到「历史」查看。详情顶部显示提交结果与当前验收状态。点开 Markdown 交付文件可直接阅读表格，也可切换原文。
+
+Superagent 的外部仓库工单从它自己的侧栏进入。按其官方部署要求在专用 profile 中运行生产自动化。
 
 创建普通子会话并委派实际工作：
 
@@ -35,16 +44,16 @@ local.1 修复未开始任务的待办版本同步及后续任务计数；local.
 
 ## 安装与升级
 
-在 DSH「插件 → 添加插件」中选择 npm 官方源，输入 `dsh-plugin-sessivra@0.3.0-dev.25`；已有同名包按宿主升级入口更新，或使用下方固定版本终端命令。
+在 DSH「插件 → 添加插件」中选择 npm 官方源，输入 `dsh-plugin-sessivra@0.3.0-dev.27`；已有同名包按宿主升级入口更新，或使用下方固定版本终端命令。
 
 先正常退出使用目标 profile 的 DSH，备份该 profile 的配置、插件包和存储。然后在 PowerShell 执行（CLI 路径按实际安装位置调整）：
 
 ```powershell
 & 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' --version
-& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'dsh-plugin-sessivra@0.3.0-dev.25'
+& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add 'dsh-plugin-sessivra@0.3.0-dev.27'
 ```
 
-CLI 必须显示 `0.2.1-rc.5`。自定义 `DSH_HOME`、profile 要与实际宿主一致。Web 用户换为 `--profile web`。重启后确认插件名 `DSH Sessivra`、版本 `0.3.0-dev.25`、已启用，然后在新一轮主会话输入协作要求。这个完整命令用于终端，不能粘贴到只接受 npm 包名的界面输入框。
+CLI 应显示 `0.2.1-rc.5` 或 `0.2.2-rc.1`。自定义 `DSH_HOME`、profile 要与实际宿主一致。Web 用户换为 `--profile web`。重启后确认插件名 `DSH Sessivra`、版本 `0.3.0-dev.27`、已启用，然后在新一轮主会话输入协作要求。这个完整命令用于终端，不能粘贴到只接受 npm 包名的界面输入框。
 
 安装更新需在 DSH 退出后执行，避免运行中的宿主与包文件版本不同。不要同时启用原信使包、旧 scoped Sessivra 包与当前包；这些包注册同一服务。
 

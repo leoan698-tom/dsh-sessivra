@@ -135,6 +135,7 @@ export interface TreeStatus { running?: boolean; pendingInteraction?: { kind: st
 export interface NativeTreeProps {
   sessionId: string; store: TreeStore; openSession(session: TreeSession): void;
   currentId?: string; statuses?: ReadonlyMap<string, TreeStatus>; pinnedIds?: ReadonlySet<string>;
+  openTask?(id:string):void;
   renderActions?(session: TreeSession): React.ReactNode;
 }
 export function treePresentation(child: TreeSession, status?: TreeStatus, alias?: string) {
@@ -212,7 +213,7 @@ function TreeToggle({ expanded, label, className, onToggle }: { expanded: boolea
 // rc.5 has row action seats, but no row-children seat. The local DOM bridge uses
 // its stable data-row-key and never alters the native header, store or handlers.
 // Each inserted sibling belongs to this component and is removed on disposal.
-export function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions }: NativeTreeProps) {
+export function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions, openTask }: NativeTreeProps) {
   const anchor = useRef<HTMLSpanElement>(null);
   const [target, setTarget] = useState<NativeRow>();
   const revealed = useRef<string>();
@@ -285,6 +286,7 @@ export function NativeSessionChildren({ sessionId, store, openSession, currentId
     {createPortal(<><style>{styles}</style>{showNotice && <div role={snapshot.problem ? 'alert' : 'status'} className="dshsm-tree-notice">{snapshot.problem ? `${snapshot.problem}${snapshot.loaded ? '，当前显示上次结果' : ''}` : '正在读取子会话…'}{snapshot.problem && <button type="button" disabled={snapshot.refreshing} onClick={() => void store.refresh()}>{snapshot.refreshing ? '重试中…' : '重试'}</button>}</div>}{!hidden && !nested && expanded && <>
       {hasChildren && <div role="list" aria-label={`${node!.label}的子会话`} onPointerOverCapture={event => event.stopPropagation()} onPointerOutCapture={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>{ordered(node!.children).map(branch)}</div>}
     </>}</>, target.children)}
+    {!hidden && !nested && node?.task && openTask && <button type="button" title={node.task.title} aria-label={'查看任务 '+node.task.title} onClick={event=>{event.stopPropagation();openTask(node.task!.id);}}>{node.task.label}</button>}
     {!hidden && !nested && hasChildren && createPortal(<TreeToggle className="dshsm-native-toggle" label={node!.label} expanded={expanded} onToggle={() => store.toggle(sessionId)} />, target.row)}
     {!hidden && !nested && !expanded && containsCurrent(sessionId) && createPortal(marker(true), target.row)}
   </>}</>;

@@ -6,7 +6,9 @@ import { z } from 'zod';
 import type { Messenger } from './core.js';
 import type { Collaboration } from './collaboration.js';
 import type { ReferenceTargets } from './reference-target.js';
-import { taskDomainSpec } from './task-schema.js';
+import { requireSessivraSession } from './session-ownership.js';
+import { SessivraPanel } from './task-panel-service.js';
+import { archiveDomainSpec, taskDomainSpec } from './task-schema.js';
 import { Tasks, taskIdFor } from './tasks.js';
 import { TaskTransport } from './task-transport.js';
 import { persistWithContentionRetry } from './storage-write.js';
@@ -34,15 +36,17 @@ const rules = `Sessivra managed collaboration:
 
 export async function installTasks(ctx: Context, messenger: Messenger, collaboration: Collaboration, references: ReferenceTargets) {
   const domain = await ctx.storageDomain.open(taskDomainSpec);
-  const tasks = new Tasks({ read: () => domain.global.get(), write: state => persistWithContentionRetry(() => domain.global.set(state)) }, new TaskTransport(ctx, messenger));
+  const history = await ctx.storageDomain.open(archiveDomainSpec).catch(async error => { await domain.close(); throw error; });
+  const tasks = new Tasks({ read: () => domain.global.get(), write: state => persistWithContentionRetry(() => domain.global.set(state)) }, new TaskTransport(ctx, messenger), Date.now, history.table('history'));
+  new SessivraPanel(ctx, tasks, collaboration, messenger);
   await tasks.recover();
-  ctx.effect(() => async () => { await tasks.close(); await domain.close(); });
+  ctx.effect(() => async () => { await tasks.close(); await history.close(); await domain.close(); });
   collaboration.taskSummary = id => tasks.treeSummary(id);
   const caller = (agent: Agent | undefined) => { if (!agent) throw new Error('CALLER_REQUIRED'); return agent; };
   const register = <S extends z.ZodType>(name: string, description: string, schema: S, execute: (args: z.output<S>, exec: Parameters<ToolDefinition['execute']>[1]) => Promise<unknown>) => {
     ctx.tools.register({ name, description, parameters: z.toJSONSchema(schema, { target: 'draft-7' }) as ToolDefinition['parameters'],
       output: { schema: {}, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
-      execute: async (raw, exec) => { exec.signal.throwIfAborted(); return execute(schema.parse(raw), exec); },
+      execute: async (raw, exec) => { exec.signal.throwIfAborted(); if (exec.agent) tasks.transport.caller(exec.agent); return execute(schema.parse(raw), exec); },
     });
   };
   register('session_task_create_child', 'Create an ordinary independently openable child conversation and assign a managed task, only when the user delegates work. Include known prerequisite business choices in requiredQuestions: the plugin will hold startup until they are decided and deduplicate related children\'s questions. Progress, questions, decisions and results return automatically. Use a stable requestId on retries, concrete acceptance conditions, and the same scope ID for related children. Returns admission and taskId, not completion.', z.object({ requestId: id, label: short.max(160), prompt: text.max(7800), acceptance: strings.min(1), scope: id.optional(), resources: strings.optional(), requiredQuestions, cwd: z.string().optional(), reasoningEffort: z.string().trim().min(1).max(40).optional() }).strict(), async (args, exec) => {
@@ -56,6 +60,7 @@ export async function installTasks(ctx: Context, messenger: Messenger, collabora
   });
   register('session_task_assign', 'Assign managed work after user delegation. For a new participant obtain exact target and selectionRevision from session_message_selected_target. For an existing participant in an authorized scope, pass that scope ID and exact target; no new @ selection is needed. New work waits for the existing managed task to be accepted. Include known prerequisite choices in requiredQuestions; they block startup until resolved. Use session_task_update to change an existing task. Stable requestId prevents duplicates. Declared resource paths coordinate writes without changing permissions.', z.object({ requestId: id, target: id, selectionRevision: z.string().optional(), title: short, goal: text, acceptance: strings.min(1), scope: id.optional(), resources: strings.optional(), requiredQuestions }).strict(), async (args, exec) => {
     const agent = caller(exec.agent);
+    requireSessivraSession(args.target);
     if (!tasks.exists(agent.id, args.requestId) && !await tasks.authorizeParticipant(agent, args.target, args.scope)) await references.prepareTask(agent, args.target, args.selectionRevision, exec.signal);
     const { selectionRevision: _selection, ...assignment } = args;
     void _selection;
@@ -64,7 +69,7 @@ export async function installTasks(ctx: Context, messenger: Messenger, collabora
   register('session_task_get', 'Read one task and its checkpoint, current/applied revisions, shared questions and decisions, evidence and bounded delivery history. This never wakes or dispatches work. Use latest revisions after a conflict. Coordinator acceptance is distinct from transport and child assertions.', z.object({ taskId: id }).strict(), (args, exec) => tasks.get(caller(exec.agent), args.taskId));
   register('session_task_list', 'Read this conversation\'s managed tasks with pagination. Does not activate another session or send work. Unknown/unavailable is not completed.', z.object({ offset: z.number().int().min(0).optional() }).strict(), (args, exec) => tasks.list(caller(exec.agent), args.offset));
   register('session_task_update', 'Revise this existing task at a safe boundary, preserving its checkpoint and unfinished obligations. Supply the complete CURRENT goal and acceptance list plus explanation. Requires the current task revision. The coordinator may update within the user scope; an assignee may reconcile a direct human instruction in its own conversation. Newer user changes cause stale coordinator edits to fail.', z.object({ ...base, goal: text, acceptance: strings.min(1), explanation: text }).strict(), (args, exec) => tasks.update(caller(exec.agent), args));
-  register('session_task_report', 'Assignee: running acknowledges the exact current revisions before work; progress saves a checkpoint without waking the coordinator; blocked automatically reports a blocker; result automatically returns final evidence for coordinator review. Preserve completed work and artifacts; result requires remaining=[] and nonempty evidence. Use this instead of a separate message reply. blocked/result finish this turn.', z.object({ ...taskVersion, phase: z.enum(['running', 'progress', 'blocked', 'result']), summary: text, done: strings.optional(), remaining: strings.optional(), artifacts: strings.optional(), evidence: strings.optional() }).strict(), async (args, exec) => {
+  register('session_task_report', 'Assignee: running acknowledges the exact current revisions before work; progress saves a checkpoint without waking the coordinator; blocked automatically reports a blocker; result automatically returns final evidence for coordinator review. Begin the result summary with one short paragraph stating the concrete outcome in the language of the task, including the main quantities and units when relevant. Put verification details in evidence; the panel displays acceptance status separately. Preserve completed work and artifacts; result requires remaining=[] and nonempty evidence. Use this instead of a separate message reply. blocked/result finish this turn.', z.object({ ...taskVersion, phase: z.enum(['running', 'progress', 'blocked', 'result']), summary: text, done: strings.optional(), remaining: strings.optional(), artifacts: strings.optional(), evidence: strings.optional() }).strict(), async (args, exec) => {
     const result = await tasks.report(caller(exec.agent), args);
     if (args.phase === 'result' || args.phase === 'blocked') exec.concludeTurn();
     return result;
@@ -79,15 +84,15 @@ export async function installTasks(ctx: Context, messenger: Messenger, collabora
   register('session_task_control', 'Pause, resume or cancel an existing task on explicit user intent or an authorized coordination need. Pause/cancel waits for the current tool to finish and never aborts it. Resume keeps the checkpoint, requires valid scope, and refuses unresolved uncertain delivery. Does not undo external side effects. Assignees may reconcile a direct human resume/pause instruction.', z.object({ ...base, action: z.enum(['pause', 'resume', 'cancel']), reason: text }).strict(), (args, exec) => tasks.control(caller(exec.agent), args));
   register('session_task_reconcile', 'Read back actual inbox/transcript evidence for uncertain task delivery. Never retries a message or repeats an external effect. If the target is cold, open that existing session before retrying reconciliation; do not create a replacement.', z.object({ taskId: id }).strict(), (args, exec) => tasks.reconcile(caller(exec.agent), args.taskId));
   ctx.inject(['systemPrompt'], c => {
-    c.effect(() => c.systemPrompt.section({ name: 'sessivra-task-coordination', order: 2810, interpolate: false, text: rules }));
+    c.effect(() => c.systemPrompt.section({ name: 'sessivra-task-coordination', order: 2810, interpolate: false, text: ({ agent }) => agent && tasks.transport.foreign(agent) ? '' : rules }));
     c.effect(() => c.systemPrompt.context({ name: 'sessivra-current-tasks', order: 130, required: true, interpolate: false, text: ({ agent }) => agent ? tasks.snapshot(agent) : '' }));
   });
-  ctx.on('agent/pre-step', (payload, next) => tasks.preStep(payload.agent, payload.messages, next));
+  ctx.on('agent/pre-step', (payload, next) => tasks.transport.foreign(payload.agent) ? next() : tasks.preStep(payload.agent, payload.messages, next));
   ctx.on('tools/pre-execute', async (exec, next) => {
-    const reason = exec.agent && tasks.guard(exec.agent, exec.name); return reason ? { kind: 'deny', reason } : next();
+    const reason = exec.agent && !tasks.transport.foreign(exec.agent) && tasks.guard(exec.agent, exec.name); return reason ? { kind: 'deny', reason } : next();
   });
   ctx.on('agent/status', ({ agent, status }) => {
-    if (status === 'idle') void tasks.idle(agent).catch(error => { if (error?.message !== 'TASK_SERVICE_CLOSED') tasks.lastBackgroundError = 'TASK_IDLE_SYNC_FAILED'; });
+    if (status === 'idle' && !tasks.transport.foreign(agent)) void tasks.idle(agent).catch(error => { if (error?.message !== 'TASK_SERVICE_CLOSED') tasks.lastBackgroundError = 'TASK_IDLE_SYNC_FAILED'; });
   });
   return tasks;
 }

@@ -5,13 +5,13 @@ export declare const taskStatus: z.ZodEnum<{
     blocked: "blocked";
     running: "running";
     cancelled: "cancelled";
+    completed: "completed";
     "waiting-decision": "waiting-decision";
     review: "review";
     dispatched: "dispatched";
     pausing: "pausing";
     paused: "paused";
     cancelling: "cancelling";
-    completed: "completed";
 }>;
 export declare const checkpointSchema: z.ZodObject<{
     summary: z.ZodString;
@@ -49,13 +49,13 @@ export declare const taskSchema: z.ZodObject<{
         blocked: "blocked";
         running: "running";
         cancelled: "cancelled";
+        completed: "completed";
         "waiting-decision": "waiting-decision";
         review: "review";
         dispatched: "dispatched";
         pausing: "pausing";
         paused: "paused";
         cancelling: "cancelling";
-        completed: "completed";
     }>;
     createdAt: z.ZodNumber;
     updatedAt: z.ZodNumber;
@@ -67,6 +67,8 @@ export declare const taskSchema: z.ZodObject<{
         at: z.ZodNumber;
     }, z.core.$strict>;
     questionIds: z.ZodArray<z.ZodString>;
+    panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+    scopeLabel: z.ZodOptional<z.ZodString>;
     result: z.ZodOptional<z.ZodObject<{
         summary: z.ZodString;
         evidence: z.ZodArray<z.ZodString>;
@@ -75,6 +77,8 @@ export declare const taskSchema: z.ZodObject<{
         at: z.ZodNumber;
     }, z.core.$strict>>;
     review: z.ZodOptional<z.ZodObject<{
+        resultId: z.ZodOptional<z.ZodString>;
+        checked: z.ZodOptional<z.ZodArray<z.ZodBoolean>>;
         accepted: z.ZodBoolean;
         explanation: z.ZodString;
         evidence: z.ZodArray<z.ZodString>;
@@ -129,14 +133,14 @@ export declare const questionSchema: z.ZodObject<{
 }, z.core.$strict>;
 export declare const eventKind: z.ZodEnum<{
     start: "start";
+    review: "review";
     result: "result";
     question: "question";
-    review: "review";
-    cancel: "cancel";
-    pause: "pause";
     decision: "decision";
     update: "update";
     attention: "attention";
+    pause: "pause";
+    cancel: "cancel";
     resume: "resume";
 }>;
 export declare const eventSchema: z.ZodObject<{
@@ -145,14 +149,14 @@ export declare const eventSchema: z.ZodObject<{
     target: z.ZodString;
     kind: z.ZodEnum<{
         start: "start";
+        review: "review";
         result: "result";
         question: "question";
-        review: "review";
-        cancel: "cancel";
-        pause: "pause";
         decision: "decision";
         update: "update";
         attention: "attention";
+        pause: "pause";
+        cancel: "cancel";
         resume: "resume";
     }>;
     revision: z.ZodNumber;
@@ -202,13 +206,13 @@ export declare const taskStateSchema: z.ZodObject<{
             blocked: "blocked";
             running: "running";
             cancelled: "cancelled";
+            completed: "completed";
             "waiting-decision": "waiting-decision";
             review: "review";
             dispatched: "dispatched";
             pausing: "pausing";
             paused: "paused";
             cancelling: "cancelling";
-            completed: "completed";
         }>;
         createdAt: z.ZodNumber;
         updatedAt: z.ZodNumber;
@@ -220,6 +224,8 @@ export declare const taskStateSchema: z.ZodObject<{
             at: z.ZodNumber;
         }, z.core.$strict>;
         questionIds: z.ZodArray<z.ZodString>;
+        panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+        scopeLabel: z.ZodOptional<z.ZodString>;
         result: z.ZodOptional<z.ZodObject<{
             summary: z.ZodString;
             evidence: z.ZodArray<z.ZodString>;
@@ -228,6 +234,8 @@ export declare const taskStateSchema: z.ZodObject<{
             at: z.ZodNumber;
         }, z.core.$strict>>;
         review: z.ZodOptional<z.ZodObject<{
+            resultId: z.ZodOptional<z.ZodString>;
+            checked: z.ZodOptional<z.ZodArray<z.ZodBoolean>>;
             accepted: z.ZodBoolean;
             explanation: z.ZodString;
             evidence: z.ZodArray<z.ZodString>;
@@ -286,14 +294,14 @@ export declare const taskStateSchema: z.ZodObject<{
         target: z.ZodString;
         kind: z.ZodEnum<{
             start: "start";
+            review: "review";
             result: "result";
             question: "question";
-            review: "review";
-            cancel: "cancel";
-            pause: "pause";
             decision: "decision";
             update: "update";
             attention: "attention";
+            pause: "pause";
+            cancel: "cancel";
             resume: "resume";
         }>;
         revision: z.ZodNumber;
@@ -315,6 +323,310 @@ export declare const taskStateSchema: z.ZodObject<{
     }, z.core.$strict>>;
     sequence: z.ZodNumber;
 }, z.core.$strict>;
+export declare const archiveSchema: z.ZodObject<{
+    task: z.ZodObject<{
+        id: z.ZodString;
+        requestHash: z.ZodString;
+        scopeId: z.ZodString;
+        title: z.ZodString;
+        coordinator: z.ZodObject<{
+            id: z.ZodString;
+            cwd: z.ZodString;
+            child: z.ZodBoolean;
+        }, z.core.$strict>;
+        assignee: z.ZodObject<{
+            id: z.ZodString;
+            cwd: z.ZodString;
+            child: z.ZodBoolean;
+        }, z.core.$strict>;
+        grantAt: z.ZodNumber;
+        goal: z.ZodString;
+        acceptance: z.ZodArray<z.ZodString>;
+        resources: z.ZodArray<z.ZodString>;
+        revision: z.ZodNumber;
+        appliedRevision: z.ZodNumber;
+        decisionRevision: z.ZodNumber;
+        appliedDecisionRevision: z.ZodNumber;
+        status: z.ZodEnum<{
+            queued: "queued";
+            failed: "failed";
+            blocked: "blocked";
+            running: "running";
+            cancelled: "cancelled";
+            completed: "completed";
+            "waiting-decision": "waiting-decision";
+            review: "review";
+            dispatched: "dispatched";
+            pausing: "pausing";
+            paused: "paused";
+            cancelling: "cancelling";
+        }>;
+        createdAt: z.ZodNumber;
+        updatedAt: z.ZodNumber;
+        checkpoint: z.ZodObject<{
+            summary: z.ZodString;
+            done: z.ZodArray<z.ZodString>;
+            remaining: z.ZodArray<z.ZodString>;
+            artifacts: z.ZodArray<z.ZodString>;
+            at: z.ZodNumber;
+        }, z.core.$strict>;
+        questionIds: z.ZodArray<z.ZodString>;
+        panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+        scopeLabel: z.ZodOptional<z.ZodString>;
+        result: z.ZodOptional<z.ZodObject<{
+            summary: z.ZodString;
+            evidence: z.ZodArray<z.ZodString>;
+            revision: z.ZodNumber;
+            decisionRevision: z.ZodNumber;
+            at: z.ZodNumber;
+        }, z.core.$strict>>;
+        review: z.ZodOptional<z.ZodObject<{
+            resultId: z.ZodOptional<z.ZodString>;
+            checked: z.ZodOptional<z.ZodArray<z.ZodBoolean>>;
+            accepted: z.ZodBoolean;
+            explanation: z.ZodString;
+            evidence: z.ZodArray<z.ZodString>;
+            by: z.ZodString;
+            at: z.ZodNumber;
+        }, z.core.$strict>>;
+        reason: z.ZodOptional<z.ZodString>;
+        pendingUserMessage: z.ZodOptional<z.ZodString>;
+        history: z.ZodArray<z.ZodObject<{
+            at: z.ZodNumber;
+            actor: z.ZodString;
+            action: z.ZodString;
+            revision: z.ZodNumber;
+            detail: z.ZodString;
+        }, z.core.$strict>>;
+    }, z.core.$strict>;
+    questions: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        scopeId: z.ZodString;
+        coordinator: z.ZodString;
+        topic: z.ZodString;
+        context: z.ZodString;
+        question: z.ZodString;
+        options: z.ZodArray<z.ZodString>;
+        taskIds: z.ZodArray<z.ZodString>;
+        status: z.ZodEnum<{
+            open: "open";
+            "awaiting-user": "awaiting-user";
+            resolved: "resolved";
+        }>;
+        version: z.ZodNumber;
+        decision: z.ZodOptional<z.ZodObject<{
+            answer: z.ZodString;
+            authority: z.ZodEnum<{
+                user: "user";
+                coordinator: "coordinator";
+            }>;
+            actor: z.ZodString;
+            userMessageId: z.ZodOptional<z.ZodString>;
+            userQuote: z.ZodOptional<z.ZodString>;
+            at: z.ZodNumber;
+        }, z.core.$strict>>;
+        createdAt: z.ZodNumber;
+        updatedAt: z.ZodNumber;
+        presentationRequestedAt: z.ZodOptional<z.ZodNumber>;
+        mergedInto: z.ZodOptional<z.ZodString>;
+        previous: z.ZodArray<z.ZodObject<{
+            answer: z.ZodString;
+            version: z.ZodNumber;
+            at: z.ZodNumber;
+        }, z.core.$strict>>;
+    }, z.core.$strict>>;
+    events: z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        taskId: z.ZodString;
+        target: z.ZodString;
+        kind: z.ZodEnum<{
+            start: "start";
+            review: "review";
+            result: "result";
+            question: "question";
+            decision: "decision";
+            update: "update";
+            attention: "attention";
+            pause: "pause";
+            cancel: "cancel";
+            resume: "resume";
+        }>;
+        revision: z.ZodNumber;
+        decisionRevision: z.ZodNumber;
+        questionId: z.ZodOptional<z.ZodString>;
+        messageId: z.ZodString;
+        text: z.ZodString;
+        createdAt: z.ZodNumber;
+        status: z.ZodEnum<{
+            dispatching: "dispatching";
+            delivered: "delivered";
+            uncertain: "uncertain";
+            blocked: "blocked";
+            pending: "pending";
+            observed: "observed";
+            superseded: "superseded";
+        }>;
+        reason: z.ZodOptional<z.ZodString>;
+    }, z.core.$strict>>;
+    archivedAt: z.ZodNumber;
+}, z.core.$strict>;
+export type ArchivedTask = z.infer<typeof archiveSchema>;
+export declare const archiveDomainSpec: {
+    name: string;
+    version: number;
+    layout: "per-record";
+    tables: {
+        history: {
+            valueSchema: z.ZodObject<{
+                task: z.ZodObject<{
+                    id: z.ZodString;
+                    requestHash: z.ZodString;
+                    scopeId: z.ZodString;
+                    title: z.ZodString;
+                    coordinator: z.ZodObject<{
+                        id: z.ZodString;
+                        cwd: z.ZodString;
+                        child: z.ZodBoolean;
+                    }, z.core.$strict>;
+                    assignee: z.ZodObject<{
+                        id: z.ZodString;
+                        cwd: z.ZodString;
+                        child: z.ZodBoolean;
+                    }, z.core.$strict>;
+                    grantAt: z.ZodNumber;
+                    goal: z.ZodString;
+                    acceptance: z.ZodArray<z.ZodString>;
+                    resources: z.ZodArray<z.ZodString>;
+                    revision: z.ZodNumber;
+                    appliedRevision: z.ZodNumber;
+                    decisionRevision: z.ZodNumber;
+                    appliedDecisionRevision: z.ZodNumber;
+                    status: z.ZodEnum<{
+                        queued: "queued";
+                        failed: "failed";
+                        blocked: "blocked";
+                        running: "running";
+                        cancelled: "cancelled";
+                        completed: "completed";
+                        "waiting-decision": "waiting-decision";
+                        review: "review";
+                        dispatched: "dispatched";
+                        pausing: "pausing";
+                        paused: "paused";
+                        cancelling: "cancelling";
+                    }>;
+                    createdAt: z.ZodNumber;
+                    updatedAt: z.ZodNumber;
+                    checkpoint: z.ZodObject<{
+                        summary: z.ZodString;
+                        done: z.ZodArray<z.ZodString>;
+                        remaining: z.ZodArray<z.ZodString>;
+                        artifacts: z.ZodArray<z.ZodString>;
+                        at: z.ZodNumber;
+                    }, z.core.$strict>;
+                    questionIds: z.ZodArray<z.ZodString>;
+                    panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    scopeLabel: z.ZodOptional<z.ZodString>;
+                    result: z.ZodOptional<z.ZodObject<{
+                        summary: z.ZodString;
+                        evidence: z.ZodArray<z.ZodString>;
+                        revision: z.ZodNumber;
+                        decisionRevision: z.ZodNumber;
+                        at: z.ZodNumber;
+                    }, z.core.$strict>>;
+                    review: z.ZodOptional<z.ZodObject<{
+                        resultId: z.ZodOptional<z.ZodString>;
+                        checked: z.ZodOptional<z.ZodArray<z.ZodBoolean>>;
+                        accepted: z.ZodBoolean;
+                        explanation: z.ZodString;
+                        evidence: z.ZodArray<z.ZodString>;
+                        by: z.ZodString;
+                        at: z.ZodNumber;
+                    }, z.core.$strict>>;
+                    reason: z.ZodOptional<z.ZodString>;
+                    pendingUserMessage: z.ZodOptional<z.ZodString>;
+                    history: z.ZodArray<z.ZodObject<{
+                        at: z.ZodNumber;
+                        actor: z.ZodString;
+                        action: z.ZodString;
+                        revision: z.ZodNumber;
+                        detail: z.ZodString;
+                    }, z.core.$strict>>;
+                }, z.core.$strict>;
+                questions: z.ZodArray<z.ZodObject<{
+                    id: z.ZodString;
+                    scopeId: z.ZodString;
+                    coordinator: z.ZodString;
+                    topic: z.ZodString;
+                    context: z.ZodString;
+                    question: z.ZodString;
+                    options: z.ZodArray<z.ZodString>;
+                    taskIds: z.ZodArray<z.ZodString>;
+                    status: z.ZodEnum<{
+                        open: "open";
+                        "awaiting-user": "awaiting-user";
+                        resolved: "resolved";
+                    }>;
+                    version: z.ZodNumber;
+                    decision: z.ZodOptional<z.ZodObject<{
+                        answer: z.ZodString;
+                        authority: z.ZodEnum<{
+                            user: "user";
+                            coordinator: "coordinator";
+                        }>;
+                        actor: z.ZodString;
+                        userMessageId: z.ZodOptional<z.ZodString>;
+                        userQuote: z.ZodOptional<z.ZodString>;
+                        at: z.ZodNumber;
+                    }, z.core.$strict>>;
+                    createdAt: z.ZodNumber;
+                    updatedAt: z.ZodNumber;
+                    presentationRequestedAt: z.ZodOptional<z.ZodNumber>;
+                    mergedInto: z.ZodOptional<z.ZodString>;
+                    previous: z.ZodArray<z.ZodObject<{
+                        answer: z.ZodString;
+                        version: z.ZodNumber;
+                        at: z.ZodNumber;
+                    }, z.core.$strict>>;
+                }, z.core.$strict>>;
+                events: z.ZodArray<z.ZodObject<{
+                    id: z.ZodString;
+                    taskId: z.ZodString;
+                    target: z.ZodString;
+                    kind: z.ZodEnum<{
+                        start: "start";
+                        review: "review";
+                        result: "result";
+                        question: "question";
+                        decision: "decision";
+                        update: "update";
+                        attention: "attention";
+                        pause: "pause";
+                        cancel: "cancel";
+                        resume: "resume";
+                    }>;
+                    revision: z.ZodNumber;
+                    decisionRevision: z.ZodNumber;
+                    questionId: z.ZodOptional<z.ZodString>;
+                    messageId: z.ZodString;
+                    text: z.ZodString;
+                    createdAt: z.ZodNumber;
+                    status: z.ZodEnum<{
+                        dispatching: "dispatching";
+                        delivered: "delivered";
+                        uncertain: "uncertain";
+                        blocked: "blocked";
+                        pending: "pending";
+                        observed: "observed";
+                        superseded: "superseded";
+                    }>;
+                    reason: z.ZodOptional<z.ZodString>;
+                }, z.core.$strict>>;
+                archivedAt: z.ZodNumber;
+            }, z.core.$strict>;
+        };
+    };
+};
 export type Task = z.infer<typeof taskSchema>;
 export type TaskQuestion = z.infer<typeof questionSchema>;
 export type TaskEvent = z.infer<typeof eventSchema>;
@@ -355,13 +667,13 @@ export declare const taskDomainSpec: {
                     blocked: "blocked";
                     running: "running";
                     cancelled: "cancelled";
+                    completed: "completed";
                     "waiting-decision": "waiting-decision";
                     review: "review";
                     dispatched: "dispatched";
                     pausing: "pausing";
                     paused: "paused";
                     cancelling: "cancelling";
-                    completed: "completed";
                 }>;
                 createdAt: z.ZodNumber;
                 updatedAt: z.ZodNumber;
@@ -373,6 +685,8 @@ export declare const taskDomainSpec: {
                     at: z.ZodNumber;
                 }, z.core.$strict>;
                 questionIds: z.ZodArray<z.ZodString>;
+                panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                scopeLabel: z.ZodOptional<z.ZodString>;
                 result: z.ZodOptional<z.ZodObject<{
                     summary: z.ZodString;
                     evidence: z.ZodArray<z.ZodString>;
@@ -381,6 +695,8 @@ export declare const taskDomainSpec: {
                     at: z.ZodNumber;
                 }, z.core.$strict>>;
                 review: z.ZodOptional<z.ZodObject<{
+                    resultId: z.ZodOptional<z.ZodString>;
+                    checked: z.ZodOptional<z.ZodArray<z.ZodBoolean>>;
                     accepted: z.ZodBoolean;
                     explanation: z.ZodString;
                     evidence: z.ZodArray<z.ZodString>;
@@ -439,14 +755,14 @@ export declare const taskDomainSpec: {
                 target: z.ZodString;
                 kind: z.ZodEnum<{
                     start: "start";
+                    review: "review";
                     result: "result";
                     question: "question";
-                    review: "review";
-                    cancel: "cancel";
-                    pause: "pause";
                     decision: "decision";
                     update: "update";
                     attention: "attention";
+                    pause: "pause";
+                    cancel: "cancel";
                     resume: "resume";
                 }>;
                 revision: z.ZodNumber;
@@ -492,7 +808,7 @@ export declare const taskDomainSpec: {
                 appliedRevision: number;
                 decisionRevision: number;
                 appliedDecisionRevision: number;
-                status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling" | "completed";
+                status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
                 createdAt: number;
                 updatedAt: number;
                 checkpoint: {
@@ -510,6 +826,8 @@ export declare const taskDomainSpec: {
                     revision: number;
                     detail: string;
                 }[];
+                panelReceipts?: Record<string, string> | undefined;
+                scopeLabel?: string | undefined;
                 result?: {
                     summary: string;
                     evidence: string[];
@@ -523,6 +841,8 @@ export declare const taskDomainSpec: {
                     evidence: string[];
                     by: string;
                     at: number;
+                    resultId?: string | undefined;
+                    checked?: boolean[] | undefined;
                 } | undefined;
                 reason?: string | undefined;
                 pendingUserMessage?: string | undefined;
@@ -560,7 +880,7 @@ export declare const taskDomainSpec: {
                 id: string;
                 taskId: string;
                 target: string;
-                kind: "start" | "result" | "question" | "review" | "cancel" | "pause" | "decision" | "update" | "attention" | "resume";
+                kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
                 revision: number;
                 decisionRevision: number;
                 messageId: string;

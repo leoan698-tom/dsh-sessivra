@@ -17,7 +17,8 @@ export interface Message { id: string; sender: string; target: string; text: str
 export interface RecipientSelection { targetId: string; label: string; sourceWorkspace: string | null; targetWorkspace: string | null; revision: string; selectedAt: number; deliveryMode?: DeliveryMode; child?: ChildAddress }
 export interface PairGrant { sourceId: string; targetId: string; sourceWorkspace: string; targetWorkspace: string; grantedAt: number }
 export interface State { policies: Record<string, Policy>; messages: Record<string, Message>; budgets: Record<string, { start: number; sent: number; wakes: number }>; selectedRecipients?: Record<string, RecipientSelection>; pairGrants?: Record<string, PairGrant> }
-export interface SessionAddress { id: string; cwd?: string | null; origin?: 'subagent'; delegationDepth?: number; parentSession?: string }
+import { requireSessivraSession, managedBySuperagent } from './session-ownership.js';
+export interface SessionAddress { id: string; agentPreset?:string; cwd?: string | null; origin?: 'subagent'; delegationDepth?: number; parentSession?: string }
 export interface Root { id: string; status: string; session: { header: { cwd?: string | null; origin?: 'subagent'; delegationDepth?: number; parentSession?: string } }; followup(message: UserMessage): void; steer(message: UserMessage): void }
 export interface ChildRecipient extends SessionAddress { child: ChildAddress }
 export interface ChildTransport {
@@ -134,13 +135,15 @@ export class Messenger {
     if (!source) throw new Error('SOURCE_CLOSED');
     return this.selectRecipient(source, targetId, label);
   }
-  selectRecipient(caller: Root, targetId: string, label: string, referenceRevision?: string) {
+  selectRecipient(caller: Root, targetId: string, label: string, referenceRevision?: string, rememberSelection = true) {
     return this.serial(async () => {
       this.live(caller);
+      requireSessivraSession(caller.id); requireSessivraSession(targetId);
       if (!targetId || targetId === caller.id || !label || label.length > 160) throw new Error('INVALID_RECIPIENT');
       const liveTarget = this.runtime.get(targetId);
       const inspected = this.runtime.inspect ? await this.runtime.inspect(targetId) : liveTarget && { id: liveTarget.id, cwd: liveTarget.session.header.cwd, origin: liveTarget.session.header.origin, delegationDepth: liveTarget.session.header.delegationDepth };
       if (!inspected || inspected.id !== targetId) throw new Error('RECIPIENT_NOT_FOUND');
+      if (managedBySuperagent(inspected) || managedBySuperagent({...caller.session.header,id:caller.id})) throw new Error('SUPERAGENT_OWNS_SESSION');
       const child = isChild(inspected) ? await this.runtime.children?.inspect(caller, targetId) : undefined;
       if (isChild(inspected) && (!child || child.child.parentId !== caller.id || child.child.childId !== targetId)) throw new Error('RECIPIENT_NOT_OWNED_CHILD');
       this.live(caller);
@@ -153,7 +156,7 @@ export class Messenger {
         return previous;
       }
       const selected: RecipientSelection = { targetId, label, sourceWorkspace: workspace(caller.session.header.cwd), targetWorkspace: workspace(child?.cwd ?? inspected.cwd), revision: referenceRevision ?? randomUUID(), selectedAt: this.clock(), deliveryMode: previous?.deliveryMode ?? 'queue', ...(child ? { child: child.child } : {}) };
-      state.selectedRecipients[key(caller.id)] = selected;
+      if (rememberSelection) state.selectedRecipients[key(caller.id)] = selected;
       // Legacy recipient selection / owner UI, or an explicit send to a native
       // user reference. Merely citing context or inspecting a target never calls
       // this method. Explicit receive/reply restrictions remain.
@@ -251,6 +254,7 @@ export class Messenger {
   sendOperator(sourceId: string, args: { target: string; text: string; id?: string; ttl?: number }) {
     return this.serial(async () => {
       if (typeof sourceId !== 'string') throw new Error('INVALID_SOURCE');
+      requireSessivraSession(sourceId); requireSessivraSession(args.target);
       const source = this.runtime.get(sourceId);
       if (!source) throw new Error('SOURCE_CLOSED');
       this.live(source);
@@ -265,6 +269,7 @@ export class Messenger {
       const target = this.runtime.get(args.target);
       if (!target) throw new Error('TARGET_CLOSED');
       this.live(target);
+      if ([source, target].some(root => managedBySuperagent({ ...root.session.header, id: root.id }))) throw new Error('SUPERAGENT_OWNS_SESSION');
       if (target === source) throw new Error('SELF_SEND_DENIED');
       if (Object.keys(state.messages).length >= this.limits.maxRecords) throw new Error('RECORD_LIMIT_EXPORT_AND_CLEAR');
       if (Object.values(state.messages).filter(m => m.target === target.id && ['queued','dispatching'].includes(m.status)).length >= this.limits.maxQueue) throw new Error('QUEUE_LIMIT');
@@ -295,6 +300,8 @@ export class Messenger {
       const prior = state.messages[id];
       const selected = args.replyTo ? undefined : state.selectedRecipients?.[key(caller.id)];
       const targetId = args.target ?? prior?.target ?? selected?.targetId;
+      if (targetId) requireSessivraSession(targetId);
+      requireSessivraSession(caller.id);
       if (!safeMessageId(id) || typeof args.text !== 'string' || !args.text.trim() || args.text.length > this.limits.maxLength || !Number.isSafeInteger(ttl) || ttl < 1 || ttl > this.limits.maxTTL) throw new Error('INVALID_MESSAGE');
       if (args.deliveryMode !== undefined && !['queue', 'insert'].includes(args.deliveryMode)) throw new Error('INVALID_DELIVERY_MODE');
       if (prior) {
@@ -362,6 +369,7 @@ export class Messenger {
       const inspected: SessionAddress | undefined = liveTarget ? { id: liveTarget.id, ...liveTarget.session.header } : await this.runtime.inspect?.(targetId);
       signal?.throwIfAborted();
       if (!inspected || inspected.id !== targetId) throw new Error('TARGET_CLOSED');
+      if (managedBySuperagent(inspected) || managedBySuperagent({ ...caller.session.header, id: caller.id })) throw new Error('SUPERAGENT_OWNS_SESSION');
       if (isChild(inspected)) {
         if (args.replyTo) throw new Error('INVALID_REPLY');
         const recipient = await this.runtime.children?.inspect(caller, targetId, signal);

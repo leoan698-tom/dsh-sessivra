@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { InvocationDescriptor } from '@deepseek-ai/dsh-typert-protocol';
+import { panelCommand, panelQuery } from './panel-contract.js';
 import { policyInput } from './validation.js';
 
 // Keep legacy wire IDs stable across the package rename. Host and browser share
@@ -22,6 +23,14 @@ const endpoints = [
   { method: 'clear', parameters: [parameter('confirmation', z.literal('DELETE MESSENGER DATA'))] },
 ];
 export const descriptors: InvocationDescriptor[] = [
+  ...[
+    {method:'list',parameters:[parameter('query',panelQuery)]},
+    {method:'participants',parameters:[]},
+    {method:'operation',parameters:[parameter('id',z.string().uuid())]},
+    {method:'detail',parameters:[parameter('id',z.string().max(160))]},
+    {method:'preview',parameters:[parameter('id',z.string().max(160)),parameter('index',z.number().int().min(0).max(63))]},
+    {method:'command',parameters:[parameter('command',panelCommand)]},
+  ].map(e => ({...e,id:'dsh-plugin-sessivra#sessivraTaskPanel/'+e.method,service:'sessivraTaskPanel',namespace:'sessivraTaskPanel',invocation:{kind:'direct' as const},result:codec('panel-result',z.json())})),
   ...endpoints.map(e => ({ ...e, id: `dsh-session-messenger#sessionMessenger/${e.method}`, service: 'sessionMessenger', namespace: 'sessionMessenger', invocation: { kind: 'direct' as const }, result: codec('result', z.json()) })),
   { method: 'tree', parameters: [], id: 'dsh-session-messenger#sessionCollaboration/tree', service: 'sessionCollaboration', namespace: 'sessionCollaboration', invocation: { kind: 'direct' as const }, result: codec('tree-result', z.json()) },
   { method: 'candidates', parameters: [parameter('sourceId', z.string()), parameter('query', z.string().max(256))], id: 'dsh-session-messenger#sessionCollaboration/candidates', service: 'sessionCollaboration', namespace: 'sessionCollaboration', invocation: { kind: 'direct' as const }, result: codec('candidate-result', z.json()) },

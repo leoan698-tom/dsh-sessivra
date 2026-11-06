@@ -162,7 +162,7 @@ export class Collaboration extends TypertRemoteService {
     });
   }
   createChild(parent: Agent, input: { label: string; prompt: string; cwd?: string; reasoningEffort?: string; requestId?: string }, signal: AbortSignal,
-    managed?: (targetId: string, selectionRevision: string) => Promise<{ id: string; status: string; taskId: string; reason?: string }>) {
+    managed?: (targetId: string, selectionRevision: string) => Promise<{ id: string; status: string; taskId: string; reason?: string }>, rememberSelection = true) {
     const work = this.tail.then(async () => {
       if (this.ctx.agents.get(parent.id) !== parent || !this.ctx.agents.roots().includes(parent) || parent.session.header.origin === 'subagent' || (parent.session.header.delegationDepth ?? 0) > 0) throw new Error('PARENT_NOT_ACTIVE_CONVERSATION');
       signal.throwIfAborted();
@@ -231,7 +231,7 @@ export class Collaboration extends TypertRemoteService {
           this.ctx.effect(() => dispose);
         }
         if (controller) await controller.rename({ sessionId, title: input.label });
-        const selection = await this.messenger.selectRecipient(parent, sessionId, input.label);
+        const selection = await this.messenger.selectRecipient(parent, sessionId, input.label, undefined, rememberSelection);
         const receipt = managed ? await managed(sessionId, selection.revision) : await this.messenger.send(parent, { id: messageId, target: sessionId, selectionRevision: selection.revision,
           text: initialText }, signal);
         return { id: sessionId, parentId: parent.id, kind: 'conversation', reused: Boolean(prior), status: receipt.status, messageId: receipt.id, ...('taskId' in receipt ? { taskId: receipt.taskId } : {}), ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}) };

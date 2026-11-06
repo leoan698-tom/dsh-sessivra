@@ -17,6 +17,7 @@ export declare class TaskTransport {
     private children;
     constructor(ctx: Context, messenger: Messenger);
     live(id: string): Agent | undefined;
+    foreign(agent: Agent): boolean;
     caller(agent: Agent): void;
     private address;
     bind(owner: Agent, target: string): Promise<{

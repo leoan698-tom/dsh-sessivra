@@ -15,16 +15,18 @@ export class Tasks {
     store;
     transport;
     clock;
+    archive;
     tail = Promise.resolve();
     closed = false;
     manual = new WeakSet();
     activeExecution = new WeakMap();
     admittedUserMessage = new WeakMap();
     lastBackgroundError;
-    constructor(store, transport, clock = Date.now) {
+    constructor(store, transport, clock = Date.now, archive) {
         this.store = store;
         this.transport = transport;
         this.clock = clock;
+        this.archive = archive;
     }
     serial(work) {
         if (this.closed)
@@ -97,10 +99,122 @@ export class Tasks {
             questions: task.questionIds.map(id => state.questions[id]).filter(Boolean),
             decisions: Object.values(state.questions).filter(q => q.scopeId === task.scopeId && q.status === 'resolved' && !q.mergedInto),
             deliveries: Object.values(state.events).filter(event => event.taskId === task.id).slice(-12),
-            completionMeaning: task.status === 'completed' ? 'coordinator-accepted-with-evidence' : 'not-accepted',
+            completionMeaning: task.status === 'completed' ? (task.review?.by === 'operator:owner' ? 'user-accepted-with-evidence' : 'coordinator-accepted-with-evidence') : 'not-accepted',
         };
     }
-    exists(owner, requestId) { return Boolean(this.store.read().tasks[taskIdFor(owner, requestId)]); }
+    // Returned only by the owner Remote, never through model tools.
+    panelItem(state, task) {
+        const view = this.view(state, task);
+        const uncertain = Object.values(state.events).some(event => event.taskId === task.id && event.status === 'uncertain');
+        const lane = this.lane(state, task.assignee.id);
+        const ahead = Object.values(state.tasks).find(t => t.assignee.id === task.assignee.id && t.status === 'queued');
+        const queueReason = this.waiting(state, task) ? '等待业务决定'
+            : lane && lane.id !== task.id ? '等待「' + lane.title + '」结束'
+                : ahead && ahead.id !== task.id ? '等待前序任务「' + ahead.title + '」'
+                    : this.resourcesBlocked(state, task) ? '等待声明资源释放' : '等待执行会话可用';
+        const actions = [];
+        if (!terminal(task) && this.transport.permitted(task)) {
+            if (!['pausing', 'cancelling'].includes(task.status))
+                actions.push('update');
+            if (task.status === 'review')
+                actions.push('review');
+            if (['paused', 'blocked'].includes(task.status) && !uncertain)
+                actions.push('resume');
+            if (['dispatched', 'running', 'blocked', 'waiting-decision'].includes(task.status))
+                actions.push('pause');
+            if (!['pausing', 'cancelling'].includes(task.status))
+                actions.push('cancel');
+            if (uncertain)
+                actions.push('reconcile');
+            if (view.questions.some(q => !q.mergedInto))
+                actions.push('answer');
+        }
+        if (terminal(task) && this.transport.permitted(task))
+            actions.push('archive');
+        const visible = { ...view };
+        delete visible.panelReceipts;
+        return { ...visible, actions, uncertain, queueReason: task.status === 'queued' ? queueReason : null,
+            token: hash([task, view.questions, uncertain]) };
+    }
+    panelTasks() {
+        const state = this.store.read();
+        return Object.values(state.tasks).map(task => this.panelItem(state, task));
+    }
+    panelDetail(id) {
+        const state = this.store.read();
+        return state.tasks[id] ? this.panelItem(state, state.tasks[id]) : undefined;
+    }
+    archivedTask(id) { return this.archive?.get(id); }
+    panelHistory() {
+        return Array.from(this.archive?.entries() ?? []).filter(([id]) => !this.store.read().tasks[id]).map(([, item]) => item);
+    }
+    panelOperation(id) {
+        for (const task of Object.values(this.store.read().tasks)) {
+            if (task.panelReceipts?.[id] || task.panelReceipts?.['panel-' + id])
+                return { id: task.id };
+        }
+        for (const [, entry] of this.archive?.entries() ?? []) {
+            const receipts = entry.task.panelReceipts;
+            if (receipts?.[id] || receipts?.['panel-' + id])
+                return { id: entry.task.id };
+        }
+        return null;
+    }
+    panelLookup(id) { return this.store.read().tasks[id] ?? this.archive?.get(id)?.task; }
+    panelCheck(state, task, op, action) {
+        if (!op)
+            return false;
+        if (task.id !== op.taskId)
+            throw new Error('TASK_ACCESS_DENIED');
+        const existing = task.panelReceipts?.[op.operationId];
+        if (existing === op.fingerprint)
+            return true;
+        if (existing)
+            throw new Error('TASK_REQUEST_ID_CONFLICT');
+        const item = this.panelItem(state, task);
+        if (item.token !== op.expected)
+            throw new Error('TASK_VERSION_CONFLICT_READ_LATEST');
+        if (!item.actions.includes(action))
+            throw new Error('TASK_ACTION_UNAVAILABLE');
+        (task.panelReceipts ??= {})[op.operationId] = op.fingerprint;
+        return false;
+    }
+    removeArchived(state, task) {
+        delete state.tasks[task.id];
+        for (const event of Object.values(state.events))
+            if (event.taskId === task.id)
+                delete state.events[event.id];
+        const scopeActive = Object.values(state.tasks).some(t => t.scopeId === task.scopeId);
+        for (const q of Object.values(state.questions)) {
+            if (q.scopeId !== task.scopeId)
+                continue;
+            if (!scopeActive)
+                delete state.questions[q.id];
+            else
+                q.taskIds = q.taskIds.filter(id => id !== task.id);
+        }
+    }
+    archiveTask(op) {
+        return this.serial(async () => {
+            if (!this.archive)
+                throw new Error('TASK_HISTORY_UNAVAILABLE');
+            const state = this.state(), prior = this.archive.get(op.taskId);
+            if (prior && !state.tasks[op.taskId]) {
+                if (prior.task.panelReceipts?.[op.operationId] !== op.fingerprint)
+                    throw new Error('TASK_ALREADY_ARCHIVED');
+                return;
+            }
+            const task = this.task(state, op.taskId);
+            this.panelCheck(state, task, op, 'archive');
+            // Commit history first. Recovery completes an interrupted hot-record removal.
+            await this.archive.put(task.id, { task, archivedAt: this.clock(),
+                questions: Object.values(state.questions).filter(q => q.scopeId === task.scopeId),
+                events: Object.values(state.events).filter(e => e.taskId === task.id) });
+            this.removeArchived(state, task);
+            await this.save(state);
+        });
+    }
+    exists(owner, requestId) { return Boolean(this.panelLookup(taskIdFor(owner, requestId))); }
     authorizeParticipant(agent, target, scopeId) {
         return this.serial(async () => {
             if (!scopeId)
@@ -112,12 +226,16 @@ export class Tasks {
             return true;
         });
     }
-    assign(agent, input) {
+    assign(agent, input, operator) {
         return this.serial(async () => {
             this.transport.caller(agent);
             const id = taskIdFor(agent.id, input.requestId), state = this.state();
             const fingerprint = hash(input), previous = state.tasks[id];
+            if (this.archive?.get(id))
+                throw new Error('TASK_ALREADY_ARCHIVED');
             if (previous) {
+                if (operator && previous.panelReceipts?.[input.requestId] !== operator.fingerprint)
+                    throw new Error('TASK_REQUEST_ID_CONFLICT');
                 await this.access(previous, agent, true);
                 if (previous.requestHash !== fingerprint)
                     throw new Error('TASK_REQUEST_ID_CONFLICT');
@@ -136,7 +254,12 @@ export class Tasks {
                 resources: [...new Set((input.resources ?? []).map(path => workspace(paths.resolve(endpoints.assignee.cwd, path))))],
                 revision: 1, appliedRevision: 0, decisionRevision: decisions, appliedDecisionRevision: 0, status: 'queued', createdAt: this.clock(), updatedAt: this.clock(),
                 checkpoint: { summary: '尚未开始', done: [], remaining: [...input.acceptance], artifacts: [], at: this.clock() }, questionIds: [], history: [] };
-            this.record(task, agent.id, 'assigned', input.title);
+            if (operator) {
+                if (operator.scopeLabel)
+                    task.scopeLabel = operator.scopeLabel;
+                task.panelReceipts = { [input.requestId]: operator.fingerprint };
+            }
+            this.record(task, operator ? 'operator:owner' : agent.id, 'assigned', input.title);
             state.tasks[id] = task;
             for (const required of input.requiredQuestions ?? []) {
                 const topic = canonical(required.topic), context = canonical(required.context);
@@ -183,10 +306,12 @@ export class Tasks {
             return { items, nextOffset: offset + page.length < all.length ? offset + page.length : null, total: all.length, lastBackgroundError: this.lastBackgroundError ?? null };
         });
     }
-    update(agent, input) {
+    update(agent, input, op) {
         return this.serial(async () => {
             const state = this.state(), task = this.task(state, input.taskId);
-            await this.access(task, agent);
+            await this.access(task, agent, !!op);
+            if (this.panelCheck(state, task, op, 'update'))
+                return this.view(state, task);
             this.revision(task, input.revision);
             if (terminal(task))
                 throw new Error('TASK_TERMINAL_CREATE_NEW_TASK');
@@ -194,6 +319,8 @@ export class Tasks {
                 throw new Error('TASK_WAIT_FOR_CONTROL_BOUNDARY');
             if (agent.id !== task.coordinator.id && (!task.pendingUserMessage || latestUser(agent)?.id !== task.pendingUserMessage))
                 throw new Error('TASK_CHANGE_REQUIRES_DIRECT_USER_INPUT');
+            if (op && input.title)
+                task.title = input.title;
             task.goal = input.goal;
             task.acceptance = input.acceptance;
             task.revision++;
@@ -207,7 +334,7 @@ export class Tasks {
             delete task.result;
             delete task.review;
             delete task.reason;
-            this.record(task, agent.id, 'updated', input.explanation);
+            this.record(task, op ? 'operator:owner' : agent.id, 'updated', input.explanation);
             if (task.status !== 'queued')
                 this.event(state, task, 'update', task.assignee.id, 'Apply the revised goal at the next safe step. Keep the checkpoint and all unfinished obligations. Report phase=running to acknowledge the current revisions before work.');
             if (agent.id !== task.coordinator.id)
@@ -358,7 +485,7 @@ export class Tasks {
             return { present, question, instruction: present ? 'Ask this business question once here, then continue unrelated work. Record the user answer with session_task_decide authority=user.' : 'Already requested in this coordinator. Do not ask again; keep it visible as pending.' };
         });
     }
-    decide(agent, input) {
+    decide(agent, input, op) {
         return this.serial(async () => {
             const state = this.state();
             const known = state.questions[input.questionId];
@@ -372,7 +499,15 @@ export class Tasks {
                 await this.access(task, agent);
                 question = known;
             }
-            if (input.authority === 'user') {
+            if (op) {
+                const task = this.task(state, op.taskId);
+                await this.access(task, agent, true);
+                if (!task.questionIds.includes(question.id))
+                    throw new Error('TASK_ACCESS_DENIED');
+                if (this.panelCheck(state, task, op, 'answer'))
+                    return { question, reused: true };
+            }
+            if (!op && input.authority === 'user') {
                 const user = latestUser(agent);
                 if (!input.userMessageId || user?.id !== input.userMessageId || !input.userQuote || !user.content.some(block => block.type === 'text' && block.text.includes(input.userQuote)))
                     throw new Error('TASK_DECISION_NEEDS_CURRENT_USER_MESSAGE_AND_QUOTE');
@@ -384,8 +519,11 @@ export class Tasks {
                 throw new Error('TASK_USER_DECISION_REQUIRED');
             if (question.decision?.authority === 'user' && input.authority !== 'user')
                 throw new Error('TASK_USER_DECISION_CANNOT_BE_OVERRIDDEN');
-            if (question.status === 'resolved' && question.decision?.answer === input.answer && question.decision.authority === input.authority)
+            if (question.status === 'resolved' && question.decision?.answer === input.answer && question.decision.authority === input.authority) {
+                if (op)
+                    await this.save(state);
                 return { question, reused: true };
+            }
             if (question.version !== input.version)
                 throw new Error('TASK_QUESTION_VERSION_CONFLICT');
             if (question.decision) {
@@ -393,7 +531,7 @@ export class Tasks {
                 question.previous = question.previous.slice(-32);
                 question.version++;
             }
-            question.decision = { answer: input.answer, authority: input.authority, actor: agent.id, ...(input.userMessageId ? { userMessageId: input.userMessageId } : {}), ...(input.userQuote ? { userQuote: input.userQuote } : {}), at: this.clock() };
+            question.decision = { answer: input.answer, authority: input.authority, actor: op ? 'operator:owner' : agent.id, ...(input.userMessageId ? { userMessageId: input.userMessageId } : {}), ...(input.userQuote ? { userQuote: input.userQuote } : {}), at: this.clock() };
             question.status = 'resolved';
             question.updatedAt = this.clock();
             const members = Object.values(state.tasks).filter(task => task.scopeId === question.scopeId);
@@ -425,7 +563,7 @@ export class Tasks {
                 }
                 if (task.status === 'waiting-decision' && !this.waiting(state, task))
                     task.status = 'dispatched';
-                this.record(task, agent.id, 'decision', question.id);
+                this.record(task, op ? 'operator:owner' : agent.id, 'decision', question.id);
                 if (!['queued', 'paused', 'pausing', 'cancelling'].includes(task.status))
                     this.event(state, task, 'decision', task.assignee.id, `Decision ${question.id} is available. Read the current snapshot, acknowledge revisions and resume the SAME task from its checkpoint. Do not repeat completed external effects.`, question.id, question.id);
             }
@@ -438,10 +576,12 @@ export class Tasks {
             return { question, reused: false, decisionRevision };
         });
     }
-    review(agent, input) {
+    review(agent, input, op) {
         return this.serial(async () => {
             const state = this.state(), task = this.task(state, input.taskId);
             await this.access(task, agent, true);
+            if (this.panelCheck(state, task, op, 'review'))
+                return this.view(state, task);
             this.revision(task, input.revision, input.decisionRevision);
             if (task.status === 'completed' && input.accepted)
                 return this.view(state, task);
@@ -449,12 +589,16 @@ export class Tasks {
                 throw new Error('TASK_RESULT_NOT_READY');
             if (!input.evidence.length)
                 throw new Error('TASK_REVIEW_EVIDENCE_REQUIRED');
-            task.review = { accepted: input.accepted, explanation: input.explanation, evidence: input.evidence, by: agent.id, at: this.clock() };
+            if (op && !input.accepted && !input.remaining?.length)
+                throw new Error('请填写退回后需要完成的事项');
+            if (op && (input.checked?.length !== task.acceptance.length || (input.accepted && input.checked.some(done => !done))))
+                throw new Error('TASK_CHECK_EACH_CRITERION');
+            task.review = { resultId: hash([task.id, task.result]), ...(op ? { checked: input.checked } : {}), accepted: input.accepted, explanation: input.explanation, evidence: input.evidence, by: op ? 'operator:owner' : agent.id, at: this.clock() };
             task.status = input.accepted ? 'completed' : 'dispatched';
-            this.record(task, agent.id, 'review', input.explanation);
+            this.record(task, op ? 'operator:owner' : agent.id, 'review', input.explanation);
             if (!input.accepted) {
                 task.revision++;
-                task.checkpoint.remaining = [input.explanation];
+                task.checkpoint.remaining = input.remaining?.length ? input.remaining : [input.explanation];
                 delete task.result;
                 this.event(state, task, 'review', task.assignee.id, 'The coordinator requested rework. Read the review and checkpoint, acknowledge the new revision, and finish the remaining work.');
             }
@@ -463,10 +607,14 @@ export class Tasks {
             return this.view(this.store.read(), this.store.read().tasks[task.id]);
         });
     }
-    control(agent, input) {
+    control(agent, input, op) {
         return this.serial(async () => {
             const state = this.state(), task = this.task(state, input.taskId);
             this.member(task, agent);
+            if (op)
+                await this.access(task, agent, true);
+            if (this.panelCheck(state, task, op, input.action))
+                return this.view(state, task);
             this.revision(task, input.revision);
             if (agent.id !== task.coordinator.id && (!task.pendingUserMessage || latestUser(agent)?.id !== task.pendingUserMessage))
                 throw new Error('TASK_CONTROL_COORDINATOR_ONLY');
@@ -499,7 +647,7 @@ export class Tasks {
                     this.event(state, task, input.action, task.assignee.id, 'Stop at the current tool boundary. Preserve the saved checkpoint. Do not begin another tool or restart the task.', state.sequence++);
             }
             task.reason = input.reason.slice(0, 600);
-            this.record(task, agent.id, input.action, input.reason);
+            this.record(task, op ? 'operator:owner' : agent.id, input.action, input.reason);
             await this.save(state);
             await this.pump();
             return this.view(this.store.read(), this.store.read().tasks[task.id]);
@@ -577,7 +725,7 @@ export class Tasks {
     preStep(agent, messages, next) {
         return this.serial(async () => {
             const state = this.state(), accepted = [];
-            if (!Object.keys(state.tasks).length)
+            if (!this.lane(state, agent.id) && !Object.values(state.tasks).some(t => t.coordinator.id === agent.id) && !messages.some(m => m.source.kind === 'plugin:dsh-sessivra-task'))
                 return next();
             const direct = messages.filter(message => message.source.kind === 'user');
             const task = this.lane(state, agent.id);
@@ -687,7 +835,7 @@ export class Tasks {
     idle(agent) {
         return this.serial(async () => {
             const state = this.state(), task = this.lane(state, agent.id);
-            if (!Object.keys(state.tasks).length)
+            if (!task && !Object.values(state.tasks).some(t => t.assignee.id === agent.id && t.status === 'queued'))
                 return;
             if (task && this.transport.live(agent.id) === agent && agent.status === 'idle') {
                 if (task.status === 'cancelling' || task.status === 'pausing') {
@@ -707,10 +855,12 @@ export class Tasks {
             await this.pump();
         });
     }
-    reconcile(agent, id) {
+    reconcile(agent, id, op) {
         return this.serial(async () => {
             const state = this.state(), task = this.task(state, id);
             await this.access(task, agent);
+            if (this.panelCheck(state, task, op, 'reconcile'))
+                return this.view(state, task);
             for (const event of Object.values(state.events)) {
                 if (event.taskId !== id || !['uncertain', 'dispatching', 'delivered'].includes(event.status))
                     continue;
@@ -727,6 +877,9 @@ export class Tasks {
     recover() {
         return this.serial(async () => {
             const state = this.state();
+            for (const task of Object.values(state.tasks))
+                if (this.archive?.get(task.id))
+                    this.removeArchived(state, task);
             for (const event of Object.values(state.events)) {
                 if (event.status !== 'dispatching' && event.status !== 'delivered')
                     continue;
@@ -757,7 +910,7 @@ export class Tasks {
         return Object.values(this.store.read().tasks).filter(task => task.assignee.id === target && task.coordinator.id === agent.id && this.transport.permitted(task)).slice(-12).map(task => ({
             taskId: task.id, status: task.status, revision: task.revision, appliedRevision: task.appliedRevision, decisionRevision: task.decisionRevision, appliedDecisionRevision: task.appliedDecisionRevision,
             pendingQuestionIds: task.questionIds.filter(id => this.store.read().questions[id]?.status !== 'resolved'), updatedAt: task.updatedAt,
-            completionMeaning: task.status === 'completed' ? 'coordinator-accepted-with-evidence' : 'not-accepted',
+            completionMeaning: task.status === 'completed' ? (task.review?.by === 'operator:owner' ? 'user-accepted-with-evidence' : 'coordinator-accepted-with-evidence') : 'not-accepted',
         }));
     }
     snapshot(agent) {

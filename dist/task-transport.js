@@ -1,5 +1,6 @@
 import { workspace } from './core.js';
 import { childTransport } from './child-transport.js';
+import { managedBySuperagent, requireSessivraSession } from './session-ownership.js';
 export class TaskTransport {
     ctx;
     messenger;
@@ -10,11 +11,25 @@ export class TaskTransport {
         this.children = childTransport(ctx);
     }
     live(id) { return this.ctx.agents.get(id); }
+    foreign(agent) {
+        const visited = new Set();
+        let header = agent.session.header;
+        while (header && !visited.has(header.id)) {
+            if (managedBySuperagent(header))
+                return true;
+            visited.add(header.id);
+            header = header.parentSession ? this.live(header.parentSession)?.session.header : undefined;
+        }
+        return false;
+    }
     caller(agent) {
+        if (this.foreign(agent))
+            throw new Error('SUPERAGENT_OWNS_SESSION');
         if (this.live(agent.id) !== agent)
             throw new Error('TASK_CALLER_NOT_ACTIVE');
     }
     async address(id) {
+        requireSessivraSession(id);
         if (this.ctx.get('workspaceRegistry')?.archivedSessionIds.includes(id))
             throw new Error('TASK_SESSION_ARCHIVED');
         const live = this.live(id);
@@ -43,6 +58,8 @@ export class TaskTransport {
         if (!this.ctx.agents.roots().includes(owner) || owner.session.header.origin === 'subagent')
             throw new Error('TASK_COORDINATOR_MUST_BE_CONVERSATION');
         const assignee = await this.address(target), coordinator = await this.address(owner.id);
+        if (managedBySuperagent(assignee) || managedBySuperagent(coordinator))
+            throw new Error('SUPERAGENT_OWNS_SESSION');
         if (target === owner.id)
             throw new Error('TASK_SELF_ASSIGNMENT');
         if (assignee.origin === 'subagent' && !await this.children.inspect(owner, target))
@@ -63,7 +80,10 @@ export class TaskTransport {
             const addresses = [task.coordinator, task.assignee].map(bound => {
                 if (this.ctx.get('workspaceRegistry')?.archivedSessionIds.includes(bound.id))
                     throw new Error();
+                requireSessivraSession(bound.id);
                 const live = this.live(bound.id);
+                if (live && this.foreign(live))
+                    throw new Error('SUPERAGENT_OWNS_SESSION');
                 if (live && (workspace(live.session.header.cwd) !== bound.cwd || (live.session.header.origin === 'subagent') !== bound.child))
                     throw new Error();
                 return { id: bound.id, cwd: bound.cwd };
@@ -83,6 +103,8 @@ export class TaskTransport {
         }
         const owner = await this.address(task.coordinator.id), target = await this.address(task.assignee.id);
         for (const [actual, expected] of [[owner, task.coordinator], [target, task.assignee]]) {
+            if (managedBySuperagent(actual))
+                throw new Error('SUPERAGENT_OWNS_SESSION');
             if (actual.id !== expected.id || workspace(actual.cwd) !== expected.cwd || (actual.origin === 'subagent') !== expected.child)
                 throw new Error('TASK_SESSION_CHANGED');
         }

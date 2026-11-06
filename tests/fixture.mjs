@@ -39,6 +39,8 @@ export async function host(root, pluginModule = productUnderTest) {
   root ??= await mkdtemp(join(tmpdir(),'dshsm-'));
   const ctx=new Context();
   for (const p of [Typert,Projections,Session,Llm,Tools,Prompt,agent.default,Storage.default]) await ctx.plugin(p);
+  // DSH 0.2.2 separates executor selection from the tool registry.
+  if (typeof ctx.tools.setExecutor === 'function') await ctx.plugin(await import('@deepseek-ai/dsh-tool-executor-native'));
   await ctx.plugin(Json,{root});
   await ctx.plugin(Domain,{backend:'json'});
   await ctx.plugin(RemoteAccess);
@@ -52,7 +54,14 @@ export async function host(root, pluginModule = productUnderTest) {
   return {ctx,adapter,plugin,root,peer,
     create: (id,cwd=root) => ctx.agents.create({sessionId:id,agentOptions:{provider:'synthetic-free',model:'fixture'},meta:{cwd}}),
     rpc: (method,args={}) => ctx.typertGateway.invoke({namespace:'sessionMessenger',method,args,peer}),
-    tool: (agent,name,args) => ctx.tools.execute({callId:randomUUID(),name,arguments:args,agent,signal:new AbortController().signal}),
+    tool: async (agent,name,args) => {
+      const signal = new AbortController().signal;
+      if (typeof ctx.tools.setExecutor === 'function') {
+        const batch = await ctx.tools.execute({calls:[{type:'tool-call',id:randomUUID(),name,arguments:JSON.stringify(args)}],agent,signal});
+        return batch.results[0].result;
+      }
+      return ctx.tools.execute({callId:randomUUID(),name,arguments:args,agent,signal});
+    },
     close: async () => {
       peerLifetime.abort();
       await ctx.fiber.dispose();

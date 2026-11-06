@@ -76,6 +76,7 @@ export interface State {
 }
 export interface SessionAddress {
     id: string;
+    agentPreset?: string;
     cwd?: string | null;
     origin?: 'subagent';
     delegationDepth?: number;
@@ -221,7 +222,7 @@ export declare class Messenger {
     } | null;
     /** A direct user composer mention selects a destination; it never dispatches. */
     selectRecipientById(sourceId: string, targetId: string, label: string): Promise<RecipientSelection>;
-    selectRecipient(caller: Root, targetId: string, label: string, referenceRevision?: string): Promise<RecipientSelection>;
+    selectRecipient(caller: Root, targetId: string, label: string, referenceRevision?: string, rememberSelection?: boolean): Promise<RecipientSelection>;
     /** The visible composer can clear its own recipient without touching policy. */
     clearSelected(sourceId: string): Promise<{
         cleared: boolean;

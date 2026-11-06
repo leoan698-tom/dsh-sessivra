@@ -1,18 +1,18 @@
 # npm 包名安装与发布
 
-包名：`dsh-plugin-sessivra`。版本：`0.3.0-dev.26`，兼容 DSH `0.2.1-rc.5` / Node.js 24+。
+包名：`dsh-plugin-sessivra`。版本：`0.3.0-dev.27`，兼容 DSH `0.2.1-rc.5` 或 `0.2.2-rc.1` / Node.js 24+。
 
-npm 公开版本以 [registry 元数据](https://registry.npmjs.org/dsh-plugin-sessivra/latest) 和 [npm 包页面](https://www.npmjs.com/package/dsh-plugin-sessivra) 为准。[验证记录](https://github.com/leoan698-tom/dsh-sessivra/blob/main/docs/validation/dev26-release.md)区分本地包检查与实际公开安装结果。
+npm 公开版本以 [registry 元数据](https://registry.npmjs.org/dsh-plugin-sessivra/latest) 和 [npm 包页面](https://www.npmjs.com/package/dsh-plugin-sessivra) 为准。[验证记录](https://github.com/leoan698-tom/dsh-sessivra/blob/main/docs/validation/dev27-release.md)区分本地包检查与实际公开安装结果。
 
 ## 用户安装
 
 在 DSH「插件 → 添加插件」中输入：
 
 ```text
-dsh-plugin-sessivra@0.3.0-dev.26
+dsh-plugin-sessivra@0.3.0-dev.27
 ```
 
-DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装较旧版本；使用上面的固定版本可明确选择 dev.26，安装后核对版本。无需关闭全局保护。
+DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装较旧版本；使用上面的固定版本可明确选择 dev.27，安装后核对版本。无需关闭全局保护。
 
 选择 npm 官方源，点击「安装」，按界面提示重新加载或重启。包名输入框不填写终端命令。预发布版本号应在安装确认与插件列表中可见。
 
@@ -26,7 +26,7 @@ DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布�
 4. 同步最终发布版 README、安装与迁移文档，重新打包并校验，再对经过验证的同一个压缩包发布：
 
 ```sh
-npm publish ./dsh-plugin-sessivra-0.3.0-dev.26.tgz --access public --tag latest --registry=https://registry.npmjs.org/
+npm publish ./dsh-plugin-sessivra-0.3.0-dev.27.tgz --access public --tag latest --registry=https://registry.npmjs.org/
 ```
 
 显式使用 `latest` 是为了让用户只填包名即可解析；版本仍是预发布。若 npm 要求登录或发布认证，由账号持有人在 npm 官方页面完成。

@@ -3,6 +3,7 @@ import { win32, posix } from 'node:path';
 import { createUserMessage } from '@deepseek-ai/dsh-llm';
 import { operatorAddress } from './identity.js';
 export { operatorAddress } from './identity.js';
+import { requireSessivraSession, managedBySuperagent } from './session-ownership.js';
 export const defaults = { maxLength: 8000, maxQueue: 64, maxRecords: 1000, ratePerMinute: 10, wakesPerMinute: 4, maxHops: 2, maxTTL: 3600000 };
 export const emptyState = () => ({ policies: {}, messages: {}, budgets: {} });
 const key = (id) => createHash('sha256').update(id).digest('hex');
@@ -134,15 +135,19 @@ export class Messenger {
             throw new Error('SOURCE_CLOSED');
         return this.selectRecipient(source, targetId, label);
     }
-    selectRecipient(caller, targetId, label, referenceRevision) {
+    selectRecipient(caller, targetId, label, referenceRevision, rememberSelection = true) {
         return this.serial(async () => {
             this.live(caller);
+            requireSessivraSession(caller.id);
+            requireSessivraSession(targetId);
             if (!targetId || targetId === caller.id || !label || label.length > 160)
                 throw new Error('INVALID_RECIPIENT');
             const liveTarget = this.runtime.get(targetId);
             const inspected = this.runtime.inspect ? await this.runtime.inspect(targetId) : liveTarget && { id: liveTarget.id, cwd: liveTarget.session.header.cwd, origin: liveTarget.session.header.origin, delegationDepth: liveTarget.session.header.delegationDepth };
             if (!inspected || inspected.id !== targetId)
                 throw new Error('RECIPIENT_NOT_FOUND');
+            if (managedBySuperagent(inspected) || managedBySuperagent({ ...caller.session.header, id: caller.id }))
+                throw new Error('SUPERAGENT_OWNS_SESSION');
             const child = isChild(inspected) ? await this.runtime.children?.inspect(caller, targetId) : undefined;
             if (isChild(inspected) && (!child || child.child.parentId !== caller.id || child.child.childId !== targetId))
                 throw new Error('RECIPIENT_NOT_OWNED_CHILD');
@@ -157,7 +162,8 @@ export class Messenger {
                 return previous;
             }
             const selected = { targetId, label, sourceWorkspace: workspace(caller.session.header.cwd), targetWorkspace: workspace(child?.cwd ?? inspected.cwd), revision: referenceRevision ?? randomUUID(), selectedAt: this.clock(), deliveryMode: previous?.deliveryMode ?? 'queue', ...(child ? { child: child.child } : {}) };
-            state.selectedRecipients[key(caller.id)] = selected;
+            if (rememberSelection)
+                state.selectedRecipients[key(caller.id)] = selected;
             // Legacy recipient selection / owner UI, or an explicit send to a native
             // user reference. Merely citing context or inspecting a target never calls
             // this method. Explicit receive/reply restrictions remain.
@@ -275,6 +281,8 @@ export class Messenger {
         return this.serial(async () => {
             if (typeof sourceId !== 'string')
                 throw new Error('INVALID_SOURCE');
+            requireSessivraSession(sourceId);
+            requireSessivraSession(args.target);
             const source = this.runtime.get(sourceId);
             if (!source)
                 throw new Error('SOURCE_CLOSED');
@@ -293,6 +301,8 @@ export class Messenger {
             if (!target)
                 throw new Error('TARGET_CLOSED');
             this.live(target);
+            if ([source, target].some(root => managedBySuperagent({ ...root.session.header, id: root.id })))
+                throw new Error('SUPERAGENT_OWNS_SESSION');
             if (target === source)
                 throw new Error('SELF_SEND_DENIED');
             if (Object.keys(state.messages).length >= this.limits.maxRecords)
@@ -332,6 +342,9 @@ export class Messenger {
             const prior = state.messages[id];
             const selected = args.replyTo ? undefined : state.selectedRecipients?.[key(caller.id)];
             const targetId = args.target ?? prior?.target ?? selected?.targetId;
+            if (targetId)
+                requireSessivraSession(targetId);
+            requireSessivraSession(caller.id);
             if (!safeMessageId(id) || typeof args.text !== 'string' || !args.text.trim() || args.text.length > this.limits.maxLength || !Number.isSafeInteger(ttl) || ttl < 1 || ttl > this.limits.maxTTL)
                 throw new Error('INVALID_MESSAGE');
             if (args.deliveryMode !== undefined && !['queue', 'insert'].includes(args.deliveryMode))
@@ -423,6 +436,8 @@ export class Messenger {
             signal?.throwIfAborted();
             if (!inspected || inspected.id !== targetId)
                 throw new Error('TARGET_CLOSED');
+            if (managedBySuperagent(inspected) || managedBySuperagent({ ...caller.session.header, id: caller.id }))
+                throw new Error('SUPERAGENT_OWNS_SESSION');
             if (isChild(inspected)) {
                 if (args.replyTo)
                     throw new Error('INVALID_REPLY');

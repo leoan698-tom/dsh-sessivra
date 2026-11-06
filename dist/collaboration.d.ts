@@ -100,7 +100,7 @@ export declare class Collaboration extends TypertRemoteService {
         status: string;
         taskId: string;
         reason?: string;
-    }>): Promise<{
+    }>, rememberSelection?: boolean): Promise<{
         reasoningEffort?: string | undefined;
         messageId: string;
         reason?: string | undefined;

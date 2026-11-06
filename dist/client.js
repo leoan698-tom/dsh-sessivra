@@ -6,9 +6,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
+var __export = (target2, all) => {
   for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+    __defProp(target2, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -18,12 +18,12 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+var __toESM = (mod, isNodeMode, target2) => (target2 = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
   // If the importer is in node compatibility mode or this is not an ESM
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target2, "default", { value: mod, enumerable: true }) : target2,
   mod
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
@@ -35,6 +35,1100 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
+var import_react11 = __toESM(require("react"), 1);
+
+// src/task-panel.tsx
+var import_react = require("react");
+
+// src/task-panel-styles.ts
+var css = `
+.sessivra-tasks {
+  --paper: var(--dsw-alias-bg-base, Canvas);
+  --text: var(--dsw-alias-label-primary, CanvasText);
+  --secondary: var(--dsw-alias-label-secondary, var(--text));
+  --muted: var(--dsw-alias-label-tertiary, GrayText);
+  --caption: var(--dsw-alias-label-caption, var(--muted));
+  --stroke: var(--dsw-alias-border-l3, color-mix(in srgb, CanvasText 18%, transparent));
+  --divider: var(--dsw-alias-border-l4, var(--stroke));
+  --hover: var(--dsw-alias-interactive-bg-hover, color-mix(in srgb, CanvasText 6%, transparent));
+  --fill: var(--dsw-alias-button-primary-fill, CanvasText);
+  --on-fill: var(--dsw-alias-label-primary-foreground, Canvas);
+  --focus: var(--dsw-focus-ring-color, Highlight);
+  --success: var(--dsw-alias-state-success-primary, var(--secondary));
+  --warning: var(--dsw-alias-state-warn-label, var(--secondary));
+  --radius: var(--dsw-radius-md, 10px);
+  box-sizing: border-box;
+  display: flex;
+  container-type: inline-size;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-start-start-radius: var(--dsw-radius-xl, 16px);
+  background: var(--paper);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: start;
+
+  & *, & *::before, & *::after { box-sizing: border-box; }
+  & svg { flex: none; }
+  & :is(h2,h3,h4,p,ul,ol,pre) { margin: 0; }
+  & :is(h2,h3) { color: var(--text); font-size: 20px; font-weight: 500; line-height: 28px; }
+  & h4 { font-size: 14px; font-weight: 500; line-height: 22px; }
+  & :is(ul,ol) { padding-inline-start: 20px; }
+  & :is(p,li) { white-space: pre-wrap; overflow-wrap: anywhere; }
+  & :is(input,textarea,select,button) { min-width: 0; max-width: 100%; color: inherit; font: inherit; }
+  & :is(input:not([type=checkbox]),textarea,select) {
+    border: .5px solid var(--stroke); border-radius: var(--radius);
+    background: var(--paper); padding: 7px 10px; line-height: 22px;
+  }
+  & input::placeholder, & textarea::placeholder { color: var(--caption); }
+  & textarea { resize: vertical; }
+  & select { text-overflow: ellipsis; }
+  & button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    min-height: 32px; padding: 0 12px; border: .5px solid var(--stroke);
+    border-radius: var(--radius); background: transparent; cursor: pointer;
+    font-size: 14px; font-weight: 400; line-height: 22px;
+  }
+  & button:hover:not(:disabled) { background: var(--hover); }
+  & button:disabled { cursor: default; opacity: .4; }
+  & :is(button,summary,input,textarea,select):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  & :is(.st-primary,button[type=submit]) { border: 0; background: var(--fill); color: var(--on-fill); }
+  & :is(.st-primary,button[type=submit]):hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover, var(--fill)); }
+
+  & .st-master, & .st-detail { min-width: 0; min-height: 0; overflow: auto; scrollbar-gutter: stable; }
+  & .st-master { flex: 1; }
+  & .st-shell { max-width: 1056px; margin: 0 auto; padding: 28px clamp(24px,4vw,48px) 48px; }
+  & .st-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  & .st-head .st-primary { flex: none; height: 32px; border-radius: 16px; font-size: 13px; line-height: 20px; }
+  & nav { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 14px; }
+  & nav button { min-height: 28px; padding: 0 10px; border: 0; border-radius: 14px; color: var(--muted); }
+  & nav button[aria-pressed=true] { color: var(--text); background: var(--hover); }
+
+  & .st-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  & .st-search {
+    flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; height: 36px;
+    padding: 0 10px; border: .5px solid var(--stroke); border-radius: 12px; color: var(--muted);
+  }
+  & .st-search svg { width: 14px; height: 14px; }
+  & .st-search input { flex: 1; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text); outline: none; }
+  & .st-search:focus-within { border-color: var(--focus); }
+  & .st-bar > button { flex: none; border: 0; color: var(--secondary); }
+  & .st-bar > button[aria-expanded=true], & .st-chipbar button { background: var(--hover); }
+  & .st-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; margin: 0 0 16px; }
+  & .st-filters label, & form label { min-width: 0; display: grid; gap: 5px; color: var(--secondary); font-size: 13px; }
+  & .st-chipbar, & .st-actions, & .st-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  & .st-chipbar { margin-bottom: 12px; }
+  & .st-chipbar button { min-height: 25px; border: 0; font-size: 12px; border-radius: 14px; }
+  & .st-listhead, & .st-blocktitle { display: flex; align-items: center; gap: 7px; }
+  & .st-listhead, & .st-groupname { margin: 0 8px 6px; font-size: 12px; color: var(--muted); }
+  & .st-items:has(.st-empty) .st-listhead { display: none; }
+  & .st-count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 400; }
+  & .st-row {
+    display: grid; justify-content: stretch; gap: 2px; width: 100%; text-align: start;
+    padding: 8px 10px; border: 0; border-radius: 12px; overflow-wrap: anywhere;
+  }
+  & .st-row + .st-row { margin-top: 2px; }
+  & .st-row[aria-pressed=true] { background: var(--hover); }
+  & .st-row strong, & .st-question strong, & .st-verdict strong { font-weight: 500; }
+  & .st-row small, & .st-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+  & .st-row small { justify-content: space-between; }
+  & .st-pill { display: inline-flex; align-items: center; gap: 5px; color: var(--secondary); }
+  & .st-pill i { width: 5px; height: 5px; background: var(--caption); border-radius: 50%; }
+  & .st-green i { background: var(--success); }
+  & .st-amber i { background: var(--warning); }
+  & .st-blue i { background: var(--dsw-alias-state-business-primary, var(--secondary)); }
+  & .st-groupname { margin-top: 10px; }
+  & .st-listfoot { text-align: center; padding-top: 8px; }
+  & .st-empty { display: grid; justify-items: center; text-align: center; padding: 48px 20px; color: var(--muted); }
+  & .st-emptyicon { display: flex; margin-bottom: 12px; color: var(--caption); }
+  & .st-emptyicon svg { width: 20px; height: 20px; }
+  & .st-empty h4 { font-size: 14px; font-weight: 400; }
+  & .st-empty p { margin-top: 4px; }
+  & .st-empty button { margin-top: 16px; color: var(--text); }
+
+  & .st-detail {
+    flex: 0 0 47%; border-inline-start: .5px solid var(--divider);
+    padding: 28px 24px 40px; overflow-wrap: anywhere;
+  }
+  & .st-detail > * + * { margin-block-start: 22px; }
+  & .st-detailtop { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  & .st-detailtop button { flex: none; width: 28px; min-height: 28px; padding: 0; border: 0; color: var(--muted); }
+  & .st-meta { margin-top: 5px; gap: 6px; }
+  & .st-meta > span + span::before { content: "\xB7"; margin-inline-end: 6px; }
+  & .st-blocktitle { margin-bottom: 6px; }
+  & .st-blocktitle svg { color: var(--muted); }
+  & .st-outcome { display: grid; gap: 12px; padding-block: 14px; border-block: .5px solid var(--divider); }
+  & .st-outcome h4 { color: var(--secondary); margin-bottom: 4px; }
+  & .st-figures { font-size: 18px; font-weight: 550; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  & .st-review-state { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+  & .st-review-state :is(span,small), & .st-question p { color: var(--secondary); font-size: 13px; }
+  & .st-review-state strong { font-weight: 550; }
+
+  & .st-file { border: .5px solid var(--stroke); border-radius: var(--radius); overflow: hidden; }
+  & .st-file + .st-file { margin-top: 6px; }
+  & .st-file-toggle { justify-content: flex-start; gap: 8px; width: 100%; padding: 7px 10px; border: 0; border-radius: 0; text-align: start; }
+  & .st-file-toggle:focus-visible { outline-offset: -2px; }
+  & .st-file-toggle span { flex: 1; }
+  & .st-file-toggle :is(small,svg) { color: var(--muted); }
+  & .st-file-toggle[aria-expanded=true] svg:last-child { transform: rotate(90deg); }
+  & .st-preview { border-top: .5px solid var(--divider); }
+  & .st-readtools { display: flex; justify-content: flex-end; gap: 4px; padding: 4px 8px; }
+  & .st-readtools button { min-height: 26px; padding: 0 8px; border: none; color: var(--secondary); font-size: 12px; }
+  & .st-readbody { max-height: min(50vh, 440px); overflow: auto; padding: 2px 14px 14px; }
+  & .st-readbody[data-expanded=true] { max-height: none; }
+  & .st-readbody pre { white-space: pre-wrap; font-family: var(--dsw-font-mono,monospace); font-size: 13px; }
+  & .st-readbody table { border-collapse: collapse; width: max-content; min-width: 100%; font-variant-numeric: tabular-nums; }
+  & .st-readbody :is(th,td) { padding: 5px 9px; border: 1px solid var(--divider); white-space: nowrap; }
+  & .st-readbody th { background: var(--hover); font-weight: 550; }
+  & .st-question + .st-question { margin-top: 10px; }
+  & .st-question p { margin: 4px 0; }
+  & .st-answer { margin-inline-end: 8px; color: var(--text); }
+  & .st-folds { border-top: .5px solid var(--divider); }
+  & .st-folds details { border-bottom: .5px solid var(--divider); }
+  & details > summary { padding: 10px 0; color: var(--secondary); cursor: pointer; }
+  & .st-foldbody { display: grid; gap: 12px; padding-bottom: 12px; }
+  & .st-formpage { max-width: 680px; }
+  & form { display: grid; gap: 14px; }
+  & form h3 { font-size: 16px; }
+  & form > p { font-size: 13px; color: var(--muted); }
+  & form fieldset { min-width: 0; border: .5px solid var(--stroke); border-radius: var(--radius); }
+  & input[type=checkbox] { accent-color: var(--fill); width: 16px; height: 16px; }
+  & form details { border-block: .5px solid var(--divider); }
+  & form details label { margin: 10px 0; }
+  & [role=alert] { margin-block: 12px; padding: 8px 12px; border-radius: var(--radius); background: var(--hover); color: var(--dsw-alias-state-error-primary,var(--text)); }
+}
+
+@container (max-width: 730px) {
+  .sessivra-tasks[data-detail] .st-master { display: none; }
+  .sessivra-tasks .st-detail { flex: 1; border-inline-start: 0; padding: 22px 18px; }
+  .sessivra-tasks .st-shell { padding: 22px 18px 32px; }
+}
+`;
+
+// src/task-panel-visual.tsx
+var import_jsx_runtime = require("react/jsx-runtime");
+var paths = {
+  mark: "M4 6h3m4 0h9M4 12l2 2 3-4m3 2h8M4 18h3m4 0h9",
+  plus: "M12 5v14M5 12h14",
+  inbox: "m3 13 4-8h10l4 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zm0 0h5l2 3h4l2-3h5",
+  list: "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",
+  archive: "M4 4h16v4H4zM6 8v12h12V8M10 12h4",
+  search: "m16 16 4 4M18 10.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0",
+  filter: "M3 7h10m4 0h4M3 17h4m4 0h10M13 4v6M7 14v6",
+  check: "m5 12 4 4L19 6",
+  file: "M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6",
+  chevron: "m9 6 6 6-6 6",
+  close: "M6 6l12 12M18 6 6 18",
+  back: "m10 5-7 7 7 7M4 12h17",
+  group: "M4 7h7m4 0h5M4 17h2m4 0h10M11 4h4v6h-4zM6 14h4v6H6z",
+  chat: "M4 4h16v12H9l-5 4zM8 8h8m-8 4h5",
+  clock: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0m-9-5v5l3 2",
+  folder: "M3 6h6l2 2h10v11H3z",
+  external: "m8 16 9-9m-6 0h6v6",
+  warn: "M12 3 2 20h20zm0 6v4m0 3v.3"
+};
+function Icon({ name, size = 17 }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: paths[name] }) });
+}
+function Pill({ label, status }) {
+  const tone = status === "completed" ? "green" : ["blocked", "waiting-decision", "review", "failed"].includes(status) ? "amber" : ["running", "dispatched"].includes(status) ? "blue" : "neutral";
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "st-pill st-" + tone, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", {}),
+    label
+  ] });
+}
+function when(at, compact = false) {
+  const opts = compact ? { month: "short", day: "numeric" } : { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false };
+  return new Intl.DateTimeFormat("zh-CN", opts).format(at);
+}
+
+// src/task-files.ts
+function taskFiles(task) {
+  const files = [...task.checkpoint.artifacts];
+  for (const evidence of task.result?.evidence ?? []) {
+    const path = evidence.trim();
+    if (/^(?:[A-Za-z]:[\\/]|\/)[^\r\n]+?\.[\w+-]+$/.test(path) && !path.includes("::") && !files.includes(path))
+      files.push(path);
+  }
+  return files;
+}
+var fileName = (path) => path.split(/[\\/]/).filter(Boolean).pop() || path;
+
+// src/task-result-overview.ts
+function resultOverview(result) {
+  const paragraphs = result.summary.trim().split(/\r?\n\s*\r?\n/);
+  const paragraph = paragraphs[0].replace(/(?:^|(?<=[。！？\n]))\s*(?:等待|等候)(?:桌面)?(?:人工|用户)?验收[。.!！]?\s*$/, "").trim();
+  const facts = /* @__PURE__ */ new Map();
+  if (paragraphs.length === 1 && paragraph.length > 90) {
+    for (const source of [paragraph, ...result.evidence]) {
+      for (const clause of source.split(/[，、；。\n]/u)) {
+        const match = /^(总[\p{Script=Han}]{1,4})\s*[:：]?\s*(\d+(?:\.\d+)?\s*[\p{Script=Han}]{1,3})$/u.exec(clause.trim());
+        if (!match) continue;
+        const [, label, value] = match;
+        const values = facts.get(label) ?? /* @__PURE__ */ new Set();
+        values.add(value.replace(/\s/g, ""));
+        facts.set(label, values);
+      }
+    }
+  }
+  const highlights = [...facts].filter(([, values]) => values.size === 1).map(([label, values]) => label + " " + [...values][0]);
+  const lead = highlights.length ? paragraph.split(/(?<=[。！？])|\n/)[0] : paragraph;
+  return { text: lead || "\u6267\u884C\u4F1A\u8BDD\u5DF2\u63D0\u4EA4\u7ED3\u679C", highlights };
+}
+
+// src/task-panel.tsx
+var import_jsx_runtime2 = require("react/jsx-runtime");
+var taskPanelTitle = "\u4EFB\u52A1\u4E2D\u5FC3";
+var actions = {
+  update: "\u4FEE\u6539\u8981\u6C42",
+  answer: "\u56DE\u7B54\u95EE\u9898",
+  review: "\u9A8C\u6536\u7ED3\u679C",
+  resume: "\u7EE7\u7EED\u4EFB\u52A1",
+  pause: "\u6682\u505C",
+  cancel: "\u53D6\u6D88\u4EFB\u52A1",
+  reconcile: "\u68C0\u67E5\u6295\u9012",
+  archive: "\u5F52\u6863"
+};
+var statusNames = {
+  queued: "\u6392\u961F",
+  dispatched: "\u5F85\u63A5\u624B",
+  running: "\u6267\u884C\u4E2D",
+  "waiting-decision": "\u5F85\u88C1\u51B3",
+  blocked: "\u53D7\u963B",
+  pausing: "\u6682\u505C\u4E2D",
+  paused: "\u5DF2\u6682\u505C",
+  cancelling: "\u53D6\u6D88\u4E2D",
+  review: "\u5F85\u9A8C\u6536",
+  completed: "\u5DF2\u5B8C\u6210",
+  cancelled: "\u5DF2\u53D6\u6D88",
+  failed: "\u5931\u8D25"
+};
+var problem = (e) => {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/CONFLICT|READ_LATEST/.test(msg)) return "\u8BB0\u5F55\u5DF2\u66F4\u65B0\u3002\u8BF7\u6838\u5BF9\u6700\u65B0\u5185\u5BB9\u540E\u91CD\u65B0\u63D0\u4EA4\u3002";
+  if (/SUPERAGENT_OWNS_SESSION/.test(msg)) return "\u8BE5\u4F1A\u8BDD\u7531 Superagent \u7BA1\u7406\uFF0C\u8BF7\u9009\u62E9\u5176\u4ED6\u4F1A\u8BDD\u3002";
+  if (/PERMISSION|ACCESS_DENIED|POLICY_BLOCKED/.test(msg)) return "\u4F1A\u8BDD\u8BB8\u53EF\u6216\u5DE5\u4F5C\u76EE\u5F55\u5DF2\u53D8\u5316\uFF0C\u8BF7\u6253\u5F00\u539F\u4F1A\u8BDD\u68C0\u67E5\u3002";
+  return msg;
+};
+var readableReason = (reason) => ({
+  TURN_ENDED_WITHOUT_TASK_RESULT: "\u672C\u8F6E\u7ED3\u675F\uFF0C\u6267\u884C\u4F1A\u8BDD\u5C1A\u672A\u63D0\u4EA4\u7ED3\u679C",
+  RECOVERED_TASK_REQUIRES_RESUME: "\u5BBF\u4E3B\u5DF2\u91CD\u5F00\uFF0C\u8BF7\u6838\u67E5\u68C0\u67E5\u70B9\u540E\u7EE7\u7EED",
+  DIRECT_USER_INPUT_REQUIRES_TASK_RECONCILIATION: "\u7528\u6237\u5728\u6267\u884C\u4F1A\u8BDD\u8865\u5145\u4E86\u8981\u6C42\uFF0C\u7B49\u5F85\u6838\u5BF9",
+  WAITING_FOR_REQUIRED_DECISION: "\u7B49\u5F85\u524D\u7F6E\u95EE\u9898\u7684\u56DE\u7B54",
+  TASK_PERMISSION_REVOKED: "\u4F1A\u8BDD\u8BB8\u53EF\u5DF2\u6539\u53D8",
+  TASK_DISPATCH_UNCERTAIN: "\u7B49\u5F85\u56DE\u67E5\u6295\u9012",
+  DECISION_CHANGED_AFTER_ACCEPTANCE: "\u9A8C\u6536\u540E\u51B3\u5B9A\u5DF2\u6539\u53D8\uFF0C\u8BF7\u590D\u6838\u5F71\u54CD"
+})[reason] ?? reason;
+async function read(p) {
+  const r = await p;
+  if (!r.ok) throw new Error(r.error.message);
+  return r.value;
+}
+var lines = (form, key) => String(form.get(key) ?? "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+var str = (form, key) => String(form.get(key) ?? "").trim();
+function Notes({
+  label,
+  name,
+  value = "",
+  required: required2 = false
+}) {
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+    label,
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("textarea", { name, defaultValue: value, required: required2, rows: 2 })
+  ] });
+}
+function RecordList({ title, items }) {
+  return items.length ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("ul", { children: items.map((item, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("li", { children: item }, i)) })
+  ] }) : null;
+}
+function ResultHeader({ task, name }) {
+  const result = task.result && resultOverview(task.result);
+  const review = task.review;
+  let status = "\u5C1A\u672A\u63D0\u4EA4\u9A8C\u6536";
+  let at;
+  if (task.status === "review") {
+    status = "\u5F85\u9A8C\u6536";
+    at = task.result?.at;
+  } else if (task.status === "completed" && review?.accepted) {
+    status = task.reason === "DECISION_CHANGED_AFTER_ACCEPTANCE" ? "\u51B3\u5B9A\u5DF2\u66F4\u65B0\uFF0C\u9700\u590D\u6838" : review.by === "operator:owner" ? "\u7528\u6237\u5DF2\u9A8C\u6536" : name(review.by) + " \u5DF2\u9A8C\u6536";
+    at = review.at;
+  } else if (task.status === "cancelled" || task.status === "failed") {
+    status = "\u672A\u9A8C\u6536";
+  } else if (review && !review.accepted) {
+    status = "\u5DF2\u9000\u56DE\u8865\u505A";
+    at = review.at;
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "st-outcome", "aria-label": "\u7ED3\u679C\u4E0E\u9A8C\u6536", children: [
+    result && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EFB\u52A1\u7ED3\u679C" }),
+      result.highlights.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "st-figures", children: result.highlights.join(" \xB7 ") }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: result.text })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-review-state", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "\u5F53\u524D\u9A8C\u6536\u72B6\u6001" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: status }),
+      at !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: when(at) })
+    ] })
+  ] });
+}
+function FilePreview({ file: file2, renderMarkdown }) {
+  const [source, setSource] = (0, import_react.useState)(false);
+  const [expanded, setExpanded] = (0, import_react.useState)(false);
+  const markdown = /\.(md|markdown)$/i.test(file2.name);
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-preview", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-readtools", children: [
+      markdown && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setSource(!source), "aria-pressed": source, children: source ? "\u8FD4\u56DE\u9884\u89C8" : "\u67E5\u770B\u539F\u6587" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setExpanded(!expanded), "aria-expanded": expanded, children: expanded ? "\u6536\u8D77\u5168\u6587" : "\u5C55\u5F00\u9605\u8BFB" })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-readbody", "data-expanded": expanded, children: markdown && !source ? renderMarkdown(file2.text) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("pre", { children: file2.text }) }),
+    file2.truncated && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u9884\u89C8\u663E\u793A\u524D 32 KiB\uFF0C\u5B8C\u6574\u6587\u4EF6\u8BF7\u5728\u6267\u884C\u76EE\u5F55\u67E5\u770B\u3002" })
+  ] });
+}
+function TaskPanel({
+  api,
+  open,
+  renderMarkdown,
+  initialSession,
+  initialTask
+}) {
+  const [query, setQuery] = (0, import_react.useState)({ view: "attention" }), [page, setPage] = (0, import_react.useState)(), [sessions, setSessions] = (0, import_react.useState)([]);
+  const [id2, select] = (0, import_react.useState)(initialTask ?? ""), [item, detail] = (0, import_react.useState)(), [mode, setMode] = (0, import_react.useState)(""), [question, setQuestion] = (0, import_react.useState)("");
+  const [owner, setOwner] = (0, import_react.useState)(initialSession ?? ""), [executor, setExecutor] = (0, import_react.useState)(""), [tick, reload] = (0, import_react.useState)(0);
+  const [filtersOpen, showFilters] = (0, import_react.useState)(false);
+  const panel = (0, import_react.useRef)(null);
+  const autoPick = (0, import_react.useRef)(false);
+  const pendingKey = "sessivra-task-panel/pending-operation";
+  const [pending, setPending] = (0, import_react.useState)(() => {
+    try {
+      return sessionStorage.getItem(pendingKey) ?? "";
+    } catch {
+      return "";
+    }
+  });
+  function rememberPending(value) {
+    setPending(value);
+    try {
+      if (value) sessionStorage.setItem(pendingKey, value);
+      else sessionStorage.removeItem(pendingKey);
+    } catch {
+    }
+  }
+  async function checkPending() {
+    try {
+      const receipt = await read(api.operation(pending));
+      if (receipt) {
+        setMode("");
+        select(receipt.id);
+        reload((n) => n + 1);
+        fail("");
+        rememberPending("");
+      } else fail("\u5C1A\u672A\u67E5\u5230\u6210\u529F\u8BB0\u5F55\u3002\u68C0\u67E5\u539F\u4EFB\u52A1\u540E\uFF0C\u53EF\u4F7F\u7528\u540C\u4E00\u8BF7\u6C42\u91CD\u8BD5\u3002");
+    } catch (e) {
+      fail(problem(e));
+    }
+  }
+  const [error51, fail] = (0, import_react.useState)(""), [busy, setBusy] = (0, import_react.useState)(false), [checkedToken, setChecked] = (0, import_react.useState)("");
+  const base = (0, import_react.useRef)(), operation = (0, import_react.useRef)(), inFlight = (0, import_react.useRef)(false);
+  const selected = item?.id === id2 ? item : void 0;
+  const [preview, setPreview] = (0, import_react.useState)();
+  const previewRequest = (0, import_react.useRef)(0);
+  const name = (key) => sessions.find((s) => s.id === key)?.label ?? key;
+  (0, import_react.useEffect)(() => {
+    let active = true;
+    read(api.participants()).then((rows) => {
+      if (active) {
+        setSessions(rows);
+        setOwner(
+          (current) => rows.some((s) => s.id === current && !s.child) ? current : rows.find((s) => !s.child)?.id ?? "new"
+        );
+      }
+    }).catch((e) => active && fail(problem(e)));
+    return () => {
+      active = false;
+    };
+  }, [api, initialSession]);
+  (0, import_react.useEffect)(() => {
+    let active = true;
+    let timer;
+    const refresh = async () => {
+      try {
+        const [p, d] = await Promise.all([
+          read(api.list(JSON.parse(JSON.stringify(query)))),
+          id2 ? read(api.detail(id2)) : void 0
+        ]);
+        if (active) {
+          setPage(p);
+          detail(d);
+          if (autoPick.current && !id2 && !mode && p.items.length && (panel.current?.clientWidth ?? 0) > 730) select(p.items[0].id);
+          autoPick.current = false;
+        }
+      } catch (e) {
+        if (active) fail(problem(e));
+      } finally {
+        if (active) timer = setTimeout(() => void refresh(), 5e3);
+      }
+    };
+    void refresh();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [query, id2, tick, api]);
+  function choose(next) {
+    previewRequest.current++;
+    setPreview(void 0);
+    select(next);
+    setMode("");
+    fail("");
+  }
+  function edit(action, qid = "") {
+    base.current = selected;
+    operation.current = void 0;
+    setChecked("");
+    setMode(action);
+    setQuestion(qid);
+    fail("");
+  }
+  function filter(key, value) {
+    setQuery((q) => ({ ...q, [key]: value || void 0, cursor: void 0 }));
+    choose("");
+    autoPick.current = key === "view" && value === "history";
+  }
+  const stale = !!(mode && mode !== "create" && selected && base.current?.token !== selected.token);
+  const checkedVersion = !!selected && checkedToken === selected.token;
+  async function submit(e) {
+    e.preventDefault();
+    if (inFlight.current) return;
+    const f = new FormData(e.currentTarget), original = base.current;
+    let body;
+    if (mode === "create") {
+      const prerequisite = str(f, "prerequisite"), group = str(f, "group");
+      body = {
+        action: "create",
+        coordinator: owner === "new" ? void 0 : owner,
+        coordinatorDirectory: owner === "new" ? str(f, "coordinatorDirectory") : void 0,
+        assignee: executor || void 0,
+        title: str(f, "title"),
+        goal: str(f, "goal"),
+        acceptance: lines(f, "acceptance"),
+        resources: lines(f, "resources"),
+        scope: group || void 0,
+        scopeLabel: group ? page?.groups.find((g) => g.id === group)?.label : str(f, "groupLabel") || void 0,
+        cwd: !executor ? str(f, "cwd") || void 0 : void 0,
+        reasoningEffort: !executor ? str(f, "effort") || void 0 : void 0,
+        requiredQuestions: prerequisite ? [
+          {
+            topic: str(f, "topic") || prerequisite,
+            context: str(f, "context"),
+            question: prerequisite,
+            options: lines(f, "options")
+          }
+        ] : void 0
+      };
+    } else {
+      if (!original || !selected) return;
+      if (stale && !checkedVersion) {
+        fail("\u4EFB\u52A1\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u6838\u5BF9\u6700\u65B0\u7248\u672C\u3002");
+        return;
+      }
+      const stamp = { taskId: id2, expected: selected.token };
+      if (mode === "update")
+        body = {
+          ...stamp,
+          action: mode,
+          title: str(f, "title"),
+          goal: str(f, "goal"),
+          acceptance: lines(f, "acceptance"),
+          explanation: str(f, "reason")
+        };
+      else if (mode === "answer")
+        body = {
+          ...stamp,
+          action: mode,
+          questionId: question,
+          version: selected.questions.find((q) => q.id === question)?.version,
+          answer: str(f, "answer")
+        };
+      else if (mode === "review") {
+        const accepted = str(f, "outcome") === "accepted", evidence = lines(f, "evidence"), remaining = lines(f, "remaining");
+        if (accepted && selected.acceptance.some((_, i) => !f.has("criterion-" + i))) {
+          fail("\u8BF7\u9010\u9879\u6838\u5BF9\u9A8C\u6536\u6761\u4EF6\u5E76\u52FE\u9009\u901A\u8FC7\u9879\u3002");
+          return;
+        }
+        if (!accepted && !remaining.length) {
+          fail("\u8BF7\u586B\u5199\u9000\u56DE\u540E\u9700\u8981\u5B8C\u6210\u7684\u4E8B\u9879\u3002");
+          return;
+        }
+        body = {
+          ...stamp,
+          action: mode,
+          accepted,
+          evidence,
+          remaining,
+          checked: selected.acceptance.map((_, i) => f.has("criterion-" + i)),
+          explanation: str(f, "reason")
+        };
+      } else if (mode === "archive" || mode === "reconcile") body = { ...stamp, action: mode };
+      else body = { ...stamp, action: mode, reason: str(f, "reason") };
+    }
+    const key = JSON.stringify(body);
+    inFlight.current = true;
+    setBusy(true);
+    fail("");
+    try {
+      const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
+      const digest = Array.from(new Uint8Array(bytes), (x) => x.toString(16).padStart(2, "0")).join("");
+      let stored = "";
+      try {
+        stored = sessionStorage.getItem(pendingKey + "/digest") ?? "";
+      } catch {
+      }
+      if (operation.current?.body !== key)
+        operation.current = { body: key, id: stored === digest && pending ? pending : crypto.randomUUID() };
+      rememberPending(operation.current.id);
+      try {
+        sessionStorage.setItem(pendingKey + "/digest", digest);
+      } catch {
+      }
+      const result = await read(api.command({ ...JSON.parse(key), operationId: operation.current.id }));
+      rememberPending("");
+      setMode("");
+      select(result.id);
+      if (mode === "create") setSessions(await read(api.participants()));
+      if (mode === "archive") setQuery({ view: "history" });
+      reload((n) => n + 1);
+    } catch (e2) {
+      fail(problem(e2));
+      reload((n) => n + 1);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  }
+  const queuedFor = executor && sessions.find((s) => s.id === executor);
+  const files = selected ? taskFiles(selected) : [];
+  const qs = selected?.questions.filter((q) => !q.mergedInto) ?? [];
+  const chips = ["workspace", "status", "coordinator", "assignee", "scope"].filter((k) => query[k]);
+  const clearFilters = () => {
+    setQuery({ view: query.view });
+    choose("");
+  };
+  const labelFor = (k) => {
+    const v = query[k] ?? "";
+    return k === "workspace" ? fileName(v) : k === "status" ? statusNames[v] ?? v : k === "scope" ? page?.groups.find((g) => g.id === v)?.label ?? "\u534F\u4F5C\u7EC4" : name(v);
+  };
+  const actionForm = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("form", { onSubmit: submit, "aria-label": actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1" }),
+    (mode === "create" || mode === "update") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u6807\u9898",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "input",
+          {
+            required: true,
+            name: "title",
+            maxLength: 160,
+            defaultValue: mode === "update" ? base.current?.title : ""
+          }
+        )
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u76EE\u6807", name: "goal", required: true, value: mode === "update" ? base.current?.goal : "" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        Notes,
+        {
+          label: "\u9A8C\u6536\u6761\u4EF6\uFF08\u6BCF\u884C\u4E00\u9879\uFF09",
+          name: "acceptance",
+          required: true,
+          value: mode === "update" ? base.current?.acceptance.join("\n") : ""
+        }
+      )
+    ] }),
+    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u534F\u8C03\u4F1A\u8BDD",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+          "select",
+          {
+            required: true,
+            value: owner,
+            onChange: (e) => {
+              setOwner(e.target.value);
+              setExecutor("");
+            },
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u9009\u62E9\u4F1A\u8BDD" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "new", children: "\u65B0\u5EFA\u534F\u8C03\u4F1A\u8BDD" }),
+              sessions.filter((s) => !s.child).map((s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("option", { value: s.id, children: [
+                s.label,
+                " \xB7 ",
+                s.workspace
+              ] }, s.id))
+            ]
+          }
+        )
+      ] }),
+      owner === "new" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u534F\u8C03\u4F1A\u8BDD\u5DE5\u4F5C\u76EE\u5F55",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "coordinatorDirectory", required: true, defaultValue: query.workspace ?? sessions.find((s) => s.id === initialSession)?.workspace ?? "" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u6267\u884C\u4F1A\u8BDD",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { value: executor, onChange: (e) => setExecutor(e.target.value), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u65B0\u5EFA\u666E\u901A\u5B50\u4F1A\u8BDD" }),
+          sessions.filter((s) => s.id !== owner && (!s.child || s.parent === owner)).map((s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("option", { value: s.id, children: [
+            s.label,
+            " \xB7 ",
+            s.workspace
+          ] }, s.id))
+        ] })
+      ] })
+    ] }),
+    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u534F\u4F5C\u7EC4\u3001\u8D44\u6E90\u4E0E\u524D\u7F6E\u95EE\u9898" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u534F\u4F5C\u7EC4",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { name: "group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u65B0\u5EFA\u72EC\u7ACB\u7EC4" }),
+          page?.groups.filter((g) => g.coordinator === owner).map((g) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: g.id, children: g.label }, g.id))
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u65B0\u7EC4\u540D\u79F0",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "groupLabel" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u58F0\u660E\u8D44\u6E90\uFF08\u6BCF\u884C\u4E00\u4E2A\u8DEF\u5F84\uFF09", name: "resources" }),
+      !executor && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+          "\u5B50\u4F1A\u8BDD\u76EE\u5F55",
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "cwd", placeholder: sessions.find((s) => s.id === owner)?.workspace ?? "" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+          "\u63A8\u7406\u7EA7\u522B",
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "effort" })
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u5F00\u59CB\u524D\u9700\u8981\u56DE\u7B54\u7684\u95EE\u9898", name: "prerequisite" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u95EE\u9898\u4E3B\u9898",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "topic" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u9002\u7528\u6761\u4EF6",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "context" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u53EF\u9009\u7B54\u6848\uFF08\u6BCF\u884C\u4E00\u9879\uFF09", name: "options" })
+    ] }),
+    mode === "answer" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected?.questions.find((q) => q.id === question)?.question }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u7B54\u590D",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "answer", required: true, list: "sessivra-answer-options" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("datalist", { id: "sessivra-answer-options", children: selected?.questions.find((q) => q.id === question)?.options.map((o) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: o }, o)) })
+    ] }),
+    mode === "review" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("fieldset", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("legend", { children: "\u9010\u9879\u6838\u9A8C" }),
+        selected?.acceptance.map((rule, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { style: { display: "flex", alignItems: "center" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { type: "checkbox", name: "criterion-" + i }),
+          rule
+        ] }, i))
+      ] }, selected?.token),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        "\u9A8C\u6536\u7ED3\u8BBA",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { name: "outcome", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "accepted", children: "\u901A\u8FC7" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "rework", children: "\u9000\u56DE\u8865\u505A" })
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { name: "evidence", label: "\u6838\u9A8C\u7684\u4EA7\u7269\u4E0E\u8BC1\u636E\uFF08\u6BCF\u884C\u4E00\u9879\uFF09", required: true }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { name: "remaining", label: "\u9000\u56DE\u540E\u9700\u5B8C\u6210\u7684\u4E8B\u9879" })
+    ] }),
+    ["update", "review", "pause", "resume", "cancel"].includes(mode) && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u8BF4\u660E", name: "reason", required: true }),
+    mode === "cancel" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u5F53\u524D\u5DE5\u5177\u7ED3\u675F\u540E\u53D6\u6D88\u3002\u540E\u7EED\u6392\u961F\u4EFB\u52A1\u53EF\u80FD\u5F00\u59CB\uFF0C\u5DF2\u4EA7\u751F\u7684\u5916\u90E8\u64CD\u4F5C\u4F1A\u4FDD\u7559\u3002" }),
+    mode === "archive" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u5F52\u6863\u540E\u5728\u5386\u53F2\u4E2D\u67E5\u770B\u4EFB\u52A1\u3001\u51B3\u5B9A\u548C\u8BC1\u636E\u3002" }),
+    mode === "reconcile" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u68C0\u67E5\u539F\u4F1A\u8BDD\u7684\u6536\u4EF6\u7BB1\u548C\u5386\u53F2\u3002\u5982\u679C\u4F1A\u8BDD\u5C1A\u672A\u6253\u5F00\uFF0C\u8BF7\u5148\u6253\u5F00\u6267\u884C\u4F1A\u8BDD\u3002" }),
+    stale && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        "input",
+        {
+          type: "checkbox",
+          checked: checkedVersion,
+          onChange: (e) => setChecked(e.target.checked ? selected.token : "")
+        }
+      ),
+      "\u6211\u5DF2\u6838\u5BF9\u4E0B\u65B9\u6700\u65B0\u8981\u6C42\u4E0E\u7ED3\u679C\uFF0C\u4F7F\u7528\u5F53\u524D\u7248\u672C"
+    ] }),
+    mode === "create" && owner && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+      owner === "new" ? "\u65B0\u5EFA\u4F1A\u8BDD" : name(owner),
+      " \u534F\u8C03\uFF0C\u5C06\u4EA4\u7ED9",
+      queuedFor ? queuedFor.label : "\u65B0\u5EFA\u7684\u666E\u901A\u5B50\u4F1A\u8BDD",
+      "\u6267\u884C\u3002",
+      executor && sessions.find((s) => s.id === executor)?.workspace,
+      " ",
+      queuedFor && page?.items.some(
+        (t) => t.assignee === executor && !["completed", "cancelled", "failed"].includes(t.status)
+      ) ? "\u6267\u884C\u4F1A\u8BDD\u5DF2\u6709\u4EFB\u52A1\uFF0C\u5C06\u6392\u961F\u3002" : "\u63D0\u4EA4\u540E\u6309\u524D\u7F6E\u95EE\u9898\u3001\u4F1A\u8BDD\u548C\u8D44\u6E90\u53EF\u7528\u60C5\u51B5\u5B89\u6392\u3002"
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-actions", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "submit", disabled: busy || stale && !checkedVersion, children: busy ? "\u63D0\u4EA4\u4E2D\u2026" : mode === "create" ? "\u521B\u5EFA\u5E76\u5B89\u6392" : "\u786E\u8BA4" + actions[mode] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", disabled: busy, onClick: () => setMode(""), children: "\u8FD4\u56DE" })
+    ] })
+  ] }, mode + question);
+  const showDetail = !!selected && mode !== "create";
+  const feedback = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+    error51 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { role: "alert", children: error51 }),
+    pending && !busy && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => void checkPending(), children: "\u56DE\u67E5\u4E0A\u6B21\u63D0\u4EA4" })
+  ] });
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("main", { className: "sessivra-tasks", ref: panel, "data-detail": showDetail || void 0, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("style", { children: css }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-master", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-shell", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("header", { className: "st-head", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { children: taskPanelTitle }),
+        mode !== "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "st-primary", onClick: () => edit("create"), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "plus", size: 14 }),
+          "\u65B0\u5EFA\u4EFB\u52A1"
+        ] })
+      ] }),
+      !showDetail && feedback,
+      mode === "create" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-formpage", children: actionForm }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("nav", { "aria-label": "\u4EFB\u52A1\u89C6\u56FE", children: ["attention", "all", "history"].map((v, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { "aria-pressed": query.view === v, onClick: () => filter("view", v), children: ["\u5F85\u5904\u7406", "\u5168\u90E8\u4EFB\u52A1", "\u5386\u53F2"][i] }, v)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-bar", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "st-search", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "search" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { type: "search", "aria-label": "\u641C\u7D22\u4EFB\u52A1", placeholder: "\u641C\u7D22\u4EFB\u52A1", value: query.search ?? "", onChange: (e) => filter("search", e.target.value) })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { "aria-expanded": filtersOpen, onClick: () => showFilters(!filtersOpen), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "filter" }),
+            "\u7B5B\u9009",
+            chips.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-count", children: chips.length })
+          ] })
+        ] }),
+        filtersOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-filters", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+            "\u5DE5\u4F5C\u76EE\u5F55",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+              "select",
+              {
+                "aria-label": "\u5DE5\u4F5C\u76EE\u5F55",
+                value: query.workspace ?? "",
+                onChange: (e) => filter("workspace", e.target.value),
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u5168\u90E8\u5DE5\u4F5C\u76EE\u5F55" }),
+                  Array.from(/* @__PURE__ */ new Set([...page?.workspaces ?? [], ...query.workspace ? [query.workspace] : []])).map(
+                    (s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { children: s }, s)
+                  )
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+            "\u72B6\u6001",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { "aria-label": "\u72B6\u6001", value: query.status ?? "", onChange: (e) => filter("status", e.target.value), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u6240\u6709\u72B6\u6001" }),
+              Object.entries(statusNames).map(([k, v]) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: k, children: v }, k))
+            ] })
+          ] }),
+          query.view === "all" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+            "\u6392\u5E8F",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+              "select",
+              {
+                "aria-label": "\u6392\u5E8F",
+                value: query.sort ?? "attention",
+                onChange: (e) => filter("sort", e.target.value),
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "attention", children: "\u9700\u5904\u7406\u4F18\u5148" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "recent", children: "\u6700\u8FD1\u66F4\u65B0\u4F18\u5148" })
+                ]
+              }
+            )
+          ] }),
+          ["coordinator", "assignee"].map((k) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+            k === "coordinator" ? "\u534F\u8C03\u4F1A\u8BDD" : "\u6267\u884C\u4F1A\u8BDD",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+              "select",
+              {
+                "aria-label": k === "coordinator" ? "\u534F\u8C03\u4F1A\u8BDD\u7B5B\u9009" : "\u6267\u884C\u4F1A\u8BDD\u7B5B\u9009",
+                value: query[k] ?? "",
+                onChange: (e) => filter(k, e.target.value),
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: k === "coordinator" ? "\u6240\u6709\u534F\u8C03\u4F1A\u8BDD" : "\u6240\u6709\u6267\u884C\u4F1A\u8BDD" }),
+                  sessions.map((s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: s.id, children: s.label }, s.id))
+                ]
+              }
+            )
+          ] }, k)),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+            "\u534F\u4F5C\u7EC4",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+              "select",
+              {
+                "aria-label": "\u534F\u4F5C\u7EC4\u7B5B\u9009",
+                value: query.scope ?? "",
+                onChange: (e) => filter("scope", e.target.value),
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u5168\u90E8\u534F\u4F5C\u7EC4" }),
+                  page?.groups.map((g) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: g.id, children: g.label }, g.id))
+                ]
+              }
+            )
+          ] })
+        ] }),
+        chips.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-chipbar", children: chips.map((k) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { title: "\u79FB\u9664\u7B5B\u9009\uFF1A" + query[k], onClick: () => filter(k, void 0), children: [
+          labelFor(k),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "close", size: 13 })
+        ] }, k)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("aside", { className: "st-items", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-listhead", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: query.view === "history" ? "\u5F52\u6863\u4EFB\u52A1" : query.view === "all" ? "\u4EFB\u52A1\u5217\u8868" : "\u9700\u8981\u4F60\u5904\u7406" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-count", children: page ? query.view === "attention" ? page.attention.length : page.total : "\u2026" })
+          ] }),
+          !page ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "st-empty", role: "status", children: "\u8BFB\u53D6\u4E2D\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+            query.view === "attention" ? ["\u5F85\u56DE\u7B54", "\u5F85\u9A8C\u6536", "\u53D7\u963B", "\u6295\u9012\u4E0D\u786E\u5B9A", "\u5F85\u540C\u6B65"].map((kind) => {
+              const group = page.attention.filter((a) => a.kind === kind);
+              return group.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-groupname", children: [
+                  kind,
+                  " \xB7 ",
+                  group.length
+                ] }),
+                group.map((a) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "st-row", "aria-pressed": id2 === a.taskId, onClick: () => choose(a.taskId), children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: a.title }),
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("small", { children: [
+                    a.affected.length > 1 ? "\u5F71\u54CD " + a.affected.length + " \u9879\u4EFB\u52A1" : kind,
+                    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chevron", size: 14 })
+                  ] })
+                ] }, a.key))
+              ] }, kind);
+            }) : page.items.map((t) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "st-row", "aria-pressed": id2 === t.id, onClick: () => choose(t.id), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: t.title }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("small", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Pill, { label: t.label, status: t.status }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("time", { title: when(t.updatedAt), children: when(t.updatedAt, true) })
+              ] }),
+              typeof t.wait === "string" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: readableReason(t.wait) })
+            ] }, t.id)),
+            (query.view === "attention" ? !page.attention.length : !page.items.length) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-empty", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-emptyicon", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: query.view === "attention" ? "inbox" : query.view === "history" ? "archive" : "list", size: 24 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: chips.length || query.search ? "\u6CA1\u6709\u7B26\u5408\u6761\u4EF6\u7684\u4EFB\u52A1\u3002" : query.view === "attention" ? "\u5F53\u524D\u6CA1\u6709\u9700\u8981\u5904\u7406\u7684\u4E8B\u9879\u3002" : query.view === "history" ? "\u8FD8\u6CA1\u6709\u5F52\u6863\u4EFB\u52A1" : "\u8FD8\u6CA1\u6709\u4EFB\u52A1" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: chips.length || query.search ? "\u6362\u4E2A\u5173\u952E\u8BCD\uFF0C\u6216\u6E05\u9664\u7B5B\u9009\u518D\u67E5\u770B\u3002" : query.view === "attention" ? "\u5171\u540C\u95EE\u9898\u3001\u5F85\u9A8C\u6536\u7ED3\u679C\u548C\u53D7\u963B\u4EFB\u52A1\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002" : query.view === "history" ? "\u4EFB\u52A1\u5F52\u6863\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u56DE\u770B\u51B3\u5B9A\u548C\u4EA4\u4ED8\u6587\u4EF6\u3002" : "\u521B\u5EFA\u4EFB\u52A1\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u8DDF\u8FDB\u6267\u884C\u548C\u9A8C\u6536\u3002" }),
+              chips.length || query.search ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: clearFilters, children: "\u6E05\u9664\u7B5B\u9009" }) : query.view === "attention" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => filter("view", "all"), children: "\u67E5\u770B\u5168\u90E8\u4EFB\u52A1" }) : query.view === "all" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => edit("create"), children: "\u521B\u5EFA\u7B2C\u4E00\u9879\u4EFB\u52A1" }) : null
+            ] }),
+            (query.cursor || page.next) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-listfoot", children: [
+              query.cursor && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setQuery((q) => ({ ...q, cursor: void 0 })), children: "\u9996\u9875" }),
+              page.next && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setQuery((q) => ({ ...q, cursor: page.next })), children: "\u4E0B\u4E00\u9875" })
+            ] })
+          ] })
+        ] })
+      ] })
+    ] }) }),
+    showDetail && selected && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("article", { className: "st-detail", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("header", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-detailtop", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: selected.title }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { "aria-label": "\u8FD4\u56DE\u5217\u8868", title: "\u8FD4\u56DE\u5217\u8868", onClick: () => choose(""), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "close", size: 16 }) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-meta", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Pill, { status: selected.status, label: statusNames[selected.status] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "archivedAt" in selected ? "\u5F52\u6863\u4E8E " + when(selected.archivedAt) : "\u66F4\u65B0\u4E8E " + when(selected.updatedAt) })
+        ] }),
+        selected.scopeLabel && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-meta", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "group", size: 14 }),
+          selected.scopeLabel
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ResultHeader, { task: selected, name }),
+      feedback,
+      !!(selected.queueReason || selected.reason) && selected.runtime !== "\u5386\u53F2" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: readableReason(selected.queueReason || selected.reason || "") }),
+      mode && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { children: actionForm }),
+      !mode && selected.actions.some((a) => a !== "answer") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-actions", children: ["review", "resume", "reconcile", "archive", "update", "pause", "cancel"].filter((a) => selected.actions.includes(a)).map((a) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: ["review", "resume", "reconcile", "archive"].includes(a) ? "st-primary" : void 0, onClick: () => edit(a), children: actions[a] }, a)) }),
+      qs.some((q) => !q.decision) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-blocktitle", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chat" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u9700\u8981\u56DE\u7B54" })
+        ] }),
+        qs.filter((q) => !q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-question", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: q.question }),
+          q.context && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: q.context }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+            q.options.join(" / "),
+            q.taskIds.length > 1 && " \xB7 \u5F71\u54CD " + q.taskIds.length + " \u9879\u4EFB\u52A1"
+          ] }),
+          !mode && selected.actions.includes("answer") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "st-primary", onClick: () => edit("answer", q.id), children: "\u56DE\u7B54\u95EE\u9898" })
+        ] }, q.id))
+      ] }),
+      files.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-blocktitle", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EA4\u4ED8\u6587\u4EF6" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-count", children: files.length })
+        ] }),
+        files.map((file2, index) => {
+          const visible = preview?.task === selected.id && preview.name === file2 ? preview : void 0;
+          const toggle = async () => {
+            const request2 = ++previewRequest.current;
+            if (visible) {
+              setPreview(void 0);
+              return;
+            }
+            try {
+              const content = await read(api.preview(selected.id, index));
+              if (request2 === previewRequest.current) setPreview({ task: selected.id, ...content });
+            } catch (e) {
+              if (request2 === previewRequest.current) fail(problem(e));
+            }
+          };
+          return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-file", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+              "button",
+              {
+                className: "st-file-toggle",
+                onClick: toggle,
+                "aria-expanded": !!visible,
+                "aria-label": visible ? "\u5173\u95ED\u9884\u89C8" : "\u9884\u89C8\u4EA7\u7269",
+                title: file2,
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "file", size: 16 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: fileName(file2) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: visible ? "\u6536\u8D77" : "\u9884\u89C8" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chevron", size: 14 })
+                ]
+              }
+            ),
+            visible && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(FilePreview, { file: visible, renderMarkdown })
+          ] }, index);
+        })
+      ] }),
+      !selected.review && !selected.result && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-blocktitle", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EFB\u52A1\u76EE\u6807" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.goal }),
+        selected.checkpoint.remaining.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u5269\u4F59\u5DE5\u4F5C", items: selected.checkpoint.remaining })
+      ] }),
+      qs.some((q) => q.decision) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-blocktitle", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chat" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u5DF2\u7B54\u95EE\u9898" })
+        ] }),
+        qs.filter((q) => q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-question", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: q.question }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-answer", children: q.decision.answer }),
+            q.decision.authority === "user" ? "\u7528\u6237\u56DE\u7B54" : "\u534F\u8C03\u4F1A\u8BDD\u56DE\u7B54"
+          ] }),
+          !mode && selected.actions.includes("answer") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => edit("answer", q.id), children: "\u66F4\u65B0\u51B3\u5B9A" })
+        ] }, q.id))
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-folds", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u4EFB\u52A1\u8981\u6C42\u4E0E\u4F1A\u8BDD" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-foldbody", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.goal }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u9A8C\u6536\u6761\u4EF6", items: selected.acceptance }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u58F0\u660E\u8D44\u6E90", items: selected.resources }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u5DE5\u4F5C\u76EE\u5F55" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.assignee.cwd })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-actions", children: [selected.coordinator, selected.assignee].map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { onClick: () => {
+              try {
+                open(p.id);
+              } catch (e) {
+                fail(problem(e));
+              }
+            }, children: [
+              i ? "\u6267\u884C" : "\u534F\u8C03",
+              " \xB7 ",
+              name(p.id).replace(/^协调\s*[·・]\s*/, ""),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "external", size: 13 })
+            ] }, i)) })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u6267\u884C\u4E0E\u9A8C\u6536\u8BB0\u5F55" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-foldbody", children: [
+            selected.checkpoint.summary && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u6267\u884C\u8FDB\u5C55" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.checkpoint.summary })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u5DF2\u5B8C\u6210", items: selected.checkpoint.done }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u5269\u4F59\u5DE5\u4F5C", items: selected.checkpoint.remaining }),
+            selected.result && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("h4", { children: [
+                  "\u63D0\u4EA4\u7ED3\u679C \xB7 ",
+                  when(selected.result.at)
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.result.summary })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u7ED3\u679C\u8BC1\u636E", items: selected.result.evidence })
+            ] }),
+            selected.review && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("h4", { children: [
+                  selected.review.accepted ? "\u9A8C\u6536\u901A\u8FC7" : "\u9000\u56DE\u8865\u505A",
+                  " \xB7 ",
+                  when(selected.review.at)
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.review.explanation }),
+                selected.review.checked?.map((yes, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+                  yes ? "\u5DF2\u6838\u5BF9" : "\u5F85\u8865\u505A",
+                  "\uFF1A",
+                  selected.acceptance[i]
+                ] }, i))
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u6838\u9A8C\u8BC1\u636E", items: selected.review.evidence })
+            ] }),
+            qs.filter((q) => q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: q.question }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: [q.context, q.options.join(" / "), "\u5F71\u54CD " + q.taskIds.length + " \u9879\u4EFB\u52A1", "\u51B3\u5B9A v" + q.version].filter(Boolean).join(" \xB7 ") })
+            ] }, q.id))
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u7248\u672C\u4E0E\u6295\u9012" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-foldbody", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+              "\u5F53\u524D v",
+              selected.revision,
+              " \xB7 \u5DF2\u91C7\u7528 v",
+              selected.appliedRevision,
+              " \xB7 \u88C1\u51B3 v",
+              selected.decisionRevision,
+              " / \u5DF2\u91C7\u7528 v",
+              selected.appliedDecisionRevision
+            ] }),
+            selected.deliveries.map((e) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+              e.kind,
+              " \xB7 ",
+              e.status,
+              " ",
+              e.reason
+            ] }, e.id))
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u6700\u8FD1\u6D3B\u52A8" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("ol", { children: selected.history.map((h, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("li", { children: [
+            when(h.at),
+            " \xB7 ",
+            h.actor === "operator:owner" ? "\u7528\u6237" : name(h.actor),
+            " \xB7 ",
+            h.action,
+            " \xB7 ",
+            h.detail
+          ] }, i)) })
+        ] })
+      ] })
+    ] }, selected.id)
+  ] });
+}
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -783,8 +1877,8 @@ function defineLazy(object2, key, getter) {
 function objectClone(obj) {
   return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
 }
-function assignProp(target, prop, value) {
-  Object.defineProperty(target, prop, {
+function assignProp(target2, prop, value) {
+  Object.defineProperty(target2, prop, {
     value,
     writable: true,
     enumerable: true,
@@ -820,14 +1914,14 @@ function promiseAllObject(promisesObj) {
 }
 function randomString(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str = "";
+  let str2 = "";
   for (let i = 0; i < length; i++) {
-    str += chars[Math.floor(Math.random() * chars.length)];
+    str2 += chars[Math.floor(Math.random() * chars.length)];
   }
-  return str;
+  return str2;
 }
-function esc(str) {
-  return JSON.stringify(str);
+function esc(str2) {
+  return JSON.stringify(str2);
 }
 function slugify(input) {
   return input.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -941,8 +2035,8 @@ var primitiveTypes = /* @__PURE__ */ new Set([
   "symbol",
   "undefined"
 ]);
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegex(str2) {
+  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function clone(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
@@ -967,35 +2061,35 @@ function normalizeParams(_params) {
   return params;
 }
 function createTransparentProxy(getter) {
-  let target;
+  let target2;
   return new Proxy({}, {
     get(_, prop, receiver) {
-      target ?? (target = getter());
-      return Reflect.get(target, prop, receiver);
+      target2 ?? (target2 = getter());
+      return Reflect.get(target2, prop, receiver);
     },
     set(_, prop, value, receiver) {
-      target ?? (target = getter());
-      return Reflect.set(target, prop, value, receiver);
+      target2 ?? (target2 = getter());
+      return Reflect.set(target2, prop, value, receiver);
     },
     has(_, prop) {
-      target ?? (target = getter());
-      return Reflect.has(target, prop);
+      target2 ?? (target2 = getter());
+      return Reflect.has(target2, prop);
     },
     deleteProperty(_, prop) {
-      target ?? (target = getter());
-      return Reflect.deleteProperty(target, prop);
+      target2 ?? (target2 = getter());
+      return Reflect.deleteProperty(target2, prop);
     },
     ownKeys(_) {
-      target ?? (target = getter());
-      return Reflect.ownKeys(target);
+      target2 ?? (target2 = getter());
+      return Reflect.ownKeys(target2);
     },
     getOwnPropertyDescriptor(_, prop) {
-      target ?? (target = getter());
-      return Reflect.getOwnPropertyDescriptor(target, prop);
+      target2 ?? (target2 = getter());
+      return Reflect.getOwnPropertyDescriptor(target2, prop);
     },
     defineProperty(_, prop, descriptor) {
-      target ?? (target = getter());
-      return Reflect.defineProperty(target, prop, descriptor);
+      target2 ?? (target2 = getter());
+      return Reflect.defineProperty(target2, prop, descriptor);
     }
   });
 }
@@ -1460,14 +2554,14 @@ function toDotPath(_path) {
   return segs.join("");
 }
 function prettifyError(error51) {
-  const lines = [];
+  const lines3 = [];
   const issues = [...error51.issues].sort((a, b) => (a.path ?? []).length - (b.path ?? []).length);
   for (const issue2 of issues) {
-    lines.push(`\u2716 ${issue2.message}`);
+    lines3.push(`\u2716 ${issue2.message}`);
     if (issue2.path?.length)
-      lines.push(`  \u2192 at ${toDotPath(issue2.path)}`);
+      lines3.push(`  \u2192 at ${toDotPath(issue2.path)}`);
   }
-  return lines.join("\n");
+  return lines3.join("\n");
 }
 
 // node_modules/zod/v4/core/parse.js
@@ -2285,9 +3379,9 @@ var Doc = class {
       return;
     }
     const content = arg;
-    const lines = content.split("\n").filter((x) => x);
-    const minIndent = Math.min(...lines.map((x) => x.length - x.trimStart().length));
-    const dedented = lines.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
+    const lines3 = content.split("\n").filter((x) => x);
+    const minIndent = Math.min(...lines3.map((x) => x.length - x.trimStart().length));
+    const dedented = lines3.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
     for (const line of dedented) {
       this.content.push(line);
     }
@@ -2296,8 +3390,8 @@ var Doc = class {
     const F = Function;
     const args = this?.args;
     const content = this?.content ?? [``];
-    const lines = [...content.map((x) => `  ${x}`)];
-    return new F(...args, lines.join("\n"));
+    const lines3 = [...content.map((x) => `  ${x}`)];
+    return new F(...args, lines3.join("\n"));
   }
 };
 
@@ -3128,42 +4222,42 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
     }
     doc.write(`const newResult = {};`);
     for (const key of normalized.keys) {
-      const id = ids[key];
+      const id2 = ids[key];
       const k = esc(key);
       const schema = shape[key];
       const isOptionalIn = schema?._zod?.optin === "optional";
       const isOptionalOut = schema?._zod?.optout === "optional";
-      doc.write(`const ${id} = ${parseStr(key)};`);
+      doc.write(`const ${id2} = ${parseStr(key)};`);
       if (isOptionalIn && isOptionalOut) {
         doc.write(`
-        if (${id}.issues.length) {
+        if (${id2}.issues.length) {
           if (${k} in input) {
-            payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
+            payload.issues = payload.issues.concat(${id2}.issues.map(iss => ({
               ...iss,
               path: iss.path ? [${k}, ...iss.path] : [${k}]
             })));
           }
         }
         
-        if (${id}.value === undefined) {
+        if (${id2}.value === undefined) {
           if (${k} in input) {
             newResult[${k}] = undefined;
           }
         } else {
-          newResult[${k}] = ${id}.value;
+          newResult[${k}] = ${id2}.value;
         }
         
       `);
       } else if (!isOptionalIn) {
         doc.write(`
-        const ${id}_present = ${k} in input;
-        if (${id}.issues.length) {
-          payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
+        const ${id2}_present = ${k} in input;
+        if (${id2}.issues.length) {
+          payload.issues = payload.issues.concat(${id2}.issues.map(iss => ({
             ...iss,
             path: iss.path ? [${k}, ...iss.path] : [${k}]
           })));
         }
-        if (!${id}_present && !${id}.issues.length) {
+        if (!${id2}_present && !${id2}.issues.length) {
           payload.issues.push({
             code: "invalid_type",
             expected: "nonoptional",
@@ -3172,30 +4266,30 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
           });
         }
 
-        if (${id}_present) {
-          if (${id}.value === undefined) {
+        if (${id2}_present) {
+          if (${id2}.value === undefined) {
             newResult[${k}] = undefined;
           } else {
-            newResult[${k}] = ${id}.value;
+            newResult[${k}] = ${id2}.value;
           }
         }
 
       `);
       } else {
         doc.write(`
-        if (${id}.issues.length) {
-          payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
+        if (${id2}.issues.length) {
+          payload.issues = payload.issues.concat(${id2}.issues.map(iss => ({
             ...iss,
             path: iss.path ? [${k}, ...iss.path] : [${k}]
           })));
         }
         
-        if (${id}.value === undefined) {
+        if (${id2}.value === undefined) {
           if (${k} in input) {
             newResult[${k}] = undefined;
           }
         } else {
-          newResult[${k}] = ${id}.value;
+          newResult[${k}] = ${id2}.value;
         }
         
       `);
@@ -7674,8 +8768,8 @@ function ko_default() {
 }
 
 // node_modules/zod/v4/locales/lt.js
-var capitalizeFirstCharacter = (text) => {
-  return text.charAt(0).toUpperCase() + text.slice(1);
+var capitalizeFirstCharacter = (text2) => {
+  return text2.charAt(0).toUpperCase() + text2.slice(1);
 };
 function getUnitTypeFromNumber(number4) {
   const abs = Math.abs(number4);
@@ -11447,15 +12541,15 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
 
 // node_modules/zod/v4/core/to-json-schema.js
 function initializeContext(params) {
-  let target = params?.target ?? "draft-2020-12";
-  if (target === "draft-4")
-    target = "draft-04";
-  if (target === "draft-7")
-    target = "draft-07";
+  let target2 = params?.target ?? "draft-2020-12";
+  if (target2 === "draft-4")
+    target2 = "draft-04";
+  if (target2 === "draft-7")
+    target2 = "draft-07";
   return {
     processors: params.processors ?? {},
     metadataRegistry: params?.metadata ?? globalRegistry,
-    target,
+    target: target2,
     unrepresentable: params?.unrepresentable ?? "throw",
     override: params?.override ?? (() => {
     }),
@@ -11527,26 +12621,26 @@ function extractDefs(ctx, schema) {
     throw new Error("Unprocessed schema. This is a bug in Zod.");
   const idToSchema = /* @__PURE__ */ new Map();
   for (const entry of ctx.seen.entries()) {
-    const id = ctx.metadataRegistry.get(entry[0])?.id;
-    if (id) {
-      const existing = idToSchema.get(id);
+    const id2 = ctx.metadataRegistry.get(entry[0])?.id;
+    if (id2) {
+      const existing = idToSchema.get(id2);
       if (existing && existing !== entry[0]) {
-        throw new Error(`Duplicate schema id "${id}" detected during JSON Schema conversion. Two different schemas cannot share the same id when converted together.`);
+        throw new Error(`Duplicate schema id "${id2}" detected during JSON Schema conversion. Two different schemas cannot share the same id when converted together.`);
       }
-      idToSchema.set(id, entry[0]);
+      idToSchema.set(id2, entry[0]);
     }
   }
   const makeURI = (entry) => {
     const defsSegment = ctx.target === "draft-2020-12" ? "$defs" : "definitions";
     if (ctx.external) {
       const externalId = ctx.external.registry.get(entry[0])?.id;
-      const uriGenerator = ctx.external.uri ?? ((id2) => id2);
+      const uriGenerator = ctx.external.uri ?? ((id3) => id3);
       if (externalId) {
         return { ref: uriGenerator(externalId) };
       }
-      const id = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
-      entry[1].defId = id;
-      return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id}` };
+      const id2 = entry[1].defId ?? entry[1].schema.id ?? `schema${ctx.counter++}`;
+      entry[1].defId = id2;
+      return { defId: id2, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id2}` };
     }
     if (entry[1] === root) {
       return { ref: "#" };
@@ -11594,8 +12688,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         continue;
       }
     }
-    const id = ctx.metadataRegistry.get(entry[0])?.id;
-    if (id) {
+    const id2 = ctx.metadataRegistry.get(entry[0])?.id;
+    if (id2) {
       extractToDef(entry);
       continue;
     }
@@ -11691,10 +12785,10 @@ function finalize(ctx, schema) {
   } else {
   }
   if (ctx.external?.uri) {
-    const id = ctx.external.registry.get(schema)?.id;
-    if (!id)
+    const id2 = ctx.external.registry.get(schema)?.id;
+    if (!id2)
       throw new Error("Schema is missing an `id` property");
-    result.$id = ctx.external.uri(id);
+    result.$id = ctx.external.uri(id2);
   }
   Object.assign(result, root.def ?? root.schema);
   const rootMetaId = ctx.metadataRegistry.get(schema)?.id;
@@ -11797,8 +12891,8 @@ var createToJSONSchemaMethod = (schema, processors = {}) => (params) => {
   return finalize(ctx, schema);
 };
 var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) => {
-  const { libraryOptions, target } = params ?? {};
-  const ctx = initializeContext({ ...libraryOptions ?? {}, target, io, processors });
+  const { libraryOptions, target: target2 } = params ?? {};
+  const ctx = initializeContext({ ...libraryOptions ?? {}, target: target2, io, processors });
   process(schema, ctx);
   extractDefs(ctx, schema);
   return finalize(ctx, schema);
@@ -12857,8 +13951,8 @@ var ZodType = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
     catch(params) {
       return _catch2(this, params);
     },
-    pipe(target) {
-      return pipe(this, target);
+    pipe(target2) {
+      return pipe(this, target2);
     },
     readonly() {
       return readonly(this);
@@ -14550,6 +15644,69 @@ function date4(params) {
 // node_modules/zod/v4/classic/external.js
 config(en_default());
 
+// src/panel-contract.ts
+var id = external_exports.string().trim().min(1).max(160);
+var short = external_exports.string().trim().min(1).max(500);
+var text = external_exports.string().trim().min(1).max(8e3);
+var lines2 = external_exports.array(short).max(32);
+var request = { operationId: external_exports.string().uuid() };
+var target = { ...request, taskId: id, expected: external_exports.string().regex(/^[a-f0-9]{64}$/) };
+var panelCommand = external_exports.discriminatedUnion("action", [
+  external_exports.object({
+    ...request,
+    action: external_exports.literal("create"),
+    coordinator: id.optional(),
+    coordinatorDirectory: short.optional(),
+    assignee: id.optional(),
+    title: short.max(160),
+    goal: text.max(7800),
+    acceptance: lines2.min(1),
+    scope: id.optional(),
+    scopeLabel: short.optional(),
+    resources: lines2.optional(),
+    cwd: short.optional(),
+    reasoningEffort: short.max(40).optional(),
+    requiredQuestions: external_exports.array(external_exports.object({ topic: short, context: short, question: text, options: lines2.min(2).max(8) }).strict()).max(8).optional()
+  }).strict(),
+  external_exports.object({
+    ...target,
+    action: external_exports.literal("update"),
+    title: short,
+    goal: text,
+    acceptance: lines2.min(1),
+    explanation: text
+  }).strict(),
+  external_exports.object({
+    ...target,
+    action: external_exports.literal("answer"),
+    questionId: id,
+    version: external_exports.number().int().positive(),
+    answer: text
+  }).strict(),
+  external_exports.object({
+    ...target,
+    action: external_exports.literal("review"),
+    checked: external_exports.array(external_exports.boolean()).max(32),
+    accepted: external_exports.boolean(),
+    explanation: text,
+    evidence: lines2.min(1),
+    remaining: lines2.optional()
+  }).strict(),
+  external_exports.object({ ...target, action: external_exports.enum(["pause", "resume", "cancel"]), reason: text }).strict(),
+  external_exports.object({ ...target, action: external_exports.enum(["archive", "reconcile"]) }).strict()
+]);
+var panelQuery = external_exports.object({
+  view: external_exports.enum(["attention", "all", "history"]),
+  search: external_exports.string().max(250).optional(),
+  workspace: short.optional(),
+  coordinator: id.optional(),
+  assignee: id.optional(),
+  scope: id.optional(),
+  status: short.optional(),
+  sort: external_exports.enum(["attention", "recent"]).optional(),
+  cursor: external_exports.object({ priority: external_exports.number().int(), updatedAt: external_exports.number(), id }).strict().optional()
+}).strict();
+
 // src/validation.ts
 var policyInput = external_exports.object({ mode: external_exports.enum(["accept", "hold", "refuse"]), senders: external_exports.array(external_exports.string()).max(64), operatorSources: external_exports.array(external_exports.string()).max(64).optional(), crossWorkspace: external_exports.boolean(), alias: external_exports.string().max(80) }).strict();
 
@@ -14572,6 +15729,14 @@ var endpoints = [
   { method: "clear", parameters: [parameter("confirmation", external_exports.literal("DELETE MESSENGER DATA"))] }
 ];
 var descriptors = [
+  ...[
+    { method: "list", parameters: [parameter("query", panelQuery)] },
+    { method: "participants", parameters: [] },
+    { method: "operation", parameters: [parameter("id", external_exports.string().uuid())] },
+    { method: "detail", parameters: [parameter("id", external_exports.string().max(160))] },
+    { method: "preview", parameters: [parameter("id", external_exports.string().max(160)), parameter("index", external_exports.number().int().min(0).max(63))] },
+    { method: "command", parameters: [parameter("command", panelCommand)] }
+  ].map((e) => ({ ...e, id: "dsh-plugin-sessivra#sessivraTaskPanel/" + e.method, service: "sessivraTaskPanel", namespace: "sessivraTaskPanel", invocation: { kind: "direct" }, result: codec2("panel-result", external_exports.json()) })),
   ...endpoints.map((e) => ({ ...e, id: `dsh-session-messenger#sessionMessenger/${e.method}`, service: "sessionMessenger", namespace: "sessionMessenger", invocation: { kind: "direct" }, result: codec2("result", external_exports.json()) })),
   { method: "tree", parameters: [], id: "dsh-session-messenger#sessionCollaboration/tree", service: "sessionCollaboration", namespace: "sessionCollaboration", invocation: { kind: "direct" }, result: codec2("tree-result", external_exports.json()) },
   { method: "candidates", parameters: [parameter("sourceId", external_exports.string()), parameter("query", external_exports.string().max(256))], id: "dsh-session-messenger#sessionCollaboration/candidates", service: "sessionCollaboration", namespace: "sessionCollaboration", invocation: { kind: "direct" }, result: codec2("candidate-result", external_exports.json()) }
@@ -14597,9 +15762,9 @@ function createLegacyRecipientSource() {
 var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/session-tree.tsx
-var import_react = require("react");
+var import_react2 = require("react");
 var import_react_dom = require("react-dom");
-var import_jsx_runtime = require("react/jsx-runtime");
+var import_jsx_runtime3 = require("react/jsx-runtime");
 function sessionForest(sessions) {
   const offered = new Map(sessions.map((session) => [session.id, session]));
   const rooted = (session) => {
@@ -14700,38 +15865,38 @@ function createSessionTreeStore(api, storage = browserStorage()) {
     }
     emit({ expansion: bounded });
   };
-  const isExpanded = (id) => snapshot.expansion.get(id) ?? !snapshot.parents.has(snapshot.parents.get(id) ?? "");
+  const isExpanded = (id2) => snapshot.expansion.get(id2) ?? !snapshot.parents.has(snapshot.parents.get(id2) ?? "");
   return {
     getSnapshot: () => snapshot,
     refresh,
     isExpanded,
-    setAlias: (id, name) => {
-      const node = snapshot.nodes.get(id);
+    setAlias: (id2, name) => {
+      const node = snapshot.nodes.get(id2);
       if (!node?.subagent || node.subagentKind !== "teammate") throw new Error("\u4EC5\u56E2\u961F\u961F\u5458\u652F\u6301\u663E\u793A\u540D\u79F0");
       const value = name.trim();
       if (value.length > 60) throw new Error("\u663E\u793A\u540D\u79F0\u6700\u591A 60 \u4E2A\u5B57\u7B26");
       const next = new Map(snapshot.aliases);
-      if (value) next.set(id, value);
-      else next.delete(id);
+      if (value) next.set(id2, value);
+      else next.delete(id2);
       if (!storage) throw new Error("\u65E0\u6CD5\u4FDD\u5B58\u672C\u673A\u663E\u793A\u540D\u79F0");
       storage.setItem(aliasesKey, JSON.stringify([...next]));
       emit({ aliases: next });
     },
-    toggle: (id) => {
+    toggle: (id2) => {
       const next = new Map(snapshot.expansion);
-      next.delete(id);
-      next.set(id, !isExpanded(id));
+      next.delete(id2);
+      next.set(id2, !isExpanded(id2));
       saveExpansion(next);
     },
-    reveal: (id, force = false) => {
-      if (!id) {
+    reveal: (id2, force = false) => {
+      if (!id2) {
         lastRevealed = void 0;
         return;
       }
-      if (!force && id === lastRevealed || !snapshot.nodes.has(id)) return;
-      lastRevealed = id;
+      if (!force && id2 === lastRevealed || !snapshot.nodes.has(id2)) return;
+      lastRevealed = id2;
       const next = new Map(snapshot.expansion);
-      let parent = snapshot.parents.get(id), changed = false;
+      let parent = snapshot.parents.get(id2), changed = false;
       while (parent) {
         if (!isExpanded(parent)) {
           next.set(parent, true);
@@ -14755,11 +15920,11 @@ function createSessionTreeStore(api, storage = browserStorage()) {
         }
       };
     },
-    attach: (target) => {
-      emit({ rows: /* @__PURE__ */ new Set([...snapshot.rows, target]) });
+    attach: (target2) => {
+      emit({ rows: /* @__PURE__ */ new Set([...snapshot.rows, target2]) });
       return () => {
         const rows = new Set(snapshot.rows);
-        rows.delete(target);
+        rows.delete(target2);
         emit({ rows });
       };
     },
@@ -14820,16 +15985,16 @@ var styles = `
 .dshsm-tree-children{margin-inline-start:28px}
 .dshsm-tree-notice{font-size:12px;line-height:18px;padding:8px;color:var(--dsw-alias-label-tertiary)}
 `;
-var Chevron = ({ expanded }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", style: { transform: expanded ? "rotate(90deg)" : void 0 }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "m6 4 4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) });
+var Chevron = ({ expanded }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", style: { transform: expanded ? "rotate(90deg)" : void 0 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m6 4 4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) });
 function TreeLabel({ label }) {
   const chars = Array.from(label), long = chars.length > 18;
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-label", "data-long": long, children: long ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-label-start", children: chars.slice(0, -6).join("") }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-label-end", children: chars.slice(-6).join("") })
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-label", "data-long": long, children: long ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-label-start", children: chars.slice(0, -6).join("") }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-label-end", children: chars.slice(-6).join("") })
   ] }) : label });
 }
 function TreeToggle({ expanded, label, className, onToggle }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
     "button",
     {
       type: "button",
@@ -14861,18 +16026,18 @@ function TreeToggle({ expanded, label, className, onToggle }) {
         event.stopPropagation();
         onToggle();
       },
-      children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Chevron, { expanded })
+      children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Chevron, { expanded })
     }
   );
 }
-function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions }) {
-  const anchor = (0, import_react.useRef)(null);
-  const [target, setTarget] = (0, import_react.useState)();
-  const revealed = (0, import_react.useRef)();
-  const snapshot = (0, import_react.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions, openTask }) {
+  const anchor = (0, import_react2.useRef)(null);
+  const [target2, setTarget] = (0, import_react2.useState)();
+  const revealed = (0, import_react2.useRef)();
+  const snapshot = (0, import_react2.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const node = snapshot.nodes.get(sessionId);
   const hidden = snapshot.hiddenSessions.has(sessionId);
-  (0, import_react.useEffect)(() => {
+  (0, import_react2.useEffect)(() => {
     const row = anchor.current?.closest("[data-row-key]");
     if (!row || row.dataset.rowKey !== `session:${sessionId}`) return;
     const children = row.ownerDocument.createElement("div");
@@ -14905,94 +16070,98 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
     parentId = snapshot.parents.get(parentId);
   }
   const noticeOwner = [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId) && !snapshot.parents.has(item.sessionId)) ?? [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId));
-  const showNotice = !hidden && !nested && noticeOwner === target && Boolean(snapshot.problem || !snapshot.loaded);
-  (0, import_react.useEffect)(() => {
-    if (!target) return;
-    if (nested) target.row.dataset.dshsmNested = "true";
-    else delete target.row.dataset.dshsmNested;
-    if (hidden) target.row.dataset.dshsmHidden = "true";
-    else delete target.row.dataset.dshsmHidden;
-    if (!hidden && !nested && node?.children.length) target.row.dataset.dshsmParent = "true";
-    else delete target.row.dataset.dshsmParent;
-    target.children.hidden = hidden || nested || !node?.children.length && !showNotice;
-  }, [target, hidden, nested, node, showNotice]);
-  (0, import_react.useEffect)(() => {
+  const showNotice = !hidden && !nested && noticeOwner === target2 && Boolean(snapshot.problem || !snapshot.loaded);
+  (0, import_react2.useEffect)(() => {
+    if (!target2) return;
+    if (nested) target2.row.dataset.dshsmNested = "true";
+    else delete target2.row.dataset.dshsmNested;
+    if (hidden) target2.row.dataset.dshsmHidden = "true";
+    else delete target2.row.dataset.dshsmHidden;
+    if (!hidden && !nested && node?.children.length) target2.row.dataset.dshsmParent = "true";
+    else delete target2.row.dataset.dshsmParent;
+    target2.children.hidden = hidden || nested || !node?.children.length && !showNotice;
+  }, [target2, hidden, nested, node, showNotice]);
+  (0, import_react2.useEffect)(() => {
     store.reveal(currentId);
   }, [store, currentId, snapshot.nodes]);
-  (0, import_react.useEffect)(() => {
+  (0, import_react2.useEffect)(() => {
     if (!currentId) {
       revealed.current = void 0;
       return;
     }
-    if (!target || hidden || nested || revealed.current === currentId) return;
-    const selected = [...target.children.querySelectorAll("[data-session-id]")].find((element) => element.dataset.sessionId === currentId);
+    if (!target2 || hidden || nested || revealed.current === currentId) return;
+    const selected = [...target2.children.querySelectorAll("[data-session-id]")].find((element) => element.dataset.sessionId === currentId);
     if (selected) {
       selected.scrollIntoView?.({ block: "nearest" });
       revealed.current = currentId;
     }
-  }, [target, currentId, hidden, nested, snapshot.expansion, snapshot.nodes]);
+  }, [target2, currentId, hidden, nested, snapshot.expansion, snapshot.nodes]);
   const ordered = (children) => pinnedIds ? [...children].sort((a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id))) : children;
-  const containsCurrent = (id) => {
+  const containsCurrent = (id2) => {
     let parent = currentId && snapshot.parents.get(currentId);
     while (parent) {
-      if (parent === id) return true;
+      if (parent === id2) return true;
       parent = snapshot.parents.get(parent);
     }
     return false;
   };
-  const marker = (native = false) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `dshsm-tree-current${native ? " dshsm-native-current" : ""}`, role: "img", "aria-label": "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD", title: "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD\uFF0C\u5C55\u5F00\u53EF\u5B9A\u4F4D" });
+  const marker = (native = false) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: `dshsm-tree-current${native ? " dshsm-native-current" : ""}`, role: "img", "aria-label": "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD", title: "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD\uFF0C\u5C55\u5F00\u53EF\u5B9A\u4F4D" });
   const branch = (child) => {
     const expanded2 = store.isExpanded(child.id), selected = currentId === child.id;
     const display = treePresentation(child, statuses?.get(child.id), snapshot.aliases.get(child.id));
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
+    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
         event.stopPropagation();
         event.dataTransfer.setData("text/plain", child.id);
         event.dataTransfer.effectAllowed = "copy";
       }, children: [
-        child.children.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TreeToggle, { className: "dshsm-tree-toggle", label: display.label, expanded: expanded2, onToggle: () => store.toggle(child.id) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-spacer", "aria-hidden": "true" }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dshsm-tree-name", disabled: child.subagent && !child.openable, "aria-current": selected ? "page" : void 0, "aria-label": `${child.subagent && !child.openable ? child.note ?? "\u6682\u4E0D\u53EF\u6253\u5F00" : "\u6253\u5F00\u4F1A\u8BDD"}\uFF1A${display.label}`, title: display.title, onClick: (event) => {
+        child.children.length ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TreeToggle, { className: "dshsm-tree-toggle", label: display.label, expanded: expanded2, onToggle: () => store.toggle(child.id) }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-spacer", "aria-hidden": "true" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { type: "button", className: "dshsm-tree-name", disabled: child.subagent && !child.openable, "aria-current": selected ? "page" : void 0, "aria-label": `${child.subagent && !child.openable ? child.note ?? "\u6682\u4E0D\u53EF\u6253\u5F00" : "\u6253\u5F00\u4F1A\u8BDD"}\uFF1A${display.label}`, title: display.title, onClick: (event) => {
           event.stopPropagation();
           openSession(child);
         }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TreeLabel, { label: display.label }),
-          pinnedIds?.has(child.id) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-pin", title: "\u5DF2\u7F6E\u9876", children: "\u7F6E\u9876" }),
-          child.subagent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-member", children: "\u961F\u5458" }),
-          display.state && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dshsm-tree-status", "data-attention": display.waiting, title: display.state, children: display.state === "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" ? "\u9700\u5F00\u7236\u4F1A\u8BDD" : display.state })
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TreeLabel, { label: display.label }),
+          pinnedIds?.has(child.id) && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-pin", title: "\u5DF2\u7F6E\u9876", children: "\u7F6E\u9876" }),
+          child.subagent && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-member", children: "\u961F\u5458" }),
+          display.state && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-status", "data-attention": display.waiting, title: display.state, children: display.state === "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" ? "\u9700\u5F00\u7236\u4F1A\u8BDD" : display.state })
         ] }),
         !expanded2 && containsCurrent(child.id) && marker(),
         renderActions?.(child)
       ] }),
-      child.children.length > 0 && expanded2 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { role: "list", "aria-label": `${display.label}\u7684\u5B50\u4F1A\u8BDD`, className: "dshsm-tree-children", children: ordered(child.children).map(branch) })
+      child.children.length > 0 && expanded2 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { role: "list", "aria-label": `${display.label}\u7684\u5B50\u4F1A\u8BDD`, className: "dshsm-tree-children", children: ordered(child.children).map(branch) })
     ] }, child.id);
   };
   const expanded = store.isExpanded(sessionId), hasChildren = Boolean(node?.children.length);
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { ref: anchor, hidden: true }),
-    target && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-      (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", { children: styles }),
-        showNotice && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { role: snapshot.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { ref: anchor, hidden: true }),
+    target2 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: styles }),
+        showNotice && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { role: snapshot.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
           snapshot.problem ? `${snapshot.problem}${snapshot.loaded ? "\uFF0C\u5F53\u524D\u663E\u793A\u4E0A\u6B21\u7ED3\u679C" : ""}` : "\u6B63\u5728\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u2026",
-          snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", disabled: snapshot.refreshing, onClick: () => void store.refresh(), children: snapshot.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
+          snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", disabled: snapshot.refreshing, onClick: () => void store.refresh(), children: snapshot.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
         ] }),
-        !hidden && !nested && expanded && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: hasChildren && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { role: "list", "aria-label": `${node.label}\u7684\u5B50\u4F1A\u8BDD`, onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: ordered(node.children).map(branch) }) })
-      ] }), target.children),
-      !hidden && !nested && hasChildren && (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target.row),
-      !hidden && !nested && !expanded && containsCurrent(sessionId) && (0, import_react_dom.createPortal)(marker(true), target.row)
+        !hidden && !nested && expanded && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: hasChildren && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { role: "list", "aria-label": `${node.label}\u7684\u5B50\u4F1A\u8BDD`, onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: ordered(node.children).map(branch) }) })
+      ] }), target2.children),
+      !hidden && !nested && node?.task && openTask && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", title: node.task.title, "aria-label": "\u67E5\u770B\u4EFB\u52A1 " + node.task.title, onClick: (event) => {
+        event.stopPropagation();
+        openTask(node.task.id);
+      }, children: node.task.label }),
+      !hidden && !nested && hasChildren && (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target2.row),
+      !hidden && !nested && !expanded && containsCurrent(sessionId) && (0, import_react_dom.createPortal)(marker(true), target2.row)
     ] })
   ] });
 }
 
 // src/session-tree-host.tsx
-var import_react4 = require("react");
+var import_react5 = require("react");
 
 // src/session-actions.tsx
-var import_react3 = require("react");
+var import_react4 = require("react");
 
 // src/session-dialog.tsx
-var import_react2 = require("react");
-var import_jsx_runtime2 = require("react/jsx-runtime");
+var import_react3 = require("react");
+var import_jsx_runtime4 = require("react/jsx-runtime");
 function createSessionDialogStore() {
   let owner;
   let content = null;
@@ -15027,28 +16196,28 @@ function createSessionDialogStore() {
   };
 }
 function SessionDialogRequest({ dialogs, children }) {
-  const owner = (0, import_react2.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
-  (0, import_react2.useLayoutEffect)(() => {
+  const owner = (0, import_react3.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
+  (0, import_react3.useLayoutEffect)(() => {
     if (children) dialogs.show(owner, children);
     else dialogs.hide(owner);
   }, [dialogs, owner, children]);
-  (0, import_react2.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
+  (0, import_react3.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
   return null;
 }
 function SessionDialogOutlet({ dialogs }) {
-  const content = (0, import_react2.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: content });
+  const content = (0, import_react3.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(import_jsx_runtime4.Fragment, { children: content });
 }
 
 // src/session-actions.tsx
-var import_jsx_runtime3 = require("react/jsx-runtime");
-function SessionActionsMenu({ session, pinned, actions, controls, dialogs, onChanged, alias, setAlias }) {
-  const [open, setOpen] = (0, import_react3.useState)(false);
-  const [dialog, setDialog] = (0, import_react3.useState)();
-  const [title, setTitle] = (0, import_react3.useState)(session.label);
-  const [busy, setBusy] = (0, import_react3.useState)(false);
-  const [error51, setError] = (0, import_react3.useState)("");
-  const composing = (0, import_react3.useRef)(false);
+var import_jsx_runtime5 = require("react/jsx-runtime");
+function SessionActionsMenu({ session, pinned, actions: actions2, controls, dialogs, onChanged, alias, setAlias }) {
+  const [open, setOpen] = (0, import_react4.useState)(false);
+  const [dialog, setDialog] = (0, import_react4.useState)();
+  const [title, setTitle] = (0, import_react4.useState)(session.label);
+  const [busy, setBusy] = (0, import_react4.useState)(false);
+  const [error51, setError] = (0, import_react4.useState)("");
+  const composing = (0, import_react4.useRef)(false);
   const { Menu: Menu2, Modal: Modal2, Button: Button2 } = controls;
   const member = session.subagent && session.subagentKind === "teammate";
   const close = () => {
@@ -15076,12 +16245,12 @@ function SessionActionsMenu({ session, pinned, actions, controls, dialogs, onCha
   const blocked = busy || !member && dialog === "rename" && !title.trim();
   const confirm = () => {
     if (blocked || composing.current) return;
-    if (dialog === "rename") void run(() => member ? Promise.resolve(setAlias(title.trim())) : actions.rename(session.id, title.trim()), member ? "\u663E\u793A\u540D\u79F0\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002" : void 0);
-    else if (dialog === "archive") void run(() => actions.archive(session.id), "\u5F52\u6863\u672A\u5B8C\u6210\u3002\u4F1A\u8BDD\u82E5\u6B63\u5728\u8FD0\u884C\uFF0C\u8BF7\u5148\u505C\u6B62\u540E\u518D\u91CD\u8BD5\u3002");
+    if (dialog === "rename") void run(() => member ? Promise.resolve(setAlias(title.trim())) : actions2.rename(session.id, title.trim()), member ? "\u663E\u793A\u540D\u79F0\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002" : void 0);
+    else if (dialog === "archive") void run(() => actions2.archive(session.id), "\u5F52\u6863\u672A\u5B8C\u6210\u3002\u4F1A\u8BDD\u82E5\u6B63\u5728\u8FD0\u884C\uFF0C\u8BF7\u5148\u505C\u6B62\u540E\u518D\u91CD\u8BD5\u3002");
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
       Menu2,
       {
         open,
@@ -15089,37 +16258,37 @@ function SessionActionsMenu({ session, pinned, actions, controls, dialogs, onCha
         align: "end",
         autoFocus: true,
         onClose: () => setOpen(false),
-        anchor: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
+        anchor: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
         items: member ? [{ id: "rename", label: "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" }] : [{ id: "rename", label: "\u91CD\u547D\u540D" }, { id: "pin", label: pinned ? "\u53D6\u6D88\u7F6E\u9876" : "\u7F6E\u9876" }, { id: "archive", label: "\u5F52\u6863", disabled: session.running }],
-        onSelect: (id) => {
+        onSelect: (id2) => {
           setOpen(false);
           setError("");
-          if (id === "pin") {
-            void run(() => actions.pin(session.id, !pinned));
+          if (id2 === "pin") {
+            void run(() => actions2.pin(session.id, !pinned));
             return;
           }
           setTitle(member ? alias ?? "" : session.label);
-          setDialog(id === "rename" ? "rename" : "archive");
+          setDialog(id2 === "rename" ? "rename" : "archive");
         }
       }
     ),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
       Modal2,
       {
         open: true,
         title: dialog === "rename" ? member ? "\u8BBE\u7F6E\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u91CD\u547D\u540D\u4F1A\u8BDD" : dialog === "archive" ? "\u5F52\u6863\u4F1A\u8BDD" : "\u64CD\u4F5C\u672A\u5B8C\u6210",
         closeLabel: "\u5173\u95ED",
         onClose: close,
-        footer: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Button2, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
-          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Button2, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
+        footer: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Button2, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
+          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Button2, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
         ] }),
-        children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
+        children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
           event.preventDefault();
           confirm();
         }, children: [
-          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
+          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
               setTitle(event.target.value);
               setError("");
             }, onCompositionStart: () => {
@@ -15132,17 +16301,17 @@ function SessionActionsMenu({ session, pinned, actions, controls, dialogs, onCha
                 if (!event.nativeEvent.isComposing) confirm();
               }
             } }),
-            member && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { className: "dshsm-session-hint", children: [
+            member && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("p", { className: "dshsm-session-hint", children: [
               "\u539F\u540D\uFF1A",
               session.label,
               "\u3002\u663E\u793A\u540D\u79F0\u4EC5\u4FDD\u5B58\u5728\u672C\u673A\uFF0C\u7559\u7A7A\u6062\u590D\u9ED8\u8BA4\u540D\u79F0\u3002"
             ] })
-          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { children: [
+          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("p", { children: [
             "\u5F52\u6863\u201C",
             session.label,
             "\u201D\u540E\u53EF\u5728\u5BBF\u4E3B\u7684\u5F52\u6863\u5217\u8868\u4E2D\u6062\u590D\u3002"
           ] }) : null,
-          error51 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { role: "alert", children: error51 })
+          error51 && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { role: "alert", children: error51 })
         ] })
       }
     ) })
@@ -15150,29 +16319,35 @@ function SessionActionsMenu({ session, pinned, actions, controls, dialogs, onCha
 }
 
 // src/session-tree-host.tsx
-var import_jsx_runtime4 = require("react/jsx-runtime");
+var import_jsx_runtime6 = require("react/jsx-runtime");
 function NativeSessionTreeHost(props) {
   const selected = props.useSessions((list) => Object.values(list.byId).find((session) => (session.retainedBy.mainView ?? 0) > 0)?.id);
   const panelActive = props.usePanelInfo((info) => info.activePanelId !== null);
   const statuses = props.useSessionStatus((state) => state);
   const pinnedIds = new Set(props.useWorkspaces((state) => state.pinnedSessionIds));
-  const snapshot = (0, import_react4.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+  const snapshot = (0, import_react5.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
     NativeSessionChildren,
     {
       ...props,
       currentId: panelActive ? void 0 : selected,
       statuses,
       pinnedIds,
-      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
+      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
+        session.task && props.openTask && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", className: "dshsm-session-actions", title: "\u67E5\u770B\u4EFB\u52A1", onClick: (e) => {
+          e.stopPropagation();
+          props.openTask?.(session.task.id);
+        }, children: "\u4EFB\u52A1" }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
+      ] })
     }
   );
 }
 
 // src/session-navigation.tsx
-var import_react5 = __toESM(require("react"), 1);
+var import_react6 = __toESM(require("react"), 1);
 var import_react_dom2 = require("react-dom");
-var import_jsx_runtime5 = require("react/jsx-runtime");
+var import_jsx_runtime7 = require("react/jsx-runtime");
 function createWorkspaceArchiveSource(slots) {
   let entry;
   let source;
@@ -15233,8 +16408,8 @@ function searchTeamMembers(store, query, archivedIds = []) {
       parent = parent.parentId ? snapshot.nodes.get(parent.parentId) : void 0;
     }
     const path = parents.join(" / ");
-    const text = [display.label, treePresentation(node).label, node.teammateName, node.label, path, ...originalParents, node.workspace].join(" ").toLocaleLowerCase();
-    return terms.every((term) => text.includes(term)) ? [{ node, display, path }] : [];
+    const text2 = [display.label, treePresentation(node).label, node.teammateName, node.label, path, ...originalParents, node.workspace].join(" ").toLocaleLowerCase();
+    return terms.every((term) => text2.includes(term)) ? [{ node, display, path }] : [];
   });
 }
 var searchLabels = ["\u641C\u7D22\u4F1A\u8BDD\u540D\u79F0", "Search session names"];
@@ -15246,9 +16421,9 @@ function findNativeSearch(doc) {
   const results = workspace && [...workspace.querySelectorAll('[role="tree"][aria-label]')].find((element) => resultLabels.includes(element.getAttribute("aria-label") ?? ""));
   return input && workspace && results ? { input, workspace, results } : void 0;
 }
-function revealNativeBranch(doc, store, id, workspaces) {
+function revealNativeBranch(doc, store, id2, workspaces) {
   const snapshot = store.getSnapshot();
-  let root = snapshot.nodes.get(id);
+  let root = snapshot.nodes.get(id2);
   while (root?.parentId && snapshot.nodes.has(root.parentId)) root = snapshot.nodes.get(root.parentId);
   if (!root) return () => {
   };
@@ -15260,8 +16435,8 @@ function revealNativeBranch(doc, store, id, workspaces) {
   const attempted = /* @__PURE__ */ new WeakSet();
   const reveal = () => {
     if (stopped) return;
-    store.reveal(id, true);
-    const selected = [...doc.querySelectorAll("[data-session-id]")].find((element) => element.dataset.sessionId === id);
+    store.reveal(id2, true);
+    const selected = [...doc.querySelectorAll("[data-session-id]")].find((element) => element.dataset.sessionId === id2);
     if (selected) {
       selected.scrollIntoView?.({ block: "nearest" });
       selected.querySelector(".dshsm-tree-name")?.focus({ preventScroll: true });
@@ -15303,28 +16478,28 @@ function revealNativeBranch(doc, store, id, workspaces) {
   reveal();
   return stop;
 }
-function SearchMatches({ store, openSession, target, query, reveal, archivedIds }) {
-  const snapshot = (0, import_react5.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+function SearchMatches({ store, openSession, target: target2, query, reveal, archivedIds }) {
+  const snapshot = (0, import_react6.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const matches = searchTeamMembers(store, query, archivedIds);
   const hasSupplement = matches.length > 0 || !snapshot.loaded || Boolean(snapshot.problem);
-  const [container] = (0, import_react5.useState)(() => target.results.ownerDocument.createElement("div"));
-  (0, import_react5.useEffect)(() => {
+  const [container] = (0, import_react6.useState)(() => target2.results.ownerDocument.createElement("div"));
+  (0, import_react6.useEffect)(() => {
     container.dataset.dshsmSearch = "true";
-    target.results.after(container);
+    target2.results.after(container);
     return () => container.remove();
-  }, [target.results, container]);
-  (0, import_react5.useEffect)(() => {
+  }, [target2.results, container]);
+  (0, import_react6.useEffect)(() => {
     const marked = /* @__PURE__ */ new Set();
     const mark = () => {
-      if (hasSupplement) for (const sibling of target.results.parentElement?.children ?? []) {
-        if (sibling instanceof target.results.ownerDocument.defaultView.HTMLElement && emptyLabels.includes(sibling.textContent?.trim() ?? "")) {
+      if (hasSupplement) for (const sibling of target2.results.parentElement?.children ?? []) {
+        if (sibling instanceof target2.results.ownerDocument.defaultView.HTMLElement && emptyLabels.includes(sibling.textContent?.trim() ?? "")) {
           sibling.dataset.dshsmSearchEmpty = "true";
           marked.add(sibling);
         }
       }
     };
     const observer = new MutationObserver(mark);
-    if (target.results.parentElement) observer.observe(target.results.parentElement, { childList: true });
+    if (target2.results.parentElement) observer.observe(target2.results.parentElement, { childList: true });
     mark();
     return () => {
       observer.disconnect();
@@ -15332,37 +16507,37 @@ function SearchMatches({ store, openSession, target, query, reveal, archivedIds 
         delete element.dataset.dshsmSearchEmpty;
       });
     };
-  }, [hasSupplement, target.results]);
+  }, [hasSupplement, target2.results]);
   const open = (node) => {
-    const clear = [...target.workspace.querySelectorAll("button[aria-label]")].find((button) => ["\u6E05\u9664\u641C\u7D22", "Clear search"].includes(button.getAttribute("aria-label") ?? ""));
+    const clear = [...target2.workspace.querySelectorAll("button[aria-label]")].find((button) => ["\u6E05\u9664\u641C\u7D22", "Clear search"].includes(button.getAttribute("aria-label") ?? ""));
     clear?.click();
     store.reveal(node.id, true);
     openSession(node);
     reveal(node.id);
   };
-  return (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
-    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dshsm-search-heading", children: [
+  return (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
+    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "dshsm-search-heading", children: [
         "\u961F\u5458 \xB7 ",
         matches.length
       ] }),
-      matches.slice(0, 50).map(({ node, display, path }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
+      matches.slice(0, 50).map(({ node, display, path }) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
 ${path}`, onClick: () => open(node), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: display.label }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("small", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: display.label }),
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { children: [
           node.teammateName,
           display.state ? ` \xB7 ${display.state}` : ""
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("small", { children: path })
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { children: path })
       ] }, node.id)),
-      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
+      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
     ] }),
-    !snapshot.loaded && !snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
-    snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
+    !snapshot.loaded && !snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
+    snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
       "\u961F\u5458\u641C\u7D22\u6682\u672A\u66F4\u65B0\uFF0C",
       snapshot.problem,
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
+      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
     ] })
   ] }), container);
 }
@@ -15370,10 +16545,10 @@ function NativeTeamSearch(props) {
   const workspaces = props.useWorkspaces((state) => state.items);
   const archivedIds = props.useWorkspaces((state) => state.archivedSessionIds);
   const archiveFilter = props.useArchiveFilter((filter) => filter);
-  const pendingReveal = import_react5.default.useRef();
-  (0, import_react5.useEffect)(() => () => pendingReveal.current?.(), []);
-  const [search, setSearch] = (0, import_react5.useState)();
-  (0, import_react5.useEffect)(() => {
+  const pendingReveal = import_react6.default.useRef();
+  (0, import_react6.useEffect)(() => () => pendingReveal.current?.(), []);
+  const [search, setSearch] = (0, import_react6.useState)();
+  (0, import_react6.useEffect)(() => {
     let queued = false, stopped = false;
     let workspace;
     const scan = () => {
@@ -15382,10 +16557,10 @@ function NativeTeamSearch(props) {
       queueMicrotask(() => {
         queued = false;
         if (stopped) return;
-        const target = findNativeSearch(document), query = target?.input.value.trim() ?? "";
+        const target2 = findNativeSearch(document), query = target2?.input.value.trim() ?? "";
         const input = [...document.querySelectorAll("input[placeholder]")].find((element) => searchLabels.includes(element.placeholder));
         workspace = input?.parentElement?.parentElement?.parentElement?.parentElement ?? void 0;
-        setSearch((current) => !target || !query ? current ? void 0 : current : current?.target.results === target.results && current.query === query ? current : { target, query });
+        setSearch((current) => !target2 || !query ? current ? void 0 : current : current?.target.results === target2.results && current.query === query ? current : { target: target2, query });
       });
     };
     const observer = new MutationObserver((records) => {
@@ -15404,9 +16579,9 @@ function NativeTeamSearch(props) {
       document.removeEventListener("input", scan);
     };
   }, []);
-  return search && (archiveFilter === "default" || archiveFilter === "show") ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(SearchMatches, { ...props, ...search, archivedIds, reveal: (id) => {
+  return search && (archiveFilter === "default" || archiveFilter === "show") ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(SearchMatches, { ...props, ...search, archivedIds, reveal: (id2) => {
     pendingReveal.current?.();
-    pendingReveal.current = revealNativeBranch(document, props.store, id, workspaces);
+    pendingReveal.current = revealNativeBranch(document, props.store, id2, workspaces);
   } }) : null;
 }
 function selectParentUnavailable(owner) {
@@ -15414,20 +16589,20 @@ function selectParentUnavailable(owner) {
   return child?.address.mode === "continuable" && child.parentAvailable === false && owner.session?.running !== true ? { parentId: child.address.parentSessionId } : null;
 }
 function ParentUnavailableComposer({ store, openSession, matched, Button: Button2 }) {
-  const snapshot = (0, import_react5.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const snapshot = (0, import_react6.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const parent = snapshot.nodes.get(matched.parentId);
-  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Button2, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Button2, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
       if (parent) openSession(parent);
     }, children: "\u6253\u5F00\u7236\u4F1A\u8BDD" })
   ] });
 }
 
 // src/session-views.tsx
-var import_react7 = require("react");
+var import_react8 = require("react");
 var import_react_dom4 = require("react-dom");
 
 // src/split-layout.ts
@@ -15437,22 +16612,22 @@ var clampRatio = (ratio) => Number.isFinite(ratio) ? Math.max(0.1, Math.min(0.9,
 function paneIds(node) {
   return node.kind === "pane" ? [node.id] : [...paneIds(node.first), ...paneIds(node.second)];
 }
-function removePane(node, id) {
-  if (node.kind === "pane") return node.id === id ? void 0 : node;
-  const first = removePane(node.first, id), second = removePane(node.second, id);
+function removePane(node, id2) {
+  if (node.kind === "pane") return node.id === id2 ? void 0 : node;
+  const first = removePane(node.first, id2), second = removePane(node.second, id2);
   return !first ? second : !second ? first : first === node.first && second === node.second ? node : { ...node, first, second };
 }
-function promotePane(node, id) {
-  if (id === MAIN_PANE || !paneIds(node).includes(id)) return node;
-  const rename = (branch) => branch.kind === "pane" ? branch.id === id ? { ...branch, id: MAIN_PANE } : branch : { ...branch, first: rename(branch.first), second: rename(branch.second) };
+function promotePane(node, id2) {
+  if (id2 === MAIN_PANE || !paneIds(node).includes(id2)) return node;
+  const rename = (branch) => branch.kind === "pane" ? branch.id === id2 ? { ...branch, id: MAIN_PANE } : branch : { ...branch, first: rename(branch.first), second: rename(branch.second) };
   return rename(removePane(node, MAIN_PANE) ?? node);
 }
-function dockPane(node, source, target, edge, splitId) {
-  if (source === target || !paneIds(node).includes(target)) return node;
+function dockPane(node, source, target2, edge, splitId) {
+  if (source === target2 || !paneIds(node).includes(target2)) return node;
   const pruned = removePane(node, source) ?? node;
   const insert = (branch) => {
     if (branch.kind === "split") return { ...branch, first: insert(branch.first), second: insert(branch.second) };
-    if (branch.id !== target) return branch;
+    if (branch.id !== target2) return branch;
     const added = { kind: "pane", id: source }, before = edge === "left" || edge === "top";
     return {
       kind: "split",
@@ -15465,10 +16640,10 @@ function dockPane(node, source, target, edge, splitId) {
   };
   return insert(pruned);
 }
-function resizeSplit(node, id, ratio) {
+function resizeSplit(node, id2, ratio) {
   if (node.kind === "pane") return node;
-  if (node.id === id) return { ...node, ratio: clampRatio(ratio) };
-  return { ...node, first: resizeSplit(node.first, id, ratio), second: resizeSplit(node.second, id, ratio) };
+  if (node.id === id2) return { ...node, ratio: clampRatio(ratio) };
+  return { ...node, first: resizeSplit(node.first, id2, ratio), second: resizeSplit(node.second, id2, ratio) };
 }
 function splitGeometry(node, width, height) {
   const panes = /* @__PURE__ */ new Map();
@@ -15496,10 +16671,10 @@ function edgePreview(rect, edge) {
 }
 
 // src/compact-headers.tsx
-var import_react6 = __toESM(require("react"), 1);
+var import_react7 = __toESM(require("react"), 1);
 var import_react_dom3 = require("react-dom");
-var import_jsx_runtime6 = require("react/jsx-runtime");
-var css = `
+var import_jsx_runtime8 = require("react/jsx-runtime");
+var css2 = `
 [data-sessivra-compact]{height:40px!important;min-height:40px!important;padding:4px 12px!important;overflow:hidden}
 [data-sessivra-compact] [data-sessivra-tab-row]{display:none!important}
 [data-sessivra-compact] [data-conversation-header-corner]{margin-right:0!important}
@@ -15508,12 +16683,12 @@ var css = `
 .sessivra-header-menu button.sessivra-pane-close{width:24px;height:28px}
 `;
 function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
-  const [open, setOpen] = (0, import_react6.useState)(false);
-  const registry2 = (0, import_react6.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
+  const [open, setOpen] = (0, import_react7.useState)(false);
+  const registry2 = (0, import_react7.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
   const native = sessionId ? registry2.get(sessionId) : void 0;
   const views = native?.views ?? seat.tabs.map((tab, index) => ({ id: String(index), label: tab.textContent?.trim() ?? "" }));
   if (!views.length) return null;
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
     Menu2,
     {
       open,
@@ -15521,19 +16696,19 @@ function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
       autoFocus: true,
       align: "start",
       onClose: () => setOpen(false),
-      anchor: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
-      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", {}) })),
-      onSelect: (id) => {
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
+      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", {}) })),
+      onSelect: (id2) => {
         setOpen(false);
-        if (native) native.selectView(id);
-        else seat.tabs[Number(id)]?.click();
+        if (native) native.selectView(id2);
+        else seat.tabs[Number(id2)]?.click();
       }
     }
   ) });
 }
 function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, current }) {
-  const [seats, setSeats] = (0, import_react6.useState)([]);
-  (0, import_react6.useLayoutEffect)(() => {
+  const [seats, setSeats] = (0, import_react7.useState)([]);
+  (0, import_react7.useLayoutEffect)(() => {
     const markedHeaders = /* @__PURE__ */ new Set(), markedTabs = /* @__PURE__ */ new Set();
     const scan = () => {
       const headers = [...host.querySelectorAll("[data-sessivra-main-header],.sessivra-pane-native-header header")];
@@ -15564,23 +16739,23 @@ function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, curre
       for (const row of markedTabs) delete row.dataset.sessivraTabRow;
     };
   }, [host]);
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("style", { children: css }),
-    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_react6.default.Fragment, { children: [
-      seat.menu && (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime6.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
-      (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("style", { children: css2 }),
+    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_react7.default.Fragment, { children: [
+      seat.menu && (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime8.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
+      (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
         event.preventDefault();
         event.stopPropagation();
       }, onClick: (event) => {
         event.stopPropagation();
         close(seat.id);
-      }, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
+      }, children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
     ] }, seat.id))
   ] });
 }
 
 // src/session-views.tsx
-var import_jsx_runtime7 = require("react/jsx-runtime");
+var import_jsx_runtime9 = require("react/jsx-runtime");
 function SessionViewContent(props) {
   const session = props.useSession((value) => value);
   const conversation = props.useConversation((value) => value);
@@ -15589,7 +16764,7 @@ function SessionViewContent(props) {
   const pending = session.subagent?.address.mode === "continuable" && session.subagent.parentAvailable === void 0;
   const settling = !active && session.openState === "loading" && blank !== true || pending;
   const hero = !active && (session.openState === "open" || blank === true);
-  return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_jsx_runtime7.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
+  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_jsx_runtime9.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
 }
 function createSessionViews(sessions) {
   let snapshot = [];
@@ -15597,9 +16772,9 @@ function createSessionViews(sessions) {
   const emit = () => {
     for (const listener of listeners) listener();
   };
-  const close = (id) => {
-    const removed = snapshot.find((pane) => pane.id === id);
-    snapshot = snapshot.filter((pane) => pane.id !== id);
+  const close = (id2) => {
+    const removed = snapshot.find((pane) => pane.id === id2);
+    snapshot = snapshot.filter((pane) => pane.id !== id2);
     removed?.reference.release();
     emit();
   };
@@ -15611,11 +16786,11 @@ function createSessionViews(sessions) {
         listeners.delete(listener);
       };
     },
-    open(target, label) {
-      const id = typeof target === "string" ? target : target.childSessionId;
-      if (snapshot.some((pane) => pane.id === id)) return id;
-      const reference = sessions.retain(target, { source: "sessivraView" });
-      snapshot = [...snapshot, { id, label, reference, ready: false }];
+    open(target2, label) {
+      const id2 = typeof target2 === "string" ? target2 : target2.childSessionId;
+      if (snapshot.some((pane) => pane.id === id2)) return id2;
+      const reference = sessions.retain(target2, { source: "sessivraView" });
+      snapshot = [...snapshot, { id: id2, label, reference, ready: false }];
       emit();
       void reference.ready.then(() => {
         snapshot = snapshot.map((pane) => pane.reference === reference ? { ...pane, ready: true } : pane);
@@ -15624,7 +16799,7 @@ function createSessionViews(sessions) {
         snapshot = snapshot.map((pane) => pane.reference === reference ? { ...pane, error: "\u4F1A\u8BDD\u6253\u5F00\u5931\u8D25\uFF0C\u8BF7\u5173\u95ED\u540E\u91CD\u65B0\u6253\u5F00" } : pane);
         emit();
       });
-      return id;
+      return id2;
     },
     close,
     dispose() {
@@ -15659,29 +16834,29 @@ var styles2 = `
 `;
 var position = (rect) => ({ left: rect.x, top: rect.y, width: rect.width, height: rect.height });
 function SessionViews(props) {
-  const panes = (0, import_react7.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
-  (0, import_react7.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  const panes = (0, import_react8.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
+  (0, import_react8.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
   const listedCurrent = props.useSessions((list) => Object.values(list.byId).find((row) => (row.retainedBy.mainView ?? 0) > 0)?.id);
-  const [nativeCurrent, setNativeCurrent] = (0, import_react7.useState)();
+  const [nativeCurrent, setNativeCurrent] = (0, import_react8.useState)();
   const current = listedCurrent ?? nativeCurrent;
   const panel = props.usePanelInfo((info) => info.activePanelId);
-  const [host, setHost] = (0, import_react7.useState)();
-  const [canvas, setCanvas] = (0, import_react7.useState)(null);
-  const [size, setSize] = (0, import_react7.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
-  const [layout, setLayout] = (0, import_react7.useState)(mainLayout);
-  const [notice, setNotice] = (0, import_react7.useState)("");
-  const [preview, setPreview] = (0, import_react7.useState)();
-  const drag = (0, import_react7.useRef)({ consumed: false });
-  const resize = (0, import_react7.useRef)();
-  const pointerDock = (0, import_react7.useRef)();
-  const suppressClick = (0, import_react7.useRef)(0);
-  const splitSerial = (0, import_react7.useRef)(0);
-  const promotion = (0, import_react7.useRef)();
-  const [promoting, setPromoting] = (0, import_react7.useState)();
-  const labelFor = (id) => props.store.getSnapshot().nodes.get(id === MAIN_PANE ? current ?? "" : id)?.label ?? panes.find((pane) => pane.id === id)?.label ?? "\u4F1A\u8BDD";
-  const close = (id) => {
-    if (id !== MAIN_PANE) {
-      props.views.close(id);
+  const [host, setHost] = (0, import_react8.useState)();
+  const [canvas, setCanvas] = (0, import_react8.useState)(null);
+  const [size, setSize] = (0, import_react8.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
+  const [layout, setLayout] = (0, import_react8.useState)(mainLayout);
+  const [notice, setNotice] = (0, import_react8.useState)("");
+  const [preview, setPreview] = (0, import_react8.useState)();
+  const drag = (0, import_react8.useRef)({ consumed: false });
+  const resize = (0, import_react8.useRef)();
+  const pointerDock = (0, import_react8.useRef)();
+  const suppressClick = (0, import_react8.useRef)(0);
+  const splitSerial = (0, import_react8.useRef)(0);
+  const promotion = (0, import_react8.useRef)();
+  const [promoting, setPromoting] = (0, import_react8.useState)();
+  const labelFor = (id2) => props.store.getSnapshot().nodes.get(id2 === MAIN_PANE ? current ?? "" : id2)?.label ?? panes.find((pane) => pane.id === id2)?.label ?? "\u4F1A\u8BDD";
+  const close = (id2) => {
+    if (id2 !== MAIN_PANE) {
+      props.views.close(id2);
       return;
     }
     const replacement = panes.find((pane) => pane.ready && !pane.error) ?? panes[0];
@@ -15692,7 +16867,7 @@ function SessionViews(props) {
     promotion.current = { closed: current ?? "", replacement: replacement.id };
     setPromoting(replacement.id);
   };
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     if (!promoting || promotion.current?.replacement !== promoting) return;
     const node = props.store.getSnapshot().nodes.get(promoting);
     props.selectSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: node.id, mode: node.subagentMode } : promoting);
@@ -15704,10 +16879,10 @@ function SessionViews(props) {
     }, 1e4);
     return () => window.clearTimeout(timer);
   }, [promoting, props.selectSession, props.store]);
-  const geometry = (0, import_react7.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
-  const focus = (id) => queueMicrotask(() => [...document.querySelectorAll("[data-sessivra-pane]")].find((element) => element.dataset.sessivraPane === id)?.focus());
-  const dock = (id, destination, edge) => {
-    const source = id === current ? MAIN_PANE : id;
+  const geometry = (0, import_react8.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
+  const focus = (id2) => queueMicrotask(() => [...document.querySelectorAll("[data-sessivra-pane]")].find((element) => element.dataset.sessivraPane === id2)?.focus());
+  const dock = (id2, destination, edge) => {
+    const source = id2 === current ? MAIN_PANE : id2;
     if (source === destination) return;
     if (!paneIds(layout).includes(destination)) return;
     if (source !== MAIN_PANE) {
@@ -15726,7 +16901,7 @@ function SessionViews(props) {
     setNotice("");
     focus(source);
   };
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     let mounted;
     const scan = () => {
       const content = [...document.querySelectorAll("[data-conversation-content]")].find((element) => !element.closest("[data-sessivra-pane]") && element.parentElement?.hasAttribute("data-phase"));
@@ -15740,7 +16915,7 @@ function SessionViews(props) {
     scan();
     return () => observer.disconnect();
   }, []);
-  (0, import_react7.useLayoutEffect)(() => {
+  (0, import_react8.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     host.dataset.sessivraViews = "true";
     return () => {
@@ -15748,7 +16923,7 @@ function SessionViews(props) {
       for (const name of ["left", "top", "width", "height"]) host.style.removeProperty(`--sessivra-main-${name}`);
     };
   }, [host, panel]);
-  (0, import_react7.useLayoutEffect)(() => {
+  (0, import_react8.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const header = host.querySelector(':scope > [data-slot="conversation.header"] header') ?? host.querySelector(":scope > header");
     host.dataset.sessivraSplit = String(panes.length > 0);
@@ -15766,13 +16941,13 @@ function SessionViews(props) {
       }
     };
   }, [host, panel, panes.length, current]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     const visible = new Set(panel === null ? [current, ...panes.map((pane) => pane.id)] : []);
     const marked = /* @__PURE__ */ new Set();
     const sync = () => {
       for (const row of document.querySelectorAll("[data-row-key],[data-session-id]")) {
-        const id = row.dataset.rowKey?.replace(/^session:/, "") ?? row.dataset.sessionId;
-        if (id && visible.has(id)) {
+        const id2 = row.dataset.rowKey?.replace(/^session:/, "") ?? row.dataset.sessionId;
+        if (id2 && visible.has(id2)) {
           if (row.dataset.sessivraVisible !== "true") row.dataset.sessivraVisible = "true";
           marked.add(row);
         } else if (marked.delete(row)) delete row.dataset.sessivraVisible;
@@ -15786,7 +16961,7 @@ function SessionViews(props) {
       for (const row of marked) delete row.dataset.sessivraVisible;
     };
   }, [current, panes, panel]);
-  (0, import_react7.useLayoutEffect)(() => {
+  (0, import_react8.useLayoutEffect)(() => {
     if (!canvas || !host) return;
     const measure = () => {
       const rect = canvas.getBoundingClientRect(), outer = host.getBoundingClientRect();
@@ -15805,7 +16980,7 @@ function SessionViews(props) {
       window.removeEventListener("resize", measure);
     };
   }, [canvas, host, panes.length, current]);
-  (0, import_react7.useLayoutEffect)(() => {
+  (0, import_react8.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const rect = geometry.panes.get(MAIN_PANE);
     if (!rect) return;
@@ -15816,11 +16991,11 @@ function SessionViews(props) {
       host.style.removeProperty("--sessivra-header-top");
     };
   }, [host, panel, geometry, size.x, size.y, size.header, panes.length]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     const retained = new Set(panes.map((pane) => pane.id));
-    setLayout((previous) => paneIds(previous).filter((id) => id !== MAIN_PANE && !retained.has(id)).reduce((next, id) => removePane(next, id) ?? mainLayout(), previous));
+    setLayout((previous) => paneIds(previous).filter((id2) => id2 !== MAIN_PANE && !retained.has(id2)).reduce((next, id2) => removePane(next, id2) ?? mainLayout(), previous));
   }, [panes]);
-  (0, import_react7.useLayoutEffect)(() => {
+  (0, import_react8.useLayoutEffect)(() => {
     if (current && promotion.current?.replacement === current) {
       setLayout((previous) => promotePane(previous, current));
       promotion.current = void 0;
@@ -15831,7 +17006,7 @@ function SessionViews(props) {
     }
     if (current) props.views.close(current);
   }, [current, props.views]);
-  (0, import_react7.useEffect)(() => {
+  (0, import_react8.useEffect)(() => {
     if (!host || !canvas || panel !== null) return;
     const hit = (event) => {
       const bounds = canvas.getBoundingClientRect(), x = event.clientX - bounds.left, y = event.clientY - bounds.top;
@@ -15846,11 +17021,11 @@ function SessionViews(props) {
       return pane?.dataset.sessivraPane ?? current;
     };
     const place = (source, event) => {
-      const target = composerAt(event);
-      if (target) {
-        const id = source === MAIN_PANE ? current : source;
-        const label = id && (props.store.getSnapshot().nodes.get(id)?.label ?? panes.find((pane) => pane.id === id)?.label);
-        if (!id || !label || !props.referenceDrop.insert(target, id, label)) setNotice("\u5F53\u524D\u8F93\u5165\u6846\u6682\u65F6\u65E0\u6CD5\u63D2\u5165\u5F15\u7528\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+      const target2 = composerAt(event);
+      if (target2) {
+        const id2 = source === MAIN_PANE ? current : source;
+        const label = id2 && (props.store.getSnapshot().nodes.get(id2)?.label ?? panes.find((pane) => pane.id === id2)?.label);
+        if (!id2 || !label || !props.referenceDrop.insert(target2, id2, label)) setNotice("\u5F53\u524D\u8F93\u5165\u6846\u6682\u65F6\u65E0\u6CD5\u63D2\u5165\u5F15\u7528\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
         else setNotice("");
         return true;
       }
@@ -15861,8 +17036,8 @@ function SessionViews(props) {
     };
     const sourceAt = (event) => {
       const element = event.target instanceof Element ? event.target.closest("[data-view-source],[data-session-id],[data-row-key]") : null;
-      const id = element?.dataset.viewSource ?? element?.dataset.sessionId ?? element?.dataset.rowKey?.replace(/^session:/, "");
-      return id && (id === MAIN_PANE || props.store.getSnapshot().nodes.has(id) || panes.some((pane) => pane.id === id)) ? id : void 0;
+      const id2 = element?.dataset.viewSource ?? element?.dataset.sessionId ?? element?.dataset.rowKey?.replace(/^session:/, "");
+      return id2 && (id2 === MAIN_PANE || props.store.getSnapshot().nodes.has(id2) || panes.some((pane) => pane.id === id2)) ? id2 : void 0;
     };
     const pointerDown = (event) => {
       if (event.button !== 0 || event.target instanceof Element && event.target.closest("button:not([data-view-source]),input,select,textarea,[contenteditable=true]")) return;
@@ -15909,8 +17084,8 @@ function SessionViews(props) {
       }
       pointerDock.current = void 0;
       const element = event.target instanceof Element ? event.target.closest("[data-view-source],[data-session-id],[data-row-key]") : null;
-      const id = element?.dataset.viewSource ?? element?.dataset.sessionId ?? element?.dataset.rowKey?.replace(/^session:/, "");
-      drag.current = { source: id && (id === MAIN_PANE || props.store.getSnapshot().nodes.has(id) || panes.some((pane) => pane.id === id)) ? id : void 0, consumed: false };
+      const id2 = element?.dataset.viewSource ?? element?.dataset.sessionId ?? element?.dataset.rowKey?.replace(/^session:/, "");
+      drag.current = { source: id2 && (id2 === MAIN_PANE || props.store.getSnapshot().nodes.has(id2) || panes.some((pane) => pane.id === id2)) ? id2 : void 0, consumed: false };
     };
     const over = (event) => {
       if (!drag.current.source) return;
@@ -15977,7 +17152,7 @@ function SessionViews(props) {
       host.removeEventListener("dragleave", leave);
     };
   }, [host, canvas, panel, current, panes, layout, geometry, props.store, props.views, props.referenceDrop]);
-  const setRatio = (id, ratio) => setLayout((previous) => resizeSplit(previous, id, ratio));
+  const setRatio = (id2, ratio) => setLayout((previous) => resizeSplit(previous, id2, ratio));
   const cancelResize = () => {
     if (resize.current) {
       setRatio(resize.current.id, resize.current.ratio);
@@ -15986,26 +17161,26 @@ function SessionViews(props) {
   };
   const previewSource = drag.current.source ?? pointerDock.current?.source;
   if (!host || panel !== null) return null;
-  return (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: styles2 }),
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
-      notice && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
+  return (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("style", { children: styles2 }),
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
+      notice && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
       panes.map((pane) => {
         const rect = geometry.panes.get(pane.id);
         if (!rect) return null;
-        return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
             event.dataTransfer.setData("text/plain", pane.id);
             event.dataTransfer.effectAllowed = "move";
           }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
-            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
+            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
         ] }, pane.id);
       }),
-      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
         "div",
         {
           role: "separator",
@@ -16055,13 +17230,13 @@ function SessionViews(props) {
         },
         node.id
       )),
-      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
+      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
     ] })
   ] }), host);
 }
 
 // src/native-pane-header.tsx
-var import_jsx_runtime8 = require("react/jsx-runtime");
+var import_jsx_runtime10 = require("react/jsx-runtime");
 function mirrorNativePaneHeader(slots) {
   let disposed = false, queued = false;
   let cleanup = [];
@@ -16070,7 +17245,7 @@ function mirrorNativePaneHeader(slots) {
     cleanup.reverse().forEach((dispose) => dispose());
     cleanup = [];
     const watched = /* @__PURE__ */ new Set();
-    const mirror = (source, target) => {
+    const mirror = (source, target2) => {
       if (!watched.has(source)) {
         watched.add(source);
         cleanup.push(slots.subscribe(source, () => {
@@ -16097,10 +17272,10 @@ function mirrorNativePaneHeader(slots) {
             if (!alias) throw new Error(`Undeclared native header child: ${name}`);
             return props[method](alias, ...args);
           };
-          return /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
+          return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
         };
         cleanup.push(slots.register({
-          name: target,
+          name: target2,
           ...entry.options,
           ...entry.inject ? { inject: entry.inject } : {},
           ...entry.store ? { store: entry.store } : {},
@@ -16122,7 +17297,7 @@ function mirrorNativePaneHeader(slots) {
 }
 
 // src/header-views.tsx
-var import_react8 = require("react");
+var import_react9 = require("react");
 function createHeaderViews() {
   let snapshot = /* @__PURE__ */ new Map();
   const listeners = /* @__PURE__ */ new Set();
@@ -16137,13 +17312,13 @@ function createHeaderViews() {
         listeners.delete(listener);
       };
     },
-    register(id, state) {
-      snapshot = new Map(snapshot).set(id, state);
+    register(id2, state) {
+      snapshot = new Map(snapshot).set(id2, state);
       emit();
       return () => {
-        if (snapshot.get(id) === state) {
+        if (snapshot.get(id2) === state) {
           snapshot = new Map(snapshot);
-          snapshot.delete(id);
+          snapshot.delete(id2);
           emit();
         }
       };
@@ -16152,7 +17327,7 @@ function createHeaderViews() {
 }
 function HeaderViewsBridge(props) {
   const views = props.useConversationViews((views2) => views2), current = props.useStore((state) => state.view);
-  (0, import_react8.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
+  (0, import_react9.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
   return null;
 }
 function wireHeaderViews(slots, headerViews) {
@@ -16179,38 +17354,41 @@ function wireHeaderViews(slots, headerViews) {
 }
 
 // src/session-reference-drop.tsx
-var import_react9 = require("react");
+var import_react10 = require("react");
 function createSessionReferenceDrop() {
   const inputs = /* @__PURE__ */ new Map();
   return {
-    register(id, actions, input) {
+    register(id2, actions2, input) {
       const insert = (source, label) => {
         const encoded = btoa(Array.from(new TextEncoder().encode(JSON.stringify(source)), (byte) => String.fromCharCode(byte)).join("")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
         const mention = `@[${label.replace(/[\\\[\]]/g, "\\$&")}](dsh-session:${encoded})`;
-        const selection = actions.captureInsertion();
+        const selection = actions2.captureInsertion();
         const inserted = input.insertReference({ source: "reference", ref: mention, label, appearance: "session", clipboardText: mention }, { ...selection, start: selection.end });
         if (inserted) {
-          actions.persistDraft();
+          actions2.persistDraft();
           input.focus();
         }
         return inserted;
       };
-      inputs.set(id, insert);
+      inputs.set(id2, insert);
       return () => {
-        if (inputs.get(id) === insert) inputs.delete(id);
+        if (inputs.get(id2) === insert) inputs.delete(id2);
       };
     },
-    insert(target, source, label) {
-      return inputs.get(target)?.(source, label) ?? false;
+    insert(target2, source, label) {
+      return inputs.get(target2)?.(source, label) ?? false;
     }
   };
 }
 function SessionReferenceDropInput(props) {
-  (0, import_react9.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
+  (0, import_react10.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
   return null;
 }
 
 // src/client.tsx
+var import_jsx_runtime11 = require("react/jsx-runtime");
+var reportLabels = { code: { copyLabel: "\u590D\u5236\u4EE3\u7801", copiedLabel: "\u5DF2\u590D\u5236" }, footnotes: "\u811A\u6CE8" };
+var renderReport = (text2) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(import_dsh_client_ui_primitives.MarkdownText, { text: text2, labels: reportLabels });
 var inject = ["slots", "remote"];
 async function apply(ctx) {
   await ctx.remote.$mount(remoteContribution);
@@ -16223,6 +17401,41 @@ async function apply(ctx) {
       const views = createSessionViews(sessions);
       const referenceDrop = createSessionReferenceDrop();
       const headerViews = createHeaderViews();
+      let requestedTask;
+      let showTask;
+      treeCtx.inject(["remote.sessivraTaskPanel", "layout"], (panelCtx) => {
+        const panelId = "sessivra-tasks";
+        const listeners = /* @__PURE__ */ new Set();
+        showTask = (id2) => {
+          requestedTask = id2;
+          panelCtx.layout.selectPanel(panelId);
+          for (const notify of listeners) notify();
+        };
+        panelCtx.effect(() => () => {
+          showTask = void 0;
+        });
+        const panelSlots = panelCtx.slots;
+        panelSlots.inject("sidebar.panellist", () => panelSlots.register({
+          name: "sidebar.panellist",
+          id: panelId,
+          order: 20,
+          label: () => taskPanelTitle
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9" }) })));
+        panelSlots.inject("main", () => panelSlots.register({ name: "main", key: panelId }, function Mounted(props) {
+          const current = props.useSessions((s) => Object.values(s.byId).find((row) => row.retainedBy.mainView)?.id);
+          const task = import_react11.default.useSyncExternalStore((listener) => {
+            listeners.add(listener);
+            return () => {
+              listeners.delete(listener);
+            };
+          }, () => requestedTask);
+          return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(TaskPanel, { initialSession: current, initialTask: task, api: panelCtx.remote.sessivraTaskPanel, renderMarkdown: renderReport, open: (id2) => {
+            const node = store.getSnapshot().nodes.get(id2);
+            if (node?.subagent && !node.openable) throw new Error("\u4F1A\u8BDD\u5F53\u524D\u4E0D\u53EF\u6253\u5F00");
+            panelCtx.uiWorkspace.openSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: id2, mode: node.subagentMode } : id2);
+          } }, task);
+        }));
+      });
       treeSlots.inject("conversation.session.header.actions", () => wireHeaderViews(treeCtx.slots, headerViews));
       treeSlots.inject("conversation.input.overlay", () => treeSlots.register({
         name: "conversation.input.overlay",
@@ -16238,7 +17451,7 @@ async function apply(ctx) {
         name: "shell.overlay",
         id: "sessivra-session-views",
         children: { "sessivra.conversation.pane": { kind: "single", scope: "session" }, "sessivra.conversation.header": { kind: "single", scope: "session" } },
-        inject: () => ({ views, store, referenceDrop, headerViews, Menu: import_dsh_client_ui_primitives.Menu, selectSession: (target) => treeCtx.uiWorkspace.openSession(target), startSession: () => treeCtx.uiWorkspace.startSession() })
+        inject: () => ({ views, store, referenceDrop, headerViews, Menu: import_dsh_client_ui_primitives.Menu, selectSession: (target2) => treeCtx.uiWorkspace.openSession(target2), startSession: () => treeCtx.uiWorkspace.startSession() })
       }, SessionViews));
       treeSlots.inject("sessivra.conversation.pane", () => treeSlots.register({ name: "sessivra.conversation.pane" }, SessionViewContent));
       treeSlots.inject("sessivra.conversation.header", () => mirrorNativePaneHeader(treeCtx.slots));
@@ -16272,15 +17485,16 @@ async function apply(ctx) {
         order: 300,
         inject: () => ({
           store,
+          openTask: (id2) => showTask?.(id2),
           controls: { Menu: import_dsh_client_ui_primitives.Menu, Modal: import_dsh_client_ui_primitives.Modal, Button: import_dsh_client_ui_primitives.Button },
           dialogs,
           sessionActions: {
-            rename: async (id, title) => {
-              const result = await sessions.using(id, { source: "workspaceOperation" }, (reference) => reference.binding.session.rename(title));
+            rename: async (id2, title) => {
+              const result = await sessions.using(id2, { source: "workspaceOperation" }, (reference) => reference.binding.session.rename(title));
               if (!result.ok) throw new Error(result.error.message);
             },
-            pin: (id, pinned) => pinned ? treeCtx.uiWorkspace.pinSession(id) : treeCtx.uiWorkspace.unpinSession(id),
-            archive: (id) => treeCtx.uiWorkspace.archiveSession(id)
+            pin: (id2, pinned) => pinned ? treeCtx.uiWorkspace.pinSession(id2) : treeCtx.uiWorkspace.unpinSession(id2),
+            archive: (id2) => treeCtx.uiWorkspace.archiveSession(id2)
           },
           openSession
         })

@@ -326,3 +326,96 @@ test('task snapshots stay bounded under maximum legal field sizes including JSON
   assert.equal(snapshot.tasks[0].revision, 3); assert.equal(snapshot.tasks[0].appliedRevision, 2);
   assert.match(text, /session_task_get/); await tasks.close();
 });
+
+test('owner panel creates, answers shared questions, rejects stale edits, reviews, archives and keeps Superagent independent', {timeout:25000}, async t => {
+  const h = await taskHost(t);
+  const a=(await h.create('panel-owner-A')).agent, b=(await h.create('panel-builder-B')).agent;
+  const rpc=(method,args={})=>h.ctx.typertGateway.invoke({namespace:'sessivraTaskPanel',method,args,peer:h.peer});
+  const cmd=command=>rpc('command',{command:JSON.parse(JSON.stringify(command))});
+  const detail=id=>rpc('detail',{id});
+  const submitPanel=(item,action,extra={})=>cmd({operationId:crypto.randomUUID(),taskId:item.id,expected:item.token,action,...extra});
+  scenario(h,{worker:task=>submit(task)});
+  const foreign=(await h.create('worker-'+'a'.repeat(32))).agent;
+  const participants=await rpc('participants');
+  assert.equal(participants.some(p=>p.id===foreign.id),false);
+  const create={action:'create',operationId:crypto.randomUUID(),coordinator:a.id,assignee:b.id,title:'验证登录',goal:'Produce a result',acceptance:['Evidence exists'],
+    requiredQuestions:[{topic:'policy',context:'test',question:'Choose policy',options:['A','B']}]};
+  await assert.rejects(cmd({...create,assignee:foreign.id}),/SUPERAGENT_OWNS_SESSION/);
+  const first=await cmd(create);
+  assert.deepEqual(await cmd(create),first);
+  let fresh=await detail(first.id);
+  const second=await cmd({...create,operationId:crypto.randomUUID(),assignee:undefined,title:'复核登录',scope:fresh.scopeId});
+  const before=h.adapter.calls.length;
+  const page=await rpc('list',{query:{view:'attention'}});
+  if (process.platform === 'win32') {
+    assert.equal((await rpc('list',{query:{view:'all', workspace:a.session.header.cwd.toUpperCase()}})).total, 2);
+  }
+  assert.equal(page.attention.filter(x=>x.kind==='待回答').length,1);
+  assert.equal(page.attention[0].affected.length,2);
+  assert.equal(h.adapter.calls.length,before);
+  fresh=await detail(first.id);
+  const update={operationId:crypto.randomUUID(),taskId:first.id,expected:fresh.token,action:'update',title:'更新要求',goal:'Produce current result',acceptance:['Current evidence'],explanation:'Current user change'};
+  await cmd(update);
+  await cmd(update);
+  await assert.rejects(cmd({...update,operationId:crypto.randomUUID()}),/VERSION_CONFLICT/);
+  fresh=await detail(first.id);
+  await submitPanel(fresh,'answer',{questionId:fresh.questions[0].id,version:fresh.questions[0].version,answer:'A'});
+  for(const id of [first.id,second.id]){
+    await until(async()=>(await detail(id)).status==='review','panel task reaches review');
+    const r=await detail(id);
+    assert.equal(r.questions[0].decision.actor,'operator:owner');
+    await submitPanel(r,'review',{accepted:true,checked:[true],explanation:'Checked actual evidence',evidence:r.result.evidence});
+    const accepted=await detail(id);
+    assert.equal(accepted.review.by,'operator:owner');
+    await submitPanel(accepted,'archive');
+    assert.ok((await detail(id)).archivedAt);
+  }
+  assert.equal((await rpc('list',{query:{view:'all'}})).total,0);
+  assert.equal((await rpc('list',{query:{view:'history'}})).total,2);
+  assert.deepEqual(await cmd(create),first,'retry after archive does not recreate work');
+  assert.equal(foreign.session.deriveMessages().length,0);
+});
+
+test('half-finished archive recovers the original history and frees hot records without waking an executor', async () => {
+  const history=new Map(), disk=emptyTaskState();
+  const archivedTask={id:'done',requestHash:'hash',scopeId:'group',title:'已验收',
+    coordinator:{id:'A',cwd:'/w',child:false},assignee:{id:'B',cwd:'/w',child:false},grantAt:1,
+    goal:'verify',acceptance:['verified'],resources:[],revision:1,appliedRevision:1,decisionRevision:0,appliedDecisionRevision:0,
+    status:'completed',createdAt:1,updatedAt:2,checkpoint:{summary:'done',done:['verified'],remaining:[],artifacts:['result'],at:2},questionIds:[],history:[]};
+  disk.tasks.done=archivedTask;
+  const active={...structuredClone(archivedTask),id:'next',status:'paused',assignee:{id:'C',cwd:'/w',child:false}};
+  disk.tasks.next=active;
+  disk.questions.shared={id:'shared',scopeId:'group',topic:'policy',context:'local',question:'Which?',options:['A','B'],taskIds:['done','next'],status:'resolved',version:1,coordinator:'A',createdAt:1,updatedAt:2,previous:[]};
+  active.questionIds=['shared'];archivedTask.questionIds=['shared'];
+  let state=structuredClone(disk), simulateCrash=true;
+  const writer={read:()=>state,write:async next=>{if(simulateCrash)throw Error('simulated interrupted hot write');state=structuredClone(next);}};
+  const cold={get:key=>history.get(key),entries:()=>history.entries(),put:async(key,item)=>history.set(key,structuredClone(item))};
+  const transport={live:()=>undefined,permitted:()=>true,deliver:()=>assert.fail('no recovery dispatch')};
+  let tasks=new Tasks(writer,transport,()=>3,cold);
+  const op={taskId:'done',operationId:crypto.randomUUID(),fingerprint:'copy',expected:tasks.panelTasks()[0].token};
+  await assert.rejects(tasks.archiveTask(op),/interrupted hot write/);
+  assert.ok(history.has('done'));assert.ok(state.tasks.done);await tasks.close();
+  simulateCrash=false;tasks=new Tasks(writer,transport,()=>4,cold);
+  await tasks.recover();await tasks.archiveTask(op);
+  assert.equal(state.tasks.done,undefined);assert.deepEqual(state.questions.shared.taskIds,['next']);
+  assert.deepEqual(tasks.panelHistory()[0].questions[0].taskIds,['done','next']);
+  assert.equal(tasks.panelOperation(op.operationId).id,'done');assert.equal(state.tasks.next.status,'paused');await tasks.close();
+});
+
+test('only owner peers manage the panel and Superagent IDs, presets and worker children bypass Sessivra', async t => {
+  const h=await taskHost(t);
+  await assert.rejects(h.ctx.typertGateway.invoke({namespace:'sessivraTaskPanel',method:'participants',args:{},peer:{...h.peer,principal:{kind:'test-outsider'}}}));
+  assert.throws(()=>h.ctx.sessivraTaskPanel.list({view:'all'}),/PANEL_OWNER_REQUIRED/);
+  const {managedBySuperagent}=await import('../dist/session-ownership.js');
+  assert.ok(managedBySuperagent({id:'custom-master',agentPreset:'dsh-superagent-router'}));
+  assert.ok(managedBySuperagent({id:'leaf',parentSession:'worker-'+'1'.repeat(32)}));
+  assert.equal(managedBySuperagent({id:'my-worker',agentPreset:'standard'}),false);
+  const foreign=(await h.create('orchestrator-'+'2'.repeat(32))).agent;
+  input(foreign,'Repository agent turn');
+  await foreign.whenIdle();
+  assert.ok(h.adapter.calls.length);
+  assert.doesNotMatch(JSON.stringify(h.adapter.calls[0].messages),/Sessivra managed collaboration:|Sessivra current task state/);
+  const attempted=await h.tool(foreign,'session_task_create_child',{requestId:'deny',label:'child',prompt:'Do work',acceptance:['checked']});
+  assert.equal(attempted.isError,true);
+  assert.equal(h.ctx.agents.list().length,1);
+});

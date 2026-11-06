@@ -57,13 +57,13 @@ export async function apply(ctx: Context, config: Partial<Limits> = {}) {
     },
     inspect: async id => {
       const controller = ctx.get('sessionController');
-      if (!controller) {
+      if (typeof controller?.inspect !== 'function') {
         const live = ctx.agents.list().find(agent => agent.id === id);
         if (live) return { ...live.session.header, id: live.id };
         const query = ctx.get('sessionQuery');
         if (!query) return undefined;
-        const snapshot = await query.readSession(id as Parameters<typeof query.readSession>[0]);
-        return { ...snapshot.session };
+        const observed = await query.observeSession(id as Parameters<typeof query.observeSession>[0]);
+        try { return { ...observed.header }; } finally { observed[Symbol.dispose](); }
       }
       const result = await controller.inspect(id);
       return result ? { ...result.meta } : undefined;
@@ -86,7 +86,10 @@ export async function apply(ctx: Context, config: Partial<Limits> = {}) {
   // Keep Host singleton services on the Host's own module graph. Importing dsh-tools
   // at runtime from an installed profile would load a second ToolRuntime scheduler symbol.
   const register = <S extends z.ZodType>(name: string, description: string, parameters: ToolDefinition['parameters'], schema: S, run: (args: z.output<S>, exec: Parameters<ToolDefinition['execute']>[1]) => Promise<unknown>) => {
-    ctx.tools.register({ name, description, parameters, output: { schema: {}, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] }, execute: async (raw, exec) => run(schema.parse(raw), exec) });
+    ctx.tools.register({ name, description, parameters, output: { schema: {}, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] }, execute: async (raw, exec) => {
+      if (exec.agent && tasks.transport.foreign(exec.agent)) throw new Error('SUPERAGENT_OWNS_SESSION');
+      return run(schema.parse(raw), exec);
+    } });
   };
   const idSchema = z.object({ id: z.string() });
   register('session_create_child', 'Use a stable requestId for each intended child; reuse it with identical arguments when retrying. A partial result reports its exact id and not-confirmed status; do not replace it with another creation. Only when the user asks to create/delegate a child session, create an ordinary independent conversation linked under this parent conversation, with its own context. Never create a subagent for this operation. Provide a short label and task prompt; cwd defaults to the parent workspace. The plugin persists parent/child conversation IDs and sends the initial task through Session Messenger. The child remains an ordinary conversation for @ messaging and list navigation. If the user specifies a child reasoning level, pass reasoningEffort (for example high) here. Do not ask the user to change global model defaults. The effort applies before the child first model request; omitting it keeps normal defaults. Returns immediately after admission, not task completion.', { type: 'object', properties: { requestId: { type: 'string', description: 'Stable idempotency key for this intended child. Reuse on retry; never use the label as identity.' }, label: { type: 'string' }, prompt: { type: 'string' }, cwd: { type: 'string' }, reasoningEffort: { type: 'string', description: 'Requested reasoning effort for this child only, such as high. Use the provider effort ID.' } }, required: ['label','prompt'] }, z.object({ requestId: z.string().min(1).max(120).optional(), label: z.string().min(1).max(160), prompt: z.string().min(1).max(8000), cwd: z.string().optional(), reasoningEffort: z.string().trim().min(1).max(40).toLowerCase().optional() }).strict(), async (args, exec) => {
@@ -130,6 +133,7 @@ export async function apply(ctx: Context, config: Partial<Limits> = {}) {
   ctx.on('agent/inbox/claimed', ({ agent, message }) => messenger.claimed(agent, message.id, message.source.kind === 'plugin:dsh-session-messenger' ? message.source.messageId : undefined));
   ctx.on('agent/inbox/discarded', ({ agent, message }) => messenger.discarded(agent, message.id));
   ctx.on('agent/pre-step', async (payload, next) => {
+    if (tasks.transport.foreign(payload.agent)) return next();
     // A genuine human input clears reply causality; peer-controlled text cannot.
     const direct = payload.messages.filter(m => m.source.kind === 'user');
     if (direct.length) {

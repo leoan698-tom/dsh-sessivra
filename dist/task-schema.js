@@ -14,8 +14,10 @@ export const taskSchema = z.object({
     decisionRevision: z.number().int().nonnegative(), appliedDecisionRevision: z.number().int().nonnegative(),
     status: taskStatus, createdAt: z.number(), updatedAt: z.number(),
     checkpoint: checkpointSchema, questionIds: z.array(z.string()).max(128),
+    panelReceipts: z.record(z.string(), z.string()).optional(),
+    scopeLabel: short.optional(),
     result: z.object({ summary: text, evidence: strings, revision: z.number(), decisionRevision: z.number(), at: z.number() }).strict().optional(),
-    review: z.object({ accepted: z.boolean(), explanation: text, evidence: strings, by: z.string(), at: z.number() }).strict().optional(),
+    review: z.object({ resultId: z.string().optional(), checked: z.array(z.boolean()).max(32).optional(), accepted: z.boolean(), explanation: text, evidence: strings, by: z.string(), at: z.number() }).strict().optional(),
     reason: z.string().max(600).optional(), pendingUserMessage: z.string().optional(),
     history: z.array(z.object({ at: z.number(), actor: z.string(), action: z.string(), revision: z.number(), detail: z.string().max(600) }).strict()).max(64),
 }).strict();
@@ -37,6 +39,11 @@ export const eventSchema = z.object({
     reason: z.string().max(600).optional(),
 }).strict();
 export const taskStateSchema = z.object({ tasks: z.record(z.string(), taskSchema), questions: z.record(z.string(), questionSchema), events: z.record(z.string(), eventSchema), sequence: z.number().int().nonnegative() }).strict();
+export const archiveSchema = z.object({
+    task: taskSchema, questions: z.array(questionSchema), events: z.array(eventSchema), archivedAt: z.number(),
+}).strict();
+export const archiveDomainSpec = defineDomain({ name: 'dsh_sessivra_task_history', version: 1,
+    layout: 'per-record', tables: { history: { valueSchema: archiveSchema } } });
 export const emptyTaskState = () => ({ tasks: {}, questions: {}, events: {}, sequence: 0 });
 // Separate domain: upgrading never rewrites the three legacy Messenger domains.
 export const taskDomainSpec = defineDomain({ name: 'dsh_sessivra_tasks', version: 1, tables: {}, global: { schema: taskStateSchema, initial: emptyTaskState() } });

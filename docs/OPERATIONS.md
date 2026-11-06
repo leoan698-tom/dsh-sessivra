@@ -2,7 +2,7 @@
 
 项目已采用 **DSH Sessivra / DSH Sessivra 协作空间** 名称。当前版本使用 `dsh-plugin-sessivra`，其安装和跨包名迁移见 [改名与迁移](RENAMING.md)。本文命令用于已发布的新包；已安装dev.19 scoped 包、原信使包或 Agent Hub 包时，先按迁移说明移除对应旧包。
 
-当前分发版本 0.3.0-dev.26，宿主固定为 DSH 0.2.1-rc.5。Node.js 24+；桌面版优先使用其安装目录下的 `resources/runtime/cli/bin/dsh.cmd`。先运行 `dsh --version` 核对；全局旧版 CLI 不应代替桌面程序自带的 CLI。
+当前分发版本 0.3.0-dev.27，支持 DSH 0.2.1-rc.5 或 0.2.2-rc.1。Node.js 24+；桌面版优先使用其安装目录下的 `resources/runtime/cli/bin/dsh.cmd`。先运行 `dsh --version` 核对；全局旧版 CLI 不应代替桌面程序自带的 CLI。
 
 ## 安装
 
@@ -11,10 +11,10 @@
 在「插件 → 添加插件」输入框中，选择 npm 官方源，只填写包名，不加引号：
 
 ```text
-dsh-plugin-sessivra@0.3.0-dev.26
+dsh-plugin-sessivra@0.3.0-dev.27
 ```
 
-DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装较旧版本；使用上面的固定版本可明确选择 dev.26，安装后核对版本。无需关闭全局保护。
+DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装较旧版本；使用上面的固定版本可明确选择 dev.27，安装后核对版本。无需关闭全局保护。
 
 点击「安装」，完成后按界面提示重启或重新加载。若出现 `not a package name the registry accepts`，先检查是否误把整条 `dsh plugin ...` 终端命令粘贴到了输入框。
 
@@ -25,16 +25,16 @@ DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布�
 正常退出使用目标 profile 的 DSH。安装命令使用官方 bundle 机制：
 
 ```sh
-dsh plugin --profile desktop add "dsh-plugin-sessivra@0.3.0-dev.26"
+dsh plugin --profile desktop add "dsh-plugin-sessivra@0.3.0-dev.27"
 ```
 
 或者安装 Release 压缩包：
 
 ```sh
-dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.26/dsh-plugin-sessivra-0.3.0-dev.26.tgz"
+dsh plugin --profile desktop add "https://github.com/leoan698-tom/dsh-sessivra/releases/download/v0.3.0-dev.27/dsh-plugin-sessivra-0.3.0-dev.27.tgz"
 ```
 
-已有本地压缩包时，把来源换成 `file:/绝对路径/dsh-plugin-sessivra-0.3.0-dev.26.tgz`。Web profile 使用 `--profile web`。自定义 DSH_HOME 应与实际宿主一致。CLI 会交给包管理器安装依赖，并在 profile 的 bundle 清单中注册插件。包包含 `dsh.manifestVersion: 1`、`dsh.bundle.patch`、`./client` 和编译产物。
+已有本地压缩包时，把来源换成 `file:/绝对路径/dsh-plugin-sessivra-0.3.0-dev.27.tgz`。Web profile 使用 `--profile web`。自定义 DSH_HOME 应与实际宿主一致。CLI 会交给包管理器安装依赖，并在 profile 的 bundle 清单中注册插件。包包含 `dsh.manifestVersion: 1`、`dsh.bundle.patch`、`./client` 和编译产物。
 
 安装后启动 DSH，在插件列表确认版本及启用状态。正常入口是输入框原生 `@` 和原生工作区列表。工作区标题、搜索、视图选项和添加工作区由宿主管理，主会话有子节点时直接显示展开箭头。
 

@@ -3,11 +3,13 @@ import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-api-remotes/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol';
+import { TaskPanel, taskPanelTitle, type TaskPanelApi } from './task-panel.js';
+import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client';
 import { remoteContribution } from './contract.js';
 import { createLegacyRecipientSource } from './recipient-source.js';
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client';
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client';
-import { Button, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
+import { Button, MarkdownText, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import { createSessionTreeStore, type TreeApi } from './session-tree.js';
 import { NativeSessionTreeHost } from './session-tree-host.js';
 import type { SessionActions } from './session-actions.js';
@@ -21,8 +23,10 @@ import { createSessionReferenceDrop, SessionReferenceDropInput } from './session
 interface Api {
   selectRecipient(sourceId: string, targetId: string, label: string): Promise<RemoteResult<unknown>>;
 }
+const reportLabels = { code: { copyLabel: '复制代码', copiedLabel: '已复制' }, footnotes: '脚注' };
+const renderReport = (text: string) => <MarkdownText text={text} labels={reportLabels}/>;
 
-declare module '@deepseek-ai/dsh-typert-protocol' { interface TypertRemoteNamespaceMap { sessionMessenger: Api; sessionCollaboration: TreeApi } }
+declare module '@deepseek-ai/dsh-typert-protocol' { interface TypertRemoteNamespaceMap { sessionMessenger: Api; sessivraTaskPanel: TaskPanelApi; sessionCollaboration: TreeApi } }
 export const inject = ['slots', 'remote'];
 export async function apply(ctx: Context) {
   await ctx.remote.$mount(remoteContribution);
@@ -37,6 +41,27 @@ export async function apply(ctx: Context) {
       const views = createSessionViews(sessions);
       const referenceDrop = createSessionReferenceDrop();
       const headerViews = createHeaderViews();
+      let requestedTask: string | undefined;
+      let showTask: ((id:string) => void) | undefined;
+      treeCtx.inject(['remote.sessivraTaskPanel','layout'], panelCtx => {
+        const panelId = 'sessivra-tasks' as MainPanelId;
+        const listeners = new Set<()=>void>();
+        showTask = id => { requestedTask=id; panelCtx.layout.selectPanel(panelId); for (const notify of listeners) notify(); };
+        panelCtx.effect(() => () => { showTask=undefined; });
+        const panelSlots = panelCtx.slots as unknown as typeof treeSlots;
+        panelSlots.inject('sidebar.panellist', () => panelSlots.register({
+          name:'sidebar.panellist', id:panelId, order:20, label:()=>taskPanelTitle,
+        }, ({size}:{size:number}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9"/></svg>));
+        panelSlots.inject('main', () => panelSlots.register({ name:'main', key:panelId }, function Mounted(props: {useSessions:<T>(get:(s:{byId:Record<string,{id:string; retainedBy:{mainView?:number}}>})=>T)=>T}) {
+          const current = props.useSessions(s=>Object.values(s.byId).find(row=>row.retainedBy.mainView)?.id);
+          const task = React.useSyncExternalStore(listener=>{listeners.add(listener);return()=>{listeners.delete(listener);};},()=>requestedTask);
+          return <TaskPanel key={task} initialSession={current} initialTask={task} api={panelCtx.remote.sessivraTaskPanel} renderMarkdown={renderReport} open={id=>{
+            const node=store.getSnapshot().nodes.get(id);
+            if(node?.subagent && !node.openable) throw new Error('会话当前不可打开');
+            panelCtx.uiWorkspace.openSession((node?.subagent ? {parentSessionId:node.parentId,childSessionId:id,mode:node.subagentMode} : id) as Parameters<typeof treeCtx.uiWorkspace.openSession>[0]);
+          }}/>;
+        }));
+      });
       treeSlots.inject('conversation.session.header.actions', () => wireHeaderViews(treeCtx.slots, headerViews));
       treeSlots.inject('conversation.input.overlay', () => treeSlots.register({
         name: 'conversation.input.overlay', id: 'sessivra-reference-drop',
@@ -76,7 +101,7 @@ export async function apply(ctx: Context) {
       treeSlots.inject('sidebar.workspaces.session.row.action', () => treeSlots.register({
         name: 'sidebar.workspaces.session.row.action', id: 'messenger-session-children', order: 300,
         inject: () => ({
-          store,
+          store, openTask:(id:string)=>showTask?.(id),
           controls: { Menu, Modal, Button },
           dialogs,
           sessionActions: {
