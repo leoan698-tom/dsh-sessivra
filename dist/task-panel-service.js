@@ -37,6 +37,7 @@ import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { open, realpath, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { MessageHistory, bookmarkedTurn, bookmarkedTurnNumbers, legacyBookmarkQuote, messageLocation, messageOrigin, readBookmarkedTurns, readBookmarkReference, readMessageOrigin } from './message-history.js';
 import { workspace } from './core.js';
 import { taskIdFor } from './tasks.js';
 import { panelCommand, panelQuery } from './panel-contract.js';
@@ -58,6 +59,10 @@ export const labels = {
 let SessivraPanel = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
+    let _locateMessage_decorators;
+    let _bookmarkedTurns_decorators;
+    let _bookmarkReference_decorators;
+    let _locateLegacyBookmark_decorators;
     let _participants_decorators;
     let _list_decorators;
     let _operation_decorators;
@@ -67,12 +72,20 @@ let SessivraPanel = (() => {
     return class SessivraPanel extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _locateMessage_decorators = [Remote];
+            _bookmarkedTurns_decorators = [Remote];
+            _bookmarkReference_decorators = [Remote];
+            _locateLegacyBookmark_decorators = [Remote];
             _participants_decorators = [Remote];
             _list_decorators = [Remote];
             _operation_decorators = [Remote];
             _preview_decorators = [Remote];
             _detail_decorators = [Remote];
             _command_decorators = [Remote];
+            __esDecorate(this, null, _locateMessage_decorators, { kind: "method", name: "locateMessage", static: false, private: false, access: { has: obj => "locateMessage" in obj, get: obj => obj.locateMessage }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _bookmarkedTurns_decorators, { kind: "method", name: "bookmarkedTurns", static: false, private: false, access: { has: obj => "bookmarkedTurns" in obj, get: obj => obj.bookmarkedTurns }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _bookmarkReference_decorators, { kind: "method", name: "bookmarkReference", static: false, private: false, access: { has: obj => "bookmarkReference" in obj, get: obj => obj.bookmarkReference }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _locateLegacyBookmark_decorators, { kind: "method", name: "locateLegacyBookmark", static: false, private: false, access: { has: obj => "locateLegacyBookmark" in obj, get: obj => obj.locateLegacyBookmark }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _participants_decorators, { kind: "method", name: "participants", static: false, private: false, access: { has: obj => "participants" in obj, get: obj => obj.participants }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _list_decorators, { kind: "method", name: "list", static: false, private: false, access: { has: obj => "list" in obj, get: obj => obj.list }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _operation_decorators, { kind: "method", name: "operation", static: false, private: false, access: { has: obj => "operation" in obj, get: obj => obj.operation }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -84,15 +97,33 @@ let SessivraPanel = (() => {
         tasks = __runInitializers(this, _instanceExtraInitializers);
         collaboration;
         messenger;
+        history;
         constructor(ctx, tasks, collaboration, messenger) {
             super(ctx, 'sessivraTaskPanel');
             this.tasks = tasks;
             this.collaboration = collaboration;
             this.messenger = messenger;
+            this.history = new MessageHistory(ctx);
         }
         owner() {
             if (this.ctx.invocation?.peer.principal.kind !== 'owner')
                 throw new Error('PANEL_OWNER_REQUIRED');
+        }
+        async locateMessage(location, expectedId) {
+            this.owner();
+            return readMessageOrigin(this.ctx, messageLocation.parse(location), expectedId || undefined);
+        }
+        async bookmarkedTurns(sessionId, turns) {
+            this.owner();
+            return readBookmarkedTurns(this.ctx, sessionId, bookmarkedTurnNumbers.parse(turns));
+        }
+        async bookmarkReference(origin, turn) {
+            this.owner();
+            return readBookmarkReference(this.ctx, messageOrigin.parse(origin), bookmarkedTurn.parse(turn));
+        }
+        async locateLegacyBookmark(quote) {
+            this.owner();
+            return this.history.locateLegacyBookmark(legacyBookmarkQuote.parse(quote));
         }
         async header(id) {
             const live = this.tasks.transport.live(id);

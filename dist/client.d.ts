@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol';
-import { type TaskPanelApi } from './task-panel.js';
+import { type TaskHistoryApi, type TaskPanelApi } from './task-panel.js';
 import { type TreeApi } from './session-tree.js';
 interface Api {
     selectRecipient(sourceId: string, targetId: string, label: string): Promise<RemoteResult<unknown>>;
@@ -8,7 +8,7 @@ interface Api {
 declare module '@deepseek-ai/dsh-typert-protocol' {
     interface TypertRemoteNamespaceMap {
         sessionMessenger: Api;
-        sessivraTaskPanel: TaskPanelApi;
+        sessivraTaskPanel: TaskPanelApi & TaskHistoryApi;
         sessionCollaboration: TreeApi;
     }
 }

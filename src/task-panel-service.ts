@@ -5,6 +5,7 @@ import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { open, realpath, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { MessageHistory, bookmarkedTurn, bookmarkedTurnNumbers, legacyBookmarkQuote, messageLocation, messageOrigin, readBookmarkedTurns, readBookmarkReference, readMessageOrigin, type LegacyBookmarkQuote, type MessageLocation, type MessageOrigin } from './message-history.js';
 import type { Collaboration } from './collaboration.js';
 import { workspace, type Messenger } from './core.js';
 import type { Tasks } from './tasks.js';
@@ -28,6 +29,7 @@ export const labels: Record<Item['status'], string> = {
   failed: '失败',
 };
 export class SessivraPanel extends TypertRemoteService {
+  private history: MessageHistory;
   constructor(
     ctx: Context,
     private tasks: Tasks,
@@ -35,9 +37,26 @@ export class SessivraPanel extends TypertRemoteService {
     private messenger: Messenger,
   ) {
     super(ctx, 'sessivraTaskPanel');
+    this.history = new MessageHistory(ctx);
   }
   private owner() {
     if (this.ctx.invocation?.peer.principal.kind !== 'owner') throw new Error('PANEL_OWNER_REQUIRED');
+  }
+  @Remote async locateMessage(location: MessageLocation, expectedId: string) {
+    this.owner();
+    return readMessageOrigin(this.ctx, messageLocation.parse(location), expectedId || undefined);
+  }
+  @Remote async bookmarkedTurns(sessionId: string, turns: number[]) {
+    this.owner();
+    return readBookmarkedTurns(this.ctx, sessionId, bookmarkedTurnNumbers.parse(turns));
+  }
+  @Remote async bookmarkReference(origin: MessageOrigin, turn: number) {
+    this.owner();
+    return readBookmarkReference(this.ctx, messageOrigin.parse(origin), bookmarkedTurn.parse(turn));
+  }
+  @Remote async locateLegacyBookmark(quote: LegacyBookmarkQuote) {
+    this.owner();
+    return this.history.locateLegacyBookmark(legacyBookmarkQuote.parse(quote));
   }
   private async header(id: string) {
     const live = this.tasks.transport.live(id);

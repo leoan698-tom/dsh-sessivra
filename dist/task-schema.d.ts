@@ -5,9 +5,9 @@ export declare const taskStatus: z.ZodEnum<{
     blocked: "blocked";
     running: "running";
     cancelled: "cancelled";
-    completed: "completed";
     "waiting-decision": "waiting-decision";
     review: "review";
+    completed: "completed";
     dispatched: "dispatched";
     pausing: "pausing";
     paused: "paused";
@@ -49,9 +49,9 @@ export declare const taskSchema: z.ZodObject<{
         blocked: "blocked";
         running: "running";
         cancelled: "cancelled";
-        completed: "completed";
         "waiting-decision": "waiting-decision";
         review: "review";
+        completed: "completed";
         dispatched: "dispatched";
         pausing: "pausing";
         paused: "paused";
@@ -132,15 +132,15 @@ export declare const questionSchema: z.ZodObject<{
     }, z.core.$strict>>;
 }, z.core.$strict>;
 export declare const eventKind: z.ZodEnum<{
+    cancel: "cancel";
+    pause: "pause";
     start: "start";
+    question: "question";
     review: "review";
     result: "result";
-    question: "question";
     decision: "decision";
     update: "update";
     attention: "attention";
-    pause: "pause";
-    cancel: "cancel";
     resume: "resume";
 }>;
 export declare const eventSchema: z.ZodObject<{
@@ -148,15 +148,15 @@ export declare const eventSchema: z.ZodObject<{
     taskId: z.ZodString;
     target: z.ZodString;
     kind: z.ZodEnum<{
+        cancel: "cancel";
+        pause: "pause";
         start: "start";
+        question: "question";
         review: "review";
         result: "result";
-        question: "question";
         decision: "decision";
         update: "update";
         attention: "attention";
-        pause: "pause";
-        cancel: "cancel";
         resume: "resume";
     }>;
     revision: z.ZodNumber;
@@ -206,9 +206,9 @@ export declare const taskStateSchema: z.ZodObject<{
             blocked: "blocked";
             running: "running";
             cancelled: "cancelled";
-            completed: "completed";
             "waiting-decision": "waiting-decision";
             review: "review";
+            completed: "completed";
             dispatched: "dispatched";
             pausing: "pausing";
             paused: "paused";
@@ -293,15 +293,15 @@ export declare const taskStateSchema: z.ZodObject<{
         taskId: z.ZodString;
         target: z.ZodString;
         kind: z.ZodEnum<{
+            cancel: "cancel";
+            pause: "pause";
             start: "start";
+            question: "question";
             review: "review";
             result: "result";
-            question: "question";
             decision: "decision";
             update: "update";
             attention: "attention";
-            pause: "pause";
-            cancel: "cancel";
             resume: "resume";
         }>;
         revision: z.ZodNumber;
@@ -353,9 +353,9 @@ export declare const archiveSchema: z.ZodObject<{
             blocked: "blocked";
             running: "running";
             cancelled: "cancelled";
-            completed: "completed";
             "waiting-decision": "waiting-decision";
             review: "review";
+            completed: "completed";
             dispatched: "dispatched";
             pausing: "pausing";
             paused: "paused";
@@ -440,15 +440,15 @@ export declare const archiveSchema: z.ZodObject<{
         taskId: z.ZodString;
         target: z.ZodString;
         kind: z.ZodEnum<{
+            cancel: "cancel";
+            pause: "pause";
             start: "start";
+            question: "question";
             review: "review";
             result: "result";
-            question: "question";
             decision: "decision";
             update: "update";
             attention: "attention";
-            pause: "pause";
-            cancel: "cancel";
             resume: "resume";
         }>;
         revision: z.ZodNumber;
@@ -507,9 +507,9 @@ export declare const archiveDomainSpec: {
                         blocked: "blocked";
                         running: "running";
                         cancelled: "cancelled";
-                        completed: "completed";
                         "waiting-decision": "waiting-decision";
                         review: "review";
+                        completed: "completed";
                         dispatched: "dispatched";
                         pausing: "pausing";
                         paused: "paused";
@@ -594,15 +594,15 @@ export declare const archiveDomainSpec: {
                     taskId: z.ZodString;
                     target: z.ZodString;
                     kind: z.ZodEnum<{
+                        cancel: "cancel";
+                        pause: "pause";
                         start: "start";
+                        question: "question";
                         review: "review";
                         result: "result";
-                        question: "question";
                         decision: "decision";
                         update: "update";
                         attention: "attention";
-                        pause: "pause";
-                        cancel: "cancel";
                         resume: "resume";
                     }>;
                     revision: z.ZodNumber;
@@ -667,9 +667,9 @@ export declare const taskDomainSpec: {
                     blocked: "blocked";
                     running: "running";
                     cancelled: "cancelled";
-                    completed: "completed";
                     "waiting-decision": "waiting-decision";
                     review: "review";
+                    completed: "completed";
                     dispatched: "dispatched";
                     pausing: "pausing";
                     paused: "paused";
@@ -754,15 +754,15 @@ export declare const taskDomainSpec: {
                 taskId: z.ZodString;
                 target: z.ZodString;
                 kind: z.ZodEnum<{
+                    cancel: "cancel";
+                    pause: "pause";
                     start: "start";
+                    question: "question";
                     review: "review";
                     result: "result";
-                    question: "question";
                     decision: "decision";
                     update: "update";
                     attention: "attention";
-                    pause: "pause";
-                    cancel: "cancel";
                     resume: "resume";
                 }>;
                 revision: z.ZodNumber;
@@ -808,7 +808,7 @@ export declare const taskDomainSpec: {
                 appliedRevision: number;
                 decisionRevision: number;
                 appliedDecisionRevision: number;
-                status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+                status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
                 createdAt: number;
                 updatedAt: number;
                 checkpoint: {
@@ -880,7 +880,7 @@ export declare const taskDomainSpec: {
                 id: string;
                 taskId: string;
                 target: string;
-                kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+                kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
                 revision: number;
                 decisionRevision: number;
                 messageId: string;

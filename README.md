@@ -6,7 +6,9 @@
 
 在 DSH 里开了几个会话干活，结果还要自己来回复制、追问进度？Sessivra 让主会话交办任务，收回普通子会话的问题和产物，读取并验收后再放行同一子会话的后续任务。普通子会话仍能独立打开和继续使用。
 
-**当前为 dev.27 预发布，兼容 DSH 0.2.1-rc.5 或 0.2.2-rc.1 / Node.js 24+，限同一 Host/profile。**非官方项目，由社区成员独立开发和维护。
+**当前为 dev.28 预发布，兼容 DSH 0.2.1-rc.5 或 0.2.2-rc.1 / Node.js 24+，限同一 Host/profile。**非官方项目，由社区成员独立开发和维护。
+
+**dev.28 新增轮次收藏。** 在回复下方点鱼形图标，在侧栏「收藏」按会话筛选。聊天框输入 `@收藏` 选中原问答，已发送消息里的收藏标签可悬停预览并点击跳回原轮次。此流程在 DSH 0.2.2-rc.1 Windows 桌面验收。
 
 **dev.27 新增「任务中心」。** 从 DSH 侧栏打开即可使用。在「待处理」集中答复共同问题、查看产物并验收，在「全部任务」创建或修改任务，在「历史」打开归档任务，可直接看到结果和当前验收状态，点击 Markdown 报告即可阅读表格。[操作说明](docs/MANAGED_TASKS.md)
 
@@ -18,7 +20,7 @@
 
 真实模型、示例需求、分段实录剪辑，含等待压缩、定格与 AI 旁白。主会话实际读取产物，第一项验收后第二项才开始调度。运行出现过一次回合耗尽后自动恢复、五次工具调用被拒，说明中均已披露；尚不代表独立用户试用或任意场景可靠性。
 
-> 在 DSH「插件 → 添加插件」的 npm 输入框只填写：`dsh-plugin-sessivra@0.3.0-dev.27`。完整终端命令见下方，桌面使用 `desktop`，Web 使用 `web`。
+> 在 DSH「插件 → 添加插件」的 npm 输入框只填写：`dsh-plugin-sessivra@0.3.0-dev.28`。完整终端命令见下方，桌面使用 `desktop`，Web 使用 `web`。
 
 想找 **5 位已经在用 DSH 主子会话的朋友**，用自己的一份小需求或方案试一次。欢迎在[现有展示帖](https://github.com/deepseek-ai/deepseek-harness/discussions/11837)留言：哪里卡住、产物是否有用、下次是否还会用。中英文反馈均可，不需要提供私密项目文件或完整聊天记录。
 
@@ -77,19 +79,19 @@
 
 ## 开始使用
 
-**当前版本为 `0.3.0-dev.27`（预发布）**，npm 包名为 **`dsh-plugin-sessivra`**，显示名称为 **DSH Sessivra 协作空间**。兼容 DSH `0.2.1-rc.5` 或 `0.2.2-rc.1` / Node.js 24+。
+**当前版本为 `0.3.0-dev.28`（预发布）**，npm 包名为 **`dsh-plugin-sessivra`**，显示名称为 **DSH Sessivra 协作空间**。兼容 DSH `0.2.1-rc.5` 或 `0.2.2-rc.1` / Node.js 24+。
 
 ### 在 DSH「添加插件」窗口安装
 
 打开「插件 → 添加插件」，选择 npm 官方源，输入框只填写：
 
 ```text
-dsh-plugin-sessivra@0.3.0-dev.27
+dsh-plugin-sessivra@0.3.0-dev.28
 ```
 
-DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装较旧版本；使用上面的固定版本可明确选择 dev.27，安装后核对版本。无需关闭全局保护。
+DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布首日，仅填裸包名可能仍安装较旧版本；使用上面的固定版本可明确选择 dev.28，安装后核对版本。无需关闭全局保护。
 
-点击「安装」，完成后按界面提示重启或重新加载，确认版本为 `0.3.0-dev.27` 且插件已启用。这里只填写包名，不加引号，不粘贴终端命令。
+点击「安装」，完成后按界面提示重启或重新加载，确认版本为 `0.3.0-dev.28` 且插件已启用。这里只填写包名，不加引号，不粘贴终端命令。
 
 已安装 `@leoan698-tom/dsh-sessivra`（dev.19）、原信使包或 Agent Hub dev.18 的用户，先按[改名与迁移](docs/RENAMING.md)移除对应旧包，再安装新包。它们使用同一组服务和持久数据，不能同时启用。
 
@@ -102,7 +104,7 @@ DSH rc.5 自带 pnpm 的默认发布时间保护为 24 小时。新版本发布�
 
 ```sh
 dsh --version
-dsh plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.27
+dsh plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.28
 ```
 
 3. 重启 DSH，在插件列表确认启用，然后在输入框键入 `@` 选择一个已有会话。
@@ -110,12 +112,12 @@ dsh plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.27
 Windows 桌面版未配置 PATH 时，使用安装目录内的 CLI，将下面的路径换成实际位置：
 
 ```powershell
-& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.27
+& 'D:\DeepSeekHarness\resources\runtime\cli\bin\dsh.cmd' plugin --profile desktop add dsh-plugin-sessivra@0.3.0-dev.28
 ```
 
-需要固定版本时使用 `dsh-plugin-sessivra@0.3.0-dev.27`。Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
+需要固定版本时使用 `dsh-plugin-sessivra@0.3.0-dev.28`。Web 用户将 `desktop` 换成 `web`；自定义 profile 和 `DSH_HOME` 应与实际宿主一致。安装包包含编译产物，使用者无需构建。
 
-[npm 包页面](https://www.npmjs.com/package/dsh-plugin-sessivra) · [GitHub Release 与离线安装包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.27) · [升级与回退](docs/RENAMING.md)
+[npm 包页面](https://www.npmjs.com/package/dsh-plugin-sessivra) · [GitHub Release 与离线安装包](https://github.com/leoan698-tom/dsh-sessivra/releases/tag/v0.3.0-dev.28) · [升级与回退](docs/RENAMING.md)
 
 ## 试跑一个小任务
 

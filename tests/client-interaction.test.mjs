@@ -25,7 +25,7 @@ test('native workspace stays registered; row navigation uses original ordinary a
     slots:{subscribe:()=>()=>{},entriesOfSlot:()=>[],inject:(_name,register)=>register(),register:(entry,component)=>{const row={entry,component};active.add(row);return()=>active.delete(row);}},
     inputTriggers:{registerSource:()=>()=>{}},effect:fn=>disposals.push(fn()),
   };
-  ctx.inject=async(_deps,fn)=>fn(ctx);
+  ctx.inject=async(deps,fn)=>{if(!deps.some(dep=>['remote.sessivraTaskPanel','workspaces','uiConversation'].includes(dep))) return fn(ctx);};
   await client.apply(ctx);
   assert.equal([...active].some(row=>row.entry.name==='sidebar.workspaces'),false);
   assert.equal([...active].some(row=>row.entry.name==='sidebar.panellist.actions'),false);

@@ -12,6 +12,7 @@ import type { Menu as HostMenu } from '@deepseek-ai/dsh-client-ui-primitives';
 import { CompactHeaders } from './compact-headers.js';
 import { promotePane } from './split-layout.js';
 import type { HeaderViews } from './header-views.js';
+import { mountTurnBookmarks } from './turn-bookmarks.js';
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
@@ -69,12 +70,20 @@ type ViewProps = PropsRuntime<'shell.overlay'> & PropsRenderSlots<'sessivra.conv
   views: Views; store: TreeStore; referenceDrop: ReturnType<typeof createSessionReferenceDrop>;
   Menu: typeof HostMenu; selectSession(target: SessionTarget): void; startSession(): void;
   headerViews: HeaderViews;
+  fish?: Parameters<typeof mountTurnBookmarks>[1];
 };
 const styles = `
 [data-sessivra-views]{display:flex!important;flex-direction:column;position:relative!important;min-height:0;isolation:isolate;overflow:hidden}
 [data-sessivra-views]>[data-conversation-content]{position:absolute!important;left:var(--sessivra-main-left,0px)!important;top:var(--sessivra-main-top,0px)!important;width:var(--sessivra-main-width,100%)!important;height:var(--sessivra-main-height,0px)!important;min-width:0!important;min-height:0!important;max-width:none!important;box-sizing:border-box;z-index:1;overflow:hidden}
 [data-sessivra-views][data-sessivra-split=true] [data-sessivra-main-header]{position:absolute!important;left:var(--sessivra-main-left,0px);top:var(--sessivra-header-top,0px);width:var(--sessivra-main-width,100%);min-width:0;box-sizing:border-box;z-index:4}
 [data-sessivra-visible=true]{background:var(--dsw-alias-interactive-bg-hover)!important}
+/* DSH rc.1's native TurnNavigator owns the outline, previews and history jumps. */
+@container (width >= 112px){
+  [data-conversation-scroll] .SNx2jG_slot>.SNx2jG_frame{display:block;left:2px;right:auto;width:14px}
+}
+[data-conversation-scroll] .SNx2jG_mark::before{left:0;right:auto;width:12px;transform-origin:left center}
+[data-conversation-scroll] .SNx2jG_mark:focus-visible::after{width:14px;inset:0}
+[data-conversation-scroll] .SNx2jG_frame>.SNx2jG_preview{left:calc(100% + 6px);right:auto;width:min(300px,calc(100cqw - 8px))}
 .sessivra-pane:focus-visible,.sessivra-pane-close:focus-visible,.sessivra-divider:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}
 .sessivra-canvas{flex:1;min-height:0;min-width:0;position:relative;pointer-events:none;z-index:2}
 .sessivra-pane{position:absolute;box-sizing:border-box;min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l2);overflow:hidden;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);pointer-events:auto}
@@ -104,6 +113,8 @@ export function SessionViews(props: ViewProps) {
   const current = listedCurrent ?? nativeCurrent;
   const panel = props.usePanelInfo(info => info.activePanelId);
   const [host, setHost] = useState<HTMLElement>();
+  const { fish } = props;
+  useEffect(() => host && fish && panel === null ? mountTurnBookmarks(host, fish) : undefined, [host, fish, panel]);
   const [canvas, setCanvas] = useState<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0, x: 0, y: 0, header: 0 });
   const [layout, setLayout] = useState<SplitLayout>(mainLayout);

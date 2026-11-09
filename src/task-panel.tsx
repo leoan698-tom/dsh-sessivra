@@ -13,6 +13,11 @@ type RemoteApi = {
   ) => Promise<RemoteResult<Awaited<ReturnType<SessivraPanel[K]>>>>;
 };
 export type TaskPanelApi = RemoteApi;
+export type TaskHistoryApi = {
+  [K in 'locateMessage' | 'bookmarkedTurns' | 'bookmarkReference' | 'locateLegacyBookmark']: (
+    ...args: Parameters<SessivraPanel[K]>
+  ) => Promise<RemoteResult<Awaited<ReturnType<SessivraPanel[K]>>>>;
+};
 export const taskPanelTitle = '任务中心';
 type Detail = Awaited<ReturnType<SessivraPanel['detail']>>;
 type Person = Awaited<ReturnType<SessivraPanel['participants']>>[number];

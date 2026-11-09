@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
+import { type LegacyBookmarkQuote, type MessageLocation, type MessageOrigin } from './message-history.js';
 import type { Collaboration } from './collaboration.js';
 import { type Messenger } from './core.js';
 import type { Tasks } from './tasks.js';
@@ -9,8 +10,35 @@ export declare class SessivraPanel extends TypertRemoteService {
     private tasks;
     private collaboration;
     private messenger;
+    private history;
     constructor(ctx: Context, tasks: Tasks, collaboration: Collaboration, messenger: Messenger);
     private owner;
+    locateMessage(location: MessageLocation, expectedId: string): Promise<{
+        nodeKey: string;
+        turn?: number | undefined;
+        cwd: string;
+        title: string;
+        excerpt: string;
+        child?: {
+            parentSessionId: string;
+            mode: "continuable" | "one-shot";
+        } | undefined;
+        origin: {
+            messageId: import("@deepseek-ai/dsh-llm").MessageId;
+            sessionId: string;
+            seq: number;
+        };
+    }>;
+    bookmarkedTurns(sessionId: string, turns: number[]): Promise<{
+        title: string;
+        items: import("./message-history.js").BookmarkedTurn[];
+    }>;
+    bookmarkReference(origin: MessageOrigin, turn: number): Promise<string>;
+    locateLegacyBookmark(quote: LegacyBookmarkQuote): Promise<{
+        sessionId: string;
+        seq: number;
+        messageId: string;
+    } | null>;
     private header;
     participants(): Promise<{
         id: string;
@@ -42,7 +70,7 @@ export declare class SessivraPanel extends TypertRemoteService {
         items: {
             id: string;
             title: string;
-            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
             label: string;
             coordinator: string;
             assignee: string;
@@ -130,7 +158,7 @@ export declare class SessivraPanel extends TypertRemoteService {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -163,7 +191,7 @@ export declare class SessivraPanel extends TypertRemoteService {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -235,7 +263,7 @@ export declare class SessivraPanel extends TypertRemoteService {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -274,7 +302,7 @@ export declare class SessivraPanel extends TypertRemoteService {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {

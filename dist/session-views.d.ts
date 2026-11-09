@@ -5,6 +5,7 @@ import type { TreeStore } from './session-tree.js';
 import type { createSessionReferenceDrop } from './session-reference-drop.js';
 import type { Menu as HostMenu } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { HeaderViews } from './header-views.js';
+import { mountTurnBookmarks } from './turn-bookmarks.js';
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface SlotMap {
         'sessivra.conversation.pane': {
@@ -45,6 +46,7 @@ type ViewProps = PropsRuntime<'shell.overlay'> & PropsRenderSlots<'sessivra.conv
     selectSession(target: SessionTarget): void;
     startSession(): void;
     headerViews: HeaderViews;
+    fish?: Parameters<typeof mountTurnBookmarks>[1];
 };
 export declare function SessionViews(props: ViewProps): React.ReactPortal | null;
 export {};

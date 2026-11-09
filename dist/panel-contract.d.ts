@@ -48,8 +48,8 @@ export declare const panelCommand: z.ZodDiscriminatedUnion<[z.ZodObject<{
     operationId: z.ZodString;
 }, z.core.$strict>, z.ZodObject<{
     action: z.ZodEnum<{
-        pause: "pause";
         cancel: "cancel";
+        pause: "pause";
         resume: "resume";
     }>;
     reason: z.ZodString;
@@ -68,9 +68,9 @@ export declare const panelCommand: z.ZodDiscriminatedUnion<[z.ZodObject<{
 export type PanelCommand = z.infer<typeof panelCommand>;
 export declare const panelQuery: z.ZodObject<{
     view: z.ZodEnum<{
+        all: "all";
         history: "history";
         attention: "attention";
-        all: "all";
     }>;
     search: z.ZodOptional<z.ZodString>;
     workspace: z.ZodOptional<z.ZodString>;

@@ -13,7 +13,7 @@ import * as slotContracts from '@deepseek-ai/dsh-client-ui-slots';
 import {remoteContribution} from '../dist/contract.js';
 test('actual DSH remote lifecycle retains old draft serialization without adding a visible @ group',async()=>{
   let bundle;
-  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,globalThis,crypto:webcrypto,TextEncoder,TextDecoder});
+  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,globalThis,crypto:webcrypto,TextEncoder,TextDecoder,setInterval,clearInterval,setTimeout,clearTimeout});
   assert.equal(bundle.id,'dsh-plugin-sessivra');
   const client=bundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='react-dom')return reactDom;if(name==='@deepseek-ai/dsh-client-ui-primitives')return {};throw new Error(`Unexpected runtime external ${name}`);});
   let rendererBundle;
@@ -61,12 +61,12 @@ test('actual DSH remote lifecycle retains old draft serialization without adding
   await ctx.fiber.dispose();assert.equal(slots.entries('plugins.bundle.config').length,0);
 });
 
-test('browser bundle leaves native file and session references as the only visible @ source',async()=>{
+test('browser bundle aligns @ sessions, preserves native files, and keeps the legacy codec',async()=>{
   let bundle;
-  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,globalThis,crypto:webcrypto,TextEncoder,TextDecoder});
+  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,globalThis,crypto:webcrypto,TextEncoder,TextDecoder,setInterval,clearInterval,setTimeout,clearTimeout});
   const client=bundle.factory(name=>{if(name==='react')return React;if(name==='react/jsx-runtime')return jsxRuntime;if(name==='react-dom')return reactDom;if(name==='@deepseek-ai/dsh-client-ui-primitives')return {};throw new Error(`Unexpected runtime external ${name}`);});
-  const entries=[];let source;
-  const nativeRows=[{name:'Project B',value:'native-session'},{name:'README.md',value:'native-file'}];
+  const entries=[], effects=[];let source;
+  const nativeRows=[{name:'Unrelated host session',value:'native-session',icon:'session'},{name:'README.md',value:'native-file',icon:'file'}];
   const native={name:'reference',trigger:'@',candidates:async()=>nativeRows};
   const sources=[native];
   const ctx={
@@ -76,18 +76,25 @@ test('browser bundle leaves native file and session references as the only visib
       sessionCollaboration:{candidates:async()=>{throw Error('Native reference source owns discovery');}},
     },
     slots:{subscribe:()=>()=>{},entriesOfSlot:()=>[],inject:(_key,register)=>register(),register:(entry,component)=>{entries.push({entry,component});return()=>{};}},
-    inputTriggers:{registerSource(value){source=value;sources.push(value);return()=>{source=undefined;};}},
-    effect:factory=>factory(),
+    sessions:{list:{getSnapshot:()=>({ids:['b'],byId:{b:{id:'b',displayTitle:'Project B',retainedBy:{}}}})}},
+    workspaces:{list:{getSnapshot:()=>({items:[],pinnedSessionIds:[],archivedSessionIds:[]})}},
+    inputTriggers:{live:{sources},registerSource(value){source=value;sources.push(value);return()=>{source=undefined;};}},
+    effect:factory=>effects.push(factory()),
   };
-  ctx.inject=async(_deps,callback)=>callback(ctx);
+  ctx.inject=async(deps,callback)=>{if(!deps.includes('remote.sessivraTaskPanel')) return callback(ctx);};
   await client.apply(ctx);
   assert.equal(entries.some(x=>x.entry.name==='plugins.bundle.config'),false);
   assert.equal(entries.some(x=>x.entry.name==='conversation.composer.dock'),false);
   assert.equal(entries.some(x=>x.entry.name==='sidebar.workspaces'),false,'native workspace header and controls keep their owner');
   assert.ok(entries.find(x=>x.entry.id==='messenger-session-children'));
   assert.equal(source.trigger,'@');
-  const rows=(await Promise.all(sources.map(s=>s.candidates()))).flat();
-  assert.deepEqual(rows,nativeRows,'session entries occur once and native file references remain intact');
-  assert.equal(sources[0],native,'the Host source is not patched or replaced');
+  const signal=new AbortController().signal;
+  const candidates=query=>Promise.all(sources.map(s=>s.candidates({sessionId:'a'},{query,quoted:false,signal})));
+  const initial=(await candidates('')).flat();
+  assert.deepEqual(Array.from(initial,row=>row.name),['Project B','浏览文件与文件夹']);
+  assert.deepEqual((await candidates('文件:')).flat(),[nativeRows[1]]);
+  assert.equal(sources[0],native,'the Host still owns native file selection and serialization');
   assert.match(await source.codec.serialize('@[B](dsh-message-target:IkIi)'),/dsh-session:/);
+  effects.reverse().forEach(dispose=>dispose?.());
+  assert.deepEqual(await native.candidates(),nativeRows,'disposing restores native candidate behavior');
 });

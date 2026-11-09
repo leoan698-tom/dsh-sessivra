@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { panelCommand, panelQuery } from './panel-contract.js';
 import { policyInput } from './validation.js';
+import { bookmarkedTurn, bookmarkedTurnNumbers, legacyBookmarkQuote, messageLocation, messageOrigin } from './message-history.js';
 // Keep legacy wire IDs stable across the package rename. Host and browser share
 // the new package identity; existing messages, tool names and storage stay valid.
 const codec = (name, schema) => ({ mode: 'strict', typeSymbol: `dsh-session-messenger#${name}`, create: () => schema });
@@ -28,6 +29,10 @@ export const descriptors = [
         { method: 'detail', parameters: [parameter('id', z.string().max(160))] },
         { method: 'preview', parameters: [parameter('id', z.string().max(160)), parameter('index', z.number().int().min(0).max(63))] },
         { method: 'command', parameters: [parameter('command', panelCommand)] },
+        { method: 'locateMessage', parameters: [parameter('location', messageLocation), parameter('expectedId', z.string().max(256))] },
+        { method: 'bookmarkedTurns', parameters: [parameter('sessionId', z.string().min(1).max(256)), parameter('turns', bookmarkedTurnNumbers)] },
+        { method: 'bookmarkReference', parameters: [parameter('origin', messageOrigin), parameter('turn', bookmarkedTurn)] },
+        { method: 'locateLegacyBookmark', parameters: [parameter('quote', legacyBookmarkQuote)] },
     ].map(e => ({ ...e, id: 'dsh-plugin-sessivra#sessivraTaskPanel/' + e.method, service: 'sessivraTaskPanel', namespace: 'sessivraTaskPanel', invocation: { kind: 'direct' }, result: codec('panel-result', z.json()) })),
     ...endpoints.map(e => ({ ...e, id: `dsh-session-messenger#sessionMessenger/${e.method}`, service: 'sessionMessenger', namespace: 'sessionMessenger', invocation: { kind: 'direct' }, result: codec('result', z.json()) })),
     { method: 'tree', parameters: [], id: 'dsh-session-messenger#sessionCollaboration/tree', service: 'sessionCollaboration', namespace: 'sessionCollaboration', invocation: { kind: 'direct' }, result: codec('tree-result', z.json()) },

@@ -144,7 +144,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -177,7 +177,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -286,7 +286,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -319,7 +319,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -428,7 +428,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -461,7 +461,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -524,7 +524,7 @@ export declare class Tasks {
             appliedRevision: number;
             decisionRevision: number;
             appliedDecisionRevision: number;
-            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
             createdAt: number;
             updatedAt: number;
             checkpoint: {
@@ -596,7 +596,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -632,7 +632,7 @@ export declare class Tasks {
             appliedRevision: number;
             decisionRevision: number;
             appliedDecisionRevision: number;
-            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
             createdAt: number;
             updatedAt: number;
             checkpoint: {
@@ -704,7 +704,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -742,7 +742,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -855,7 +855,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -888,7 +888,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -993,7 +993,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1026,7 +1026,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -1073,7 +1073,7 @@ export declare class Tasks {
             title: string;
             coordinator: string;
             assignee: string;
-            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
             revision: number;
             appliedRevision: number;
             decisionRevision: number;
@@ -1161,7 +1161,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1194,7 +1194,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -1299,7 +1299,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1332,7 +1332,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -1477,7 +1477,7 @@ export declare class Tasks {
                 id: string;
                 taskId: string;
                 target: string;
-                kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+                kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
                 revision: number;
                 decisionRevision: number;
                 messageId: string;
@@ -1510,7 +1510,7 @@ export declare class Tasks {
             appliedRevision: number;
             decisionRevision: number;
             appliedDecisionRevision: number;
-            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+            status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
             createdAt: number;
             updatedAt: number;
             checkpoint: {
@@ -1804,7 +1804,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1837,7 +1837,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -1947,7 +1947,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1980,7 +1980,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -2091,7 +2091,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "start" | "review" | "result" | "question" | "decision" | "update" | "attention" | "pause" | "cancel" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -2124,7 +2124,7 @@ export declare class Tasks {
         appliedRevision: number;
         decisionRevision: number;
         appliedDecisionRevision: number;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         createdAt: number;
         updatedAt: number;
         checkpoint: {
@@ -2167,7 +2167,7 @@ export declare class Tasks {
     busyTask(target: string): string | undefined;
     progressSummary(agent: Agent, target: string): {
         taskId: string;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         revision: number;
         appliedRevision: number;
         decisionRevision: number;
@@ -2180,7 +2180,7 @@ export declare class Tasks {
     treeSummary(sessionId: string): {
         id: string;
         title: string;
-        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "completed" | "waiting-decision" | "review" | "dispatched" | "pausing" | "paused" | "cancelling";
+        status: "queued" | "failed" | "blocked" | "running" | "cancelled" | "waiting-decision" | "review" | "completed" | "dispatched" | "pausing" | "paused" | "cancelling";
         label: string;
         revision: number;
         appliedRevision: number;

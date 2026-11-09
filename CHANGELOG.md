@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-dev.28
+
+- Collect conversation turns with the DeepSeek bookmark control and browse them from the sidebar, with a session filter and direct navigation.
+- Reference saved question-and-answer turns from the composer’s @ menu. Session and bookmark suggestions initially show five matches, with the remaining matches expandable and searchable.
+- Preview the original question and answer from sent bookmark chips and click through to the source turn. Older chips can open their source when the saved quotation uniquely identifies it.
+
 ## 0.3.0-dev.27
 
 - Add Task Center (任务中心) to the DSH sidebar for creating managed tasks, answering shared questions, reviewing results and browsing archived tasks.

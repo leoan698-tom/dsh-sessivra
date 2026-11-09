@@ -35,7 +35,7 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react11 = __toESM(require("react"), 1);
+var import_react14 = __toESM(require("react"), 1);
 
 // src/task-panel.tsx
 var import_react = require("react");
@@ -265,8 +265,8 @@ function resultOverview(result) {
   const paragraph = paragraphs[0].replace(/(?:^|(?<=[。！？\n]))\s*(?:等待|等候)(?:桌面)?(?:人工|用户)?验收[。.!！]?\s*$/, "").trim();
   const facts = /* @__PURE__ */ new Map();
   if (paragraphs.length === 1 && paragraph.length > 90) {
-    for (const source of [paragraph, ...result.evidence]) {
-      for (const clause of source.split(/[，、；。\n]/u)) {
+    for (const source2 of [paragraph, ...result.evidence]) {
+      for (const clause of source2.split(/[，、；。\n]/u)) {
         const match = /^(总[\p{Script=Han}]{1,4})\s*[:：]?\s*(\d+(?:\.\d+)?\s*[\p{Script=Han}]{1,3})$/u.exec(clause.trim());
         if (!match) continue;
         const [, label, value] = match;
@@ -379,15 +379,15 @@ function ResultHeader({ task, name }) {
   ] });
 }
 function FilePreview({ file: file2, renderMarkdown }) {
-  const [source, setSource] = (0, import_react.useState)(false);
+  const [source2, setSource] = (0, import_react.useState)(false);
   const [expanded, setExpanded] = (0, import_react.useState)(false);
   const markdown = /\.(md|markdown)$/i.test(file2.name);
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-preview", children: [
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-readtools", children: [
-      markdown && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setSource(!source), "aria-pressed": source, children: source ? "\u8FD4\u56DE\u9884\u89C8" : "\u67E5\u770B\u539F\u6587" }),
+      markdown && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setSource(!source2), "aria-pressed": source2, children: source2 ? "\u8FD4\u56DE\u9884\u89C8" : "\u67E5\u770B\u539F\u6587" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setExpanded(!expanded), "aria-expanded": expanded, children: expanded ? "\u6536\u8D77\u5168\u6587" : "\u5C55\u5F00\u9605\u8BFB" })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-readbody", "data-expanded": expanded, children: markdown && !source ? renderMarkdown(file2.text) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("pre", { children: file2.text }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-readbody", "data-expanded": expanded, children: markdown && !source2 ? renderMarkdown(file2.text) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("pre", { children: file2.text }) }),
     file2.truncated && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u9884\u89C8\u663E\u793A\u524D 32 KiB\uFF0C\u5B8C\u6574\u6587\u4EF6\u8BF7\u5728\u6267\u884C\u76EE\u5F55\u67E5\u770B\u3002" })
   ] });
 }
@@ -1130,6 +1130,1063 @@ function TaskPanel({
   ] });
 }
 
+// src/message-navigation.tsx
+var import_react2 = require("react");
+var import_react_dom = require("react-dom");
+var import_jsx_runtime3 = require("react/jsx-runtime");
+function findRow(message, mainOnly) {
+  const chat = [...document.querySelectorAll("[data-conversation-session]")].find(
+    (element) => element.dataset.conversationSession === message.origin.sessionId && (!mainOnly || !element.closest("[data-sessivra-pane]")) && !element.closest("[hidden], [inert]") && element.getClientRects().length > 0
+  );
+  if (!chat) return;
+  const rows = [...chat.querySelectorAll("[data-chat-node-key]")];
+  const turn = "turn" in message ? message.turn : void 0;
+  return rows.find((row) => row.dataset.chatNodeKey === message.nodeKey && row.getClientRects().length > 0) ?? rows.find((row) => turn !== void 0 && row.dataset.chatTurn === String(turn) && row.getClientRects().length > 0);
+}
+function createMessageNavigator(sessions, open, resolve) {
+  const listeners = /* @__PURE__ */ new Set();
+  let state = {};
+  let active;
+  const publish = (next) => {
+    state = next;
+    listeners.forEach((notify) => notify());
+  };
+  return {
+    subscribe(notify) {
+      listeners.add(notify);
+      return () => {
+        listeners.delete(notify);
+      };
+    },
+    snapshot: () => state,
+    dismiss() {
+      active?.abort();
+      publish({});
+    },
+    async jump(location, expectedId = "", bookmark = false) {
+      active?.abort();
+      const controller = new AbortController();
+      active = controller;
+      const { signal } = controller;
+      publish({ loading: true });
+      try {
+        const message = await resolve(location, expectedId);
+        signal.throwIfAborted();
+        const childSessionId = message.origin.sessionId;
+        const target2 = message.child ? { childSessionId, parentSessionId: message.child.parentSessionId, mode: message.child.mode } : childSessionId;
+        open(target2);
+        await sessions.using(target2, { source: "workspaceOperation", signal }, async (reference) => {
+          await reference.ready;
+          signal.throwIfAborted();
+          await reference.binding.session.loadThrough(message.origin.seq);
+        });
+        const until = Date.now() + 4e3;
+        while (!signal.aborted && Date.now() < until) {
+          const row = findRow(message, bookmark);
+          if (row) {
+            row.scrollIntoView({ block: "center" });
+            publish(bookmark ? {} : { row, message });
+            return;
+          }
+          await new Promise((resolve2) => setTimeout(resolve2, 70));
+        }
+        if (!signal.aborted) publish({ error: "\u5DF2\u6253\u5F00\u4F1A\u8BDD\uFF0C\u539F\u6D88\u606F\u672A\u80FD\u5B9A\u4F4D\u3002" });
+      } catch (error51) {
+        if (!signal.aborted) publish({ error: error51 instanceof Error ? error51.message : "\u65E0\u6CD5\u6253\u5F00\u539F\u6D88\u606F" });
+      }
+    }
+  };
+}
+function MessageJumpNotice({ navigator: navigator2, organize }) {
+  const { row, message, loading, error: error51 } = (0, import_react2.useSyncExternalStore)(navigator2.subscribe, navigator2.snapshot);
+  if (row && message) return (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "sessivra-message-origin", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: `.sessivra-message-origin{padding:6px 8px;margin:4px 0;border-inline-start:3px solid var(--dsw-alias-state-business-primary);background:var(--dsw-alias-bg-layer-1);display:flex;align-items:center;gap:10px}.sessivra-message-origin button{cursor:pointer;color:inherit;font:inherit}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "\u5DF2\u5B9A\u4F4D\u539F\u6D88\u606F" }),
+    organize && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", onClick: () => {
+      navigator2.dismiss();
+      organize(message);
+    }, children: "\u6574\u7406\u6210\u4EFB\u52A1" })
+  ] }), row);
+  if (!loading && !error51) return null;
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { role: error51 ? "alert" : "status", style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, padding: 12, borderRadius: 8, background: "var(--dsw-alias-bg-layer-1)", boxShadow: "var(--dsw-elevation-soft)" }, children: [
+    error51 ?? "\u6B63\u5728\u5B9A\u4F4D\u539F\u6D88\u606F\u2026",
+    " ",
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", onClick: () => navigator2.dismiss(), children: "\u5173\u95ED" })
+  ] });
+}
+
+// src/bookmark-library.tsx
+var import_react3 = require("react");
+
+// src/turn-bookmarks.ts
+var storageKey = "sessivra.turn-bookmarks.v1";
+var turnBookmarksChanged = "sessivra:turn-bookmarks-changed";
+var markSelector = ".SNx2jG_mark";
+var previewSelector = ".SNx2jG_preview";
+var styles = `
+.sessivra-turn-bookmark{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.sessivra-turn-bookmark:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.sessivra-turn-bookmark:focus-visible{outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
+.sessivra-turn-bookmark svg{width:17px;height:15px;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.25;stroke-linejoin:round}
+.sessivra-turn-bookmark[aria-pressed=true]{color:var(--dsw-alias-state-business-primary)}
+.sessivra-turn-bookmark[aria-pressed=true] svg{fill:currentColor;stroke-width:.6}
+.SNx2jG_preview:has(>.sessivra-turn-bookmark){pointer-events:auto;overflow:visible}
+.SNx2jG_preview:has(>.sessivra-turn-bookmark)::before{content:'';position:absolute;inset:0 100% 0 auto;width:6px}
+.SNx2jG_preview:has(>.sessivra-turn-bookmark)>.SNx2jG_previewPrompt{padding-inline-end:26px}
+.SNx2jG_preview>.sessivra-turn-bookmark{position:absolute;top:3px;right:4px}
+[data-conversation-scroll] .SNx2jG_mark[data-sessivra-bookmarked]::before{background:var(--dsw-alias-state-business-primary);opacity:1}
+[data-conversation-scroll] .SNx2jG_mark[data-sessivra-bookmarked]:not(:focus-visible)::after{content:'';position:absolute;top:calc(50% - 2px);left:10px;width:4px;height:4px;border-radius:50%;background:var(--dsw-alias-state-business-primary)}
+`;
+function markTurn(mark) {
+  return mark.getAttribute("aria-label")?.match(/\d+/)?.[0];
+}
+function loadBookmarks(win) {
+  try {
+    const value = JSON.parse(win.localStorage.getItem(storageKey) ?? "[]");
+    return new Set(Array.isArray(value) ? value.filter((key) => typeof key === "string") : []);
+  } catch {
+    return /* @__PURE__ */ new Set();
+  }
+}
+function listTurnBookmarks(win) {
+  return [...loadBookmarks(win)].reverse().flatMap((key) => {
+    try {
+      const value = JSON.parse(key);
+      if (!Array.isArray(value) || value.length !== 2 || typeof value[0] !== "string" || !value[0] || value[0].length > 256 || typeof value[1] !== "string" || !/^\d+$/.test(value[1])) return [];
+      const turn = Number(value[1]);
+      return Number.isSafeInteger(turn) ? [{ sessionId: value[0], turn }] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+function mountTurnBookmarks(host, fish) {
+  const doc = host.ownerDocument, win = doc.defaultView;
+  if (!win) return;
+  const style = doc.createElement("style");
+  style.textContent = styles;
+  doc.head.append(style);
+  const controls = /* @__PURE__ */ new Map();
+  let marked = /* @__PURE__ */ new Set();
+  let bookmarks = loadBookmarks(win), frame = 0;
+  function toggle(key) {
+    const next = loadBookmarks(win);
+    if (!next.delete(key)) next.add(key);
+    try {
+      win.localStorage.setItem(storageKey, JSON.stringify([...next]));
+    } catch {
+      return false;
+    }
+    bookmarks = next;
+    scan();
+    win.dispatchEvent(new Event(turnBookmarksChanged));
+    return true;
+  }
+  function put(target2, key, preview) {
+    let control = controls.get(target2);
+    if (!control || control.key !== key || control.button.parentElement !== target2) {
+      control?.button.remove();
+      const button = doc.createElement("button");
+      button.type = "button";
+      button.className = "sessivra-turn-bookmark";
+      const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `0 0 ${fish.width} ${fish.height}`);
+      svg.setAttribute("aria-hidden", "true");
+      const path = doc.createElementNS(svg.namespaceURI, "path");
+      path.setAttribute("d", fish.path);
+      path.setAttribute("fill-rule", "evenodd");
+      svg.append(path);
+      button.append(svg);
+      if (preview) {
+        button.tabIndex = -1;
+        button.addEventListener("mousedown", (event) => event.preventDefault());
+      }
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (!toggle(key)) button.title = "\u65E0\u6CD5\u4FDD\u5B58\u8F6E\u6B21\u6536\u85CF";
+      });
+      target2.insertBefore(button, preview ? null : target2.lastElementChild);
+      control = { key, button };
+      controls.set(target2, control);
+    }
+    const pressed = bookmarks.has(key);
+    control.button.setAttribute("aria-pressed", String(pressed));
+    control.button.setAttribute("aria-label", pressed ? "\u53D6\u6D88\u6536\u85CF\u6B64\u8F6E" : "\u6536\u85CF\u6B64\u8F6E");
+    control.button.title = pressed ? "\u53D6\u6D88\u6536\u85CF\u6B64\u8F6E" : "\u6536\u85CF\u6B64\u8F6E";
+  }
+  function scan() {
+    const seen = /* @__PURE__ */ new Set(), nextMarks = /* @__PURE__ */ new Set();
+    for (const chat of host.querySelectorAll("[data-conversation-content][data-conversation-session]")) {
+      const session = chat.dataset.conversationSession;
+      if (!session || chat.closest("[hidden], [inert]")) continue;
+      const keyFor = (turn) => JSON.stringify([session, turn]);
+      for (const mark of chat.querySelectorAll(markSelector)) {
+        const turn = markTurn(mark);
+        if (!turn) continue;
+        const key = keyFor(turn);
+        nextMarks.add(mark);
+        mark.toggleAttribute("data-sessivra-bookmarked", bookmarks.has(key));
+        mark.setAttribute("aria-keyshortcuts", "B");
+        const previewId = mark.getAttribute("aria-describedby");
+        const preview = previewId && doc.getElementById(previewId);
+        if (preview && preview.matches(previewSelector) && chat.contains(preview)) {
+          seen.add(preview);
+          put(preview, key, true);
+        }
+      }
+      for (const tail of chat.querySelectorAll("[data-turn-tail][data-actions-reveal]")) {
+        const actions2 = tail.querySelector(":scope > [data-clock=end]");
+        const turn = tail.dataset.turnTail;
+        if (!actions2 || !turn) continue;
+        seen.add(actions2);
+        put(actions2, keyFor(turn), false);
+      }
+    }
+    for (const [target2, control] of controls) if (!seen.has(target2)) {
+      control.button.remove();
+      controls.delete(target2);
+    }
+    for (const mark of marked) if (!nextMarks.has(mark)) clearMark(mark);
+    marked = nextMarks;
+  }
+  const clearMark = (mark) => {
+    mark.removeAttribute("data-sessivra-bookmarked");
+    mark.removeAttribute("aria-keyshortcuts");
+  };
+  const schedule = () => {
+    if (!frame) frame = win.requestAnimationFrame(() => {
+      frame = 0;
+      scan();
+    });
+  };
+  const observer = new MutationObserver(schedule);
+  observer.observe(host, { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-describedby", "data-conversation-session", "data-turn-tail", "data-actions-reveal", "hidden", "inert"] });
+  const onStorage = (event) => {
+    if (event.key === storageKey || event.key === null) {
+      bookmarks = loadBookmarks(win);
+      schedule();
+    }
+  };
+  const onKey = (event) => {
+    if (event.key.toLowerCase() !== "b" || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
+    const mark = event.target instanceof Element && event.target.closest(markSelector);
+    const session = mark && mark.closest("[data-conversation-content]")?.dataset.conversationSession;
+    const turn = mark && markTurn(mark);
+    if (session && turn && toggle(JSON.stringify([session, turn]))) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+  win.addEventListener("storage", onStorage);
+  host.addEventListener("keydown", onKey);
+  scan();
+  return () => {
+    observer.disconnect();
+    win.cancelAnimationFrame(frame);
+    win.removeEventListener("storage", onStorage);
+    host.removeEventListener("keydown", onKey);
+    for (const { button } of controls.values()) button.remove();
+    marked.forEach(clearMark);
+    style.remove();
+  };
+}
+
+// src/bookmark-library.tsx
+var import_jsx_runtime4 = require("react/jsx-runtime");
+var styles2 = `
+.sessivra-bookmark-library{display:flex;flex-direction:column;height:100%;min-height:0;color:var(--dsw-alias-label-primary)}
+.sessivra-bookmark-library header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;height:40px;padding-inline:16px;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.sessivra-bookmark-library h1{flex:none;font-size:14px;font-weight:500;margin:0}
+.sessivra-bookmark-library .bookmark-filter{min-width:0;max-width:min(65%,260px)}
+.sessivra-bookmark-library .bookmark-filter button{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;min-height:28px;font:inherit;font-size:13px;color:var(--dsw-alias-label-secondary);background:transparent;border:0;padding:4px 8px;border-radius:var(--dsw-radius-sm);cursor:pointer}
+.sessivra-bookmark-library .bookmark-filter svg{flex:none}
+.sessivra-bookmark-library .bookmark-filter span,.sessivra-bookmark-filter-label{display:block;min-width:0;max-width: min(50vw,300px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sessivra-bookmark-library .bookmark-filter button:hover,.sessivra-bookmark-library .bookmark-filter button[aria-expanded=true],.sessivra-bookmark-library li>button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
+.sessivra-bookmark-library .bookmark-body{flex:1;min-height:0;overflow:auto;padding:8px 8px 16px}
+.sessivra-bookmark-library ul{list-style:none;padding:0;margin:0}
+.sessivra-bookmark-library li+li{border-top:1px solid var(--dsw-alias-border-l2)}
+.sessivra-bookmark-library li>button{box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;text-align:start;width:100%;font:inherit;color:inherit;background:transparent;border:0;border-radius:6px;padding:9px 8px;cursor:pointer}
+.sessivra-bookmark-library :focus-visible{outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
+.sessivra-bookmark-library .bookmark-summary{min-width:0;display:grid;gap:2px}
+.sessivra-bookmark-library small,.sessivra-bookmark-library p,.sessivra-bookmark-library .bookmark-response,.sessivra-bookmark-library .bookmark-arrow{color:var(--dsw-alias-label-secondary)}
+.sessivra-bookmark-library small,.sessivra-bookmark-library .bookmark-response{font-size:12px;line-height:17px}
+.sessivra-bookmark-library .bookmark-prompt{font-size:14px;line-height:20px}
+.sessivra-bookmark-library small,.sessivra-bookmark-library .bookmark-response,.sessivra-bookmark-library .bookmark-prompt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sessivra-bookmark-library p{margin:6px 8px;font-size:13px}
+.sessivra-bookmark-library li>button:disabled{cursor:default}
+`;
+function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
+  const [saved, setSaved] = (0, import_react3.useState)(() => listTurnBookmarks(window));
+  const [filter, setFilter] = (0, import_react3.useState)("");
+  const [filterOpen, setFilterOpen] = (0, import_react3.useState)(false);
+  const [sessions, setSessions] = (0, import_react3.useState)(() => /* @__PURE__ */ new Map());
+  (0, import_react3.useEffect)(() => {
+    const refresh = () => setSaved(listTurnBookmarks(window));
+    window.addEventListener("storage", refresh);
+    window.addEventListener(turnBookmarksChanged, refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener(turnBookmarksChanged, refresh);
+    };
+  }, []);
+  const sessionIds = [...new Set(saved.map((item) => item.sessionId))];
+  const selected = sessionIds.includes(filter) ? filter : "";
+  (0, import_react3.useEffect)(() => {
+    let disposed = false;
+    const groups = /* @__PURE__ */ new Map();
+    for (const { sessionId, turn } of saved) {
+      if (!groups.has(sessionId)) groups.set(sessionId, []);
+      groups.get(sessionId).push(turn);
+    }
+    setSessions(/* @__PURE__ */ new Map());
+    const pending = [...groups];
+    const read2 = async () => {
+      for (let group = pending.shift(); group && !disposed; group = pending.shift()) {
+        const [id2, turns] = group;
+        let result = null;
+        try {
+          result = await load(id2, turns.slice(0, 100));
+          for (let i = 100; i < turns.length && !disposed; i += 100) {
+            result.items.push(...(await load(id2, turns.slice(i, i + 100))).items);
+          }
+        } catch {
+        }
+        if (!disposed) setSessions((previous) => new Map(previous).set(id2, result));
+      }
+    };
+    void Promise.all(Array.from({ length: Math.min(4, pending.length) }, read2));
+    return () => {
+      disposed = true;
+    };
+  }, [saved, load]);
+  return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("section", { className: "sessivra-bookmark-library", "aria-label": "\u6536\u85CF", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("style", { children: styles2 }),
+    /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("header", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h1", { children: "\u6536\u85CF" }),
+      saved.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+        Menu2,
+        {
+          className: "bookmark-filter",
+          portal: true,
+          align: "end",
+          compact: true,
+          autoFocus: true,
+          open: filterOpen,
+          onClose: () => setFilterOpen(false),
+          selectedId: selected ? `session:${selected}` : "all",
+          anchor: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { type: "button", "aria-label": "\u6309\u4F1A\u8BDD\u7B5B\u9009", "aria-haspopup": "menu", "aria-expanded": filterOpen, onClick: () => setFilterOpen(!filterOpen), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { children: selected ? sessions.get(selected)?.title ?? "\u4F1A\u8BDD" : "\u5168\u90E8\u4F1A\u8BDD" }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Chevron, { path: "m3 4.5 3 3 3-3" })
+          ] }),
+          items: [{ id: "all", label: "\u5168\u90E8\u4F1A\u8BDD" }, ...sessionIds.map((id2, index) => ({
+            id: `session:${id2}`,
+            label: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "sessivra-bookmark-filter-label", children: sessions.get(id2)?.title ?? `\u4F1A\u8BDD ${index + 1}` })
+          }))],
+          onSelect: (id2) => {
+            setFilter(id2 === "all" ? "" : id2.slice("session:".length));
+            setFilterOpen(false);
+          }
+        }
+      )
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "bookmark-body", children: saved.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { children: "\u8FD8\u6CA1\u6709\u6536\u85CF\u3002\u70B9\u51FB\u4EFB\u610F\u8F6E\u6B21\u7684\u9C7C\u5F62\u6309\u94AE\uFF0C\u5C31\u53EF\u4EE5\u5728\u8FD9\u91CC\u627E\u5230\u5B83\u3002" }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("ul", { children: saved.filter((item) => !selected || item.sessionId === selected).map(({ sessionId, turn }) => {
+      const session = sessions.get(sessionId), item = session?.items.find((entry) => entry.turn === turn);
+      return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { type: "button", disabled: !item, onClick: () => item && jump(item.anchor), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("span", { className: "bookmark-summary", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("small", { children: [
+            session?.title ?? "\u4F1A\u8BDD",
+            " \xB7 \u7B2C ",
+            turn,
+            " \u8F6E"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "bookmark-prompt", children: item ? item.prompt || "\u672C\u8F6E\u95EE\u7B54" : session === void 0 ? "\u6B63\u5728\u8BFB\u53D6\u95EE\u7B54\u2026" : "\u539F\u8F6E\u6B21\u6682\u4E0D\u53EF\u7528" }),
+          item?.response && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "bookmark-response", children: item.response })
+        ] }),
+        item && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "bookmark-arrow", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Chevron, { path: "m4.5 3 3 3-3 3" }) })
+      ] }) }, JSON.stringify([sessionId, turn]));
+    }) }) })
+  ] });
+}
+function Chevron({ path }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("svg", { "aria-hidden": "true", width: "12", height: "12", viewBox: "0 0 12 12", fill: "none", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { d: path, stroke: "currentColor", strokeWidth: "1.25", strokeLinecap: "round", strokeLinejoin: "round" }) });
+}
+
+// src/session-tree.tsx
+var import_react4 = require("react");
+var import_react_dom2 = require("react-dom");
+var import_jsx_runtime5 = require("react/jsx-runtime");
+function sessionForest(sessions) {
+  const offered = new Map(sessions.map((session) => [session.id, session]));
+  const rooted = (session) => {
+    if (!session.subagent) return true;
+    if (!["teammate", "standalone", "unknown"].includes(session.subagentKind)) return false;
+    const seen = /* @__PURE__ */ new Set([session.id]);
+    let parent = offered.get(session.parentId);
+    while (parent) {
+      if (seen.has(parent.id)) return false;
+      if (!parent.subagent) return true;
+      seen.add(parent.id);
+      parent = offered.get(parent.parentId);
+    }
+    return false;
+  };
+  const nodes = new Map(sessions.filter(rooted).map((session) => [session.id, { ...session, children: [] }]));
+  const roots = [];
+  for (const node of nodes.values()) {
+    const seen = /* @__PURE__ */ new Set([node.id]);
+    let parent = node.parentId && nodes.get(node.parentId);
+    let cursor = parent;
+    while (cursor) {
+      if (seen.has(cursor.id)) {
+        parent = void 0;
+        break;
+      }
+      seen.add(cursor.id);
+      cursor = cursor.parentId ? nodes.get(cursor.parentId) : void 0;
+    }
+    if (parent) parent.children.push(node);
+    else roots.push(node);
+  }
+  return roots;
+}
+var expansionKey = "sessivra.tree.expansion.v1";
+var aliasesKey = "sessivra.tree.aliases.v1";
+function browserStorage() {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return void 0;
+  }
+}
+function createSessionTreeStore(api, storage = browserStorage()) {
+  let expansion = /* @__PURE__ */ new Map();
+  try {
+    const saved = JSON.parse(storage?.getItem(expansionKey) ?? "[]");
+    if (Array.isArray(saved)) expansion = new Map(saved.filter((entry) => Array.isArray(entry) && entry.length === 2 && typeof entry[0] === "string" && typeof entry[1] === "boolean").slice(-2e3));
+  } catch {
+  }
+  let aliases = /* @__PURE__ */ new Map();
+  try {
+    const saved = JSON.parse(storage?.getItem(aliasesKey) ?? "[]");
+    if (Array.isArray(saved)) aliases = new Map(saved.filter((entry) => Array.isArray(entry) && entry.length === 2 && typeof entry[0] === "string" && typeof entry[1] === "string" && entry[1].trim().length > 0 && entry[1].length <= 60));
+  } catch {
+  }
+  let snapshot = { nodes: /* @__PURE__ */ new Map(), parents: /* @__PURE__ */ new Map(), hiddenSessions: /* @__PURE__ */ new Set(), rows: /* @__PURE__ */ new Set(), problem: "", loaded: false, refreshing: false, expansion, aliases };
+  const listeners = /* @__PURE__ */ new Set();
+  let timer, inFlight = false, disposed = false, lastRevealed;
+  const emit = (patch) => {
+    snapshot = { ...snapshot, ...patch };
+    for (const listener of listeners) listener();
+  };
+  const refresh = async () => {
+    if (inFlight || disposed || !listeners.size) return;
+    inFlight = true;
+    emit({ refreshing: true });
+    try {
+      const result = await api.tree();
+      if (disposed || !listeners.size) return;
+      if (!result.ok) {
+        emit({ problem: "\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" });
+        return;
+      }
+      const nodes = /* @__PURE__ */ new Map(), parents = /* @__PURE__ */ new Map();
+      const visit = (node) => {
+        nodes.set(node.id, node);
+        for (const child of node.children) {
+          parents.set(child.id, node.id);
+          visit(child);
+        }
+      };
+      sessionForest(result.value.filter((session) => !session.subagent || session.subagentKind === "teammate")).forEach(visit);
+      const hiddenSessions = new Set(result.value.filter((session) => session.subagent && !nodes.has(session.id)).map((session) => session.id));
+      emit({ nodes, parents, hiddenSessions, problem: "", loaded: true });
+    } catch {
+      if (!disposed && listeners.size) emit({ problem: "\u5B50\u4F1A\u8BDD\u5217\u8868\u8FDE\u63A5\u4E2D\u65AD" });
+    } finally {
+      inFlight = false;
+      if (!disposed) emit({ refreshing: false });
+    }
+  };
+  const saveExpansion = (next) => {
+    const bounded = new Map([...next].slice(-2e3));
+    try {
+      storage?.setItem(expansionKey, JSON.stringify([...bounded]));
+    } catch {
+    }
+    emit({ expansion: bounded });
+  };
+  const isExpanded = (id2) => snapshot.expansion.get(id2) ?? !snapshot.parents.has(snapshot.parents.get(id2) ?? "");
+  return {
+    getSnapshot: () => snapshot,
+    refresh,
+    isExpanded,
+    setAlias: (id2, name) => {
+      const node = snapshot.nodes.get(id2);
+      if (!node?.subagent || node.subagentKind !== "teammate") throw new Error("\u4EC5\u56E2\u961F\u961F\u5458\u652F\u6301\u663E\u793A\u540D\u79F0");
+      const value = name.trim();
+      if (value.length > 60) throw new Error("\u663E\u793A\u540D\u79F0\u6700\u591A 60 \u4E2A\u5B57\u7B26");
+      const next = new Map(snapshot.aliases);
+      if (value) next.set(id2, value);
+      else next.delete(id2);
+      if (!storage) throw new Error("\u65E0\u6CD5\u4FDD\u5B58\u672C\u673A\u663E\u793A\u540D\u79F0");
+      storage.setItem(aliasesKey, JSON.stringify([...next]));
+      emit({ aliases: next });
+    },
+    toggle: (id2) => {
+      const next = new Map(snapshot.expansion);
+      next.delete(id2);
+      next.set(id2, !isExpanded(id2));
+      saveExpansion(next);
+    },
+    reveal: (id2, force = false) => {
+      if (!id2) {
+        lastRevealed = void 0;
+        return;
+      }
+      if (!force && id2 === lastRevealed || !snapshot.nodes.has(id2)) return;
+      lastRevealed = id2;
+      const next = new Map(snapshot.expansion);
+      let parent = snapshot.parents.get(id2), changed = false;
+      while (parent) {
+        if (!isExpanded(parent)) {
+          next.set(parent, true);
+          changed = true;
+        }
+        parent = snapshot.parents.get(parent);
+      }
+      if (changed) saveExpansion(next);
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      if (!timer && !disposed) {
+        void refresh();
+        timer = setInterval(() => void refresh(), 2e3);
+      }
+      return () => {
+        listeners.delete(listener);
+        if (!listeners.size) {
+          clearInterval(timer);
+          timer = void 0;
+        }
+      };
+    },
+    attach: (target2) => {
+      emit({ rows: /* @__PURE__ */ new Set([...snapshot.rows, target2]) });
+      return () => {
+        const rows = new Set(snapshot.rows);
+        rows.delete(target2);
+        emit({ rows });
+      };
+    },
+    dispose: () => {
+      disposed = true;
+      clearInterval(timer);
+      timer = void 0;
+      listeners.clear();
+    }
+  };
+}
+function treePresentation(child, status, alias) {
+  const description = child.subagent ? child.description?.trim() : void 0;
+  const label = alias || (description && description.length <= 60 && !/[\r\n]/.test(description) && !/^(你是|你将|you\s+(are|will)\b)/i.test(description) ? description : child.label);
+  const kind = status?.pendingInteraction?.kind;
+  const waiting = kind === "approval" ? "\u7B49\u5F85\u6279\u51C6" : kind === "plan-review" ? "\u7B49\u5F85\u65B9\u6848\u786E\u8BA4" : kind === "question" ? "\u7B49\u5F85\u56DE\u7B54" : "";
+  const taskState = child.task && `${child.task.label}${child.task.pendingUpdate && child.task.appliedRevision > 0 ? " \xB7 \u5F85\u540C\u6B65" : ""}`;
+  const state = waiting || taskState || (child.subagent && child.note !== "\u53EA\u8BFB" ? child.note : "") || (status?.running ?? child.running ? "\u8FD0\u884C\u4E2D" : "") || (child.subagent && child.subagentMode === "continuable" && child.parentAvailable === false ? "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" : "") || (child.subagent ? child.note : "") || "";
+  return { label, state, waiting: Boolean(waiting) || Boolean(child.task && ["waiting-decision", "blocked", "review"].includes(child.task.status)), title: [label, child.subagent && `\u961F\u5458\uFF1A${child.subagentKind === "teammate" ? child.teammateName || child.label : child.label}`, description !== label && description, state, child.task && `${child.task.title} \xB7 \u5DF2\u91C7\u7528 v${child.task.appliedRevision} / \u5F53\u524D v${child.task.revision}${child.task.queued ? ` \xB7 \u540E\u7EED ${child.task.queued} \u9879` : ""}`].filter(Boolean).join(" \xB7 ") };
+}
+var styles3 = `
+[data-dshsm-nested=true],[data-dshsm-hidden=true]{display:none!important}
+[data-dshsm-parent=true]{position:relative;padding-inline-start:calc(40px + var(--dsh-workspace-indent,0px))!important}
+.dshsm-native-children{font:inherit;color:var(--dsw-alias-label-primary);min-width:0;margin-inline-start:calc(40px + var(--dsh-workspace-indent,0px));--dshsm-tree-guide:var(--dsw-alias-border-l2,var(--dsw-alias-label-tertiary))}
+.dshsm-native-children *{box-sizing:border-box}
+.dshsm-native-children button,.dshsm-native-toggle{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer}
+.dshsm-native-toggle{position:absolute;inset-inline-start:calc(4px + var(--dsh-workspace-indent,0px));top:2px;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm,4px)}
+.dshsm-native-toggle:hover,.dshsm-native-children .dshsm-tree-toggle:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
+.dshsm-native-toggle:active,.dshsm-native-children .dshsm-tree-toggle:active{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px currentColor}
+.dshsm-native-children button:focus-visible,.dshsm-native-toggle:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
+.dshsm-tree-branch{position:relative;min-width:0}
+.dshsm-tree-branch::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;border-inline-start:1px solid var(--dshsm-tree-guide);pointer-events:none}
+.dshsm-tree-branch:last-child::before{bottom:auto;height:16px}
+.dshsm-tree-branch::after{content:"";position:absolute;inset-inline-start:0;top:16px;width:8px;border-top:1px solid var(--dshsm-tree-guide);pointer-events:none}
+.dshsm-tree-row{position:relative;display:flex;align-items:center;gap:4px;height:32px;min-width:0;padding:0 4px 0 8px;border-radius:var(--dsw-radius-md);font-size:14px;line-height:20px;user-select:none}
+.dshsm-tree-row[data-selected=true]{background:var(--dsw-alias-interactive-bg-hover)}
+.dshsm-native-children .dshsm-tree-toggle{display:flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm,4px);color:var(--dsw-alias-label-secondary)}
+.dshsm-tree-spacer{display:flex;align-items:center;justify-content:center;flex:0 0 4px;width:4px;height:28px}
+.dshsm-tree-spacer::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--dshsm-tree-guide)}
+.dshsm-native-children .dshsm-tree-name{display:flex;align-items:center;gap:6px;flex:1;min-width:0;height:100%;margin:0;padding:0 4px;text-align:left;line-height:20px;border-radius:var(--dsw-radius-sm,4px)}
+.dshsm-native-children .dshsm-tree-name:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
+.dshsm-tree-label{display:block;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dshsm-tree-label[data-long=true]{display:flex;text-overflow:clip}
+.dshsm-tree-label-start{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dshsm-tree-label-end{flex:none;max-width:50%;overflow:hidden}
+.dshsm-tree-running{flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary)}
+.dshsm-tree-member{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.dshsm-tree-status{flex:none;max-width:5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--dsw-alias-label-secondary)}
+.dshsm-tree-status[data-attention=true]{color:var(--dsw-alias-state-warning,#aa6700)}
+.dshsm-tree-current{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary);pointer-events:none}
+.dshsm-native-current{position:absolute;inset-inline-start:calc(28px + var(--dsh-workspace-indent,0px));top:4px}
+.dshsm-tree-row .dshsm-session-actions{display:none}
+.dshsm-tree-row:hover .dshsm-session-actions,.dshsm-tree-row:focus-within .dshsm-session-actions,.dshsm-tree-row .dshsm-session-actions[data-open=true]{display:inline-flex}
+@media(hover:none){.dshsm-tree-row .dshsm-session-actions{display:inline-flex}}
+.dshsm-tree-pin{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.dshsm-tree-notice button{margin-inline-start:8px;text-decoration:underline}
+.dshsm-native-children .dshsm-tree-name:disabled{cursor:default;opacity:.75}
+.dshsm-tree-children{margin-inline-start:28px}
+.dshsm-tree-notice{font-size:12px;line-height:18px;padding:8px;color:var(--dsw-alias-label-tertiary)}
+`;
+var Chevron2 = ({ expanded }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", style: { transform: expanded ? "rotate(90deg)" : void 0 }, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: "m6 4 4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) });
+function TreeLabel({ label }) {
+  const chars = Array.from(label), long = chars.length > 18;
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-label", "data-long": long, children: long ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-label-start", children: chars.slice(0, -6).join("") }),
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-label-end", children: chars.slice(-6).join("") })
+  ] }) : label });
+}
+function TreeToggle({ expanded, label, className, onToggle }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+    "button",
+    {
+      type: "button",
+      className,
+      "aria-label": `${expanded ? "\u6536\u8D77" : "\u5C55\u5F00"}${label}\u7684\u5B50\u4F1A\u8BDD`,
+      "aria-expanded": expanded,
+      title: `${expanded ? "\u6536\u8D77" : "\u5C55\u5F00"}\u5B50\u4F1A\u8BDD`,
+      draggable: false,
+      onPointerDown: (event) => event.stopPropagation(),
+      onMouseDown: (event) => {
+        event.stopPropagation();
+        if (event.button === 0) {
+          event.preventDefault();
+          event.currentTarget.focus();
+        }
+      },
+      onDoubleClick: (event) => event.stopPropagation(),
+      onDragStart: (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      onKeyDown: (event) => {
+        if (event.key === "Enter" || event.key === " ") event.stopPropagation();
+      },
+      onKeyUp: (event) => {
+        if (event.key === "Enter" || event.key === " ") event.stopPropagation();
+      },
+      onClick: (event) => {
+        event.stopPropagation();
+        onToggle();
+      },
+      children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Chevron2, { expanded })
+    }
+  );
+}
+function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions, openTask }) {
+  const anchor = (0, import_react4.useRef)(null);
+  const [target2, setTarget] = (0, import_react4.useState)();
+  const revealed = (0, import_react4.useRef)();
+  const snapshot = (0, import_react4.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const node = snapshot.nodes.get(sessionId);
+  const hidden = snapshot.hiddenSessions.has(sessionId);
+  (0, import_react4.useEffect)(() => {
+    const row = anchor.current?.closest("[data-row-key]");
+    if (!row || row.dataset.rowKey !== `session:${sessionId}`) return;
+    const children = row.ownerDocument.createElement("div");
+    children.className = "dshsm-native-children";
+    const mounted = { sessionId, row, children };
+    const position2 = () => {
+      if (row.isConnected && row.nextSibling !== children) row.after(children);
+    };
+    position2();
+    const observer = new MutationObserver(position2);
+    if (row.parentElement) observer.observe(row.parentElement, { childList: true });
+    setTarget(mounted);
+    const detach = store.attach(mounted);
+    return () => {
+      observer.disconnect();
+      detach();
+      delete row.dataset.dshsmNested;
+      delete row.dataset.dshsmHidden;
+      delete row.dataset.dshsmParent;
+      children.remove();
+    };
+  }, [sessionId, store]);
+  let nested = false;
+  let parentId = snapshot.parents.get(sessionId);
+  while (parentId) {
+    if ([...snapshot.rows].some((item) => item.sessionId === parentId && item.row.isConnected)) {
+      nested = true;
+      break;
+    }
+    parentId = snapshot.parents.get(parentId);
+  }
+  const noticeOwner = [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId) && !snapshot.parents.has(item.sessionId)) ?? [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId));
+  const showNotice = !hidden && !nested && noticeOwner === target2 && Boolean(snapshot.problem || !snapshot.loaded);
+  (0, import_react4.useEffect)(() => {
+    if (!target2) return;
+    if (nested) target2.row.dataset.dshsmNested = "true";
+    else delete target2.row.dataset.dshsmNested;
+    if (hidden) target2.row.dataset.dshsmHidden = "true";
+    else delete target2.row.dataset.dshsmHidden;
+    if (!hidden && !nested && node?.children.length) target2.row.dataset.dshsmParent = "true";
+    else delete target2.row.dataset.dshsmParent;
+    target2.children.hidden = hidden || nested || !node?.children.length && !showNotice;
+  }, [target2, hidden, nested, node, showNotice]);
+  (0, import_react4.useEffect)(() => {
+    store.reveal(currentId);
+  }, [store, currentId, snapshot.nodes]);
+  (0, import_react4.useEffect)(() => {
+    if (!currentId) {
+      revealed.current = void 0;
+      return;
+    }
+    if (!target2 || hidden || nested || revealed.current === currentId) return;
+    const selected = [...target2.children.querySelectorAll("[data-session-id]")].find((element) => element.dataset.sessionId === currentId);
+    if (selected) {
+      selected.scrollIntoView?.({ block: "nearest" });
+      revealed.current = currentId;
+    }
+  }, [target2, currentId, hidden, nested, snapshot.expansion, snapshot.nodes]);
+  const ordered = (children) => pinnedIds ? [...children].sort((a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id))) : children;
+  const containsCurrent = (id2) => {
+    let parent = currentId && snapshot.parents.get(currentId);
+    while (parent) {
+      if (parent === id2) return true;
+      parent = snapshot.parents.get(parent);
+    }
+    return false;
+  };
+  const marker = (native = false) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: `dshsm-tree-current${native ? " dshsm-native-current" : ""}`, role: "img", "aria-label": "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD", title: "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD\uFF0C\u5C55\u5F00\u53EF\u5B9A\u4F4D" });
+  const branch = (child) => {
+    const expanded2 = store.isExpanded(child.id), selected = currentId === child.id;
+    const display = treePresentation(child, statuses?.get(child.id), snapshot.aliases.get(child.id));
+    return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
+        event.stopPropagation();
+        event.dataTransfer.setData("text/plain", child.id);
+        event.dataTransfer.effectAllowed = "copy";
+      }, children: [
+        child.children.length ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeToggle, { className: "dshsm-tree-toggle", label: display.label, expanded: expanded2, onToggle: () => store.toggle(child.id) }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-spacer", "aria-hidden": "true" }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { type: "button", className: "dshsm-tree-name", disabled: child.subagent && !child.openable, "aria-current": selected ? "page" : void 0, "aria-label": `${child.subagent && !child.openable ? child.note ?? "\u6682\u4E0D\u53EF\u6253\u5F00" : "\u6253\u5F00\u4F1A\u8BDD"}\uFF1A${display.label}`, title: display.title, onClick: (event) => {
+          event.stopPropagation();
+          openSession(child);
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeLabel, { label: display.label }),
+          pinnedIds?.has(child.id) && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-pin", title: "\u5DF2\u7F6E\u9876", children: "\u7F6E\u9876" }),
+          child.subagent && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-member", children: "\u961F\u5458" }),
+          display.state && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-status", "data-attention": display.waiting, title: display.state, children: display.state === "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" ? "\u9700\u5F00\u7236\u4F1A\u8BDD" : display.state })
+        ] }),
+        !expanded2 && containsCurrent(child.id) && marker(),
+        renderActions?.(child)
+      ] }),
+      child.children.length > 0 && expanded2 && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { role: "list", "aria-label": `${display.label}\u7684\u5B50\u4F1A\u8BDD`, className: "dshsm-tree-children", children: ordered(child.children).map(branch) })
+    ] }, child.id);
+  };
+  const expanded = store.isExpanded(sessionId), hasChildren = Boolean(node?.children.length);
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { ref: anchor, hidden: true }),
+    target2 && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+      (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: styles3 }),
+        showNotice && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: snapshot.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
+          snapshot.problem ? `${snapshot.problem}${snapshot.loaded ? "\uFF0C\u5F53\u524D\u663E\u793A\u4E0A\u6B21\u7ED3\u679C" : ""}` : "\u6B63\u5728\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u2026",
+          snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", disabled: snapshot.refreshing, onClick: () => void store.refresh(), children: snapshot.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
+        ] }),
+        !hidden && !nested && expanded && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(import_jsx_runtime5.Fragment, { children: hasChildren && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { role: "list", "aria-label": `${node.label}\u7684\u5B50\u4F1A\u8BDD`, onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: ordered(node.children).map(branch) }) })
+      ] }), target2.children),
+      !hidden && !nested && node?.task && openTask && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", title: node.task.title, "aria-label": "\u67E5\u770B\u4EFB\u52A1 " + node.task.title, onClick: (event) => {
+        event.stopPropagation();
+        openTask(node.task.id);
+      }, children: node.task.label }),
+      !hidden && !nested && hasChildren && (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target2.row),
+      !hidden && !nested && !expanded && containsCurrent(sessionId) && (0, import_react_dom2.createPortal)(marker(true), target2.row)
+    ] })
+  ] });
+}
+
+// src/mention-menu.ts
+var categories = { sessions: "\u4F1A\u8BDD", bookmarks: "\u6536\u85CF", files: "\u6587\u4EF6" };
+var previewCount = 5;
+function mentionQuery(query) {
+  const match = /^(会话|收藏|文件)[:：](.*)$/u.exec(query);
+  const category = match && Object.keys(categories).find((key) => categories[key] === match[1]);
+  return { category, text: match ? match[2] : query };
+}
+function compactMentions(rows, category, query) {
+  if (mentionQuery(query).category === category || rows.length <= previewCount) return rows;
+  return [...rows.slice(0, previewCount), {
+    name: `\u5C55\u5F00\u5176\u4F59 ${rows.length - previewCount} \u9879`,
+    section: rows[0].section,
+    value: `@${categories[category]}:${query}`
+  }];
+}
+function createSidebarMentionSource(sessions, store, workspace, archive) {
+  return {
+    name: "sessivra-sidebar-session",
+    trigger: "@",
+    order: -20,
+    showGroupTitle: false,
+    async candidates(session, request2) {
+      const { category, text: text2 } = mentionQuery(request2.query);
+      if (request2.quoted || category && category !== "sessions") return [];
+      const { ids, byId } = sessions.list.getSnapshot();
+      const { archivedSessionIds, pinnedSessionIds, items } = workspace();
+      const archived = new Set(archivedSessionIds), filter = archive();
+      const tree = store.getSnapshot();
+      const terms = text2.normalize("NFKC").toLocaleLowerCase().trim().split(/\s+/u).filter(Boolean);
+      const members = new Set(items.flatMap((item) => item.sessionIds));
+      const ordered = [...pinnedSessionIds, ...ids.filter((id2) => members.has(id2)), ...ids, ...tree.nodes.keys()];
+      const rows = [...new Set(ordered)].flatMap((id2) => {
+        const summary = byId[id2], node = tree.nodes.get(id2);
+        if (id2 === session.sessionId) return [];
+        if (tree.hiddenSessions.has(id2) || !summary && !node || summary?.origin === "subagent" && !node) return [];
+        if (summary?.blank && !summary.retainedBy.mainView) return [];
+        let root = id2;
+        while (tree.parents.has(root)) root = tree.parents.get(root);
+        const isArchived = archived.has(id2) || archived.has(root);
+        if (filter === "only" ? !isArchived : filter !== "show" && isArchived) return [];
+        const name = node && (node.subagent || tree.parents.has(id2)) ? treePresentation(node, void 0, tree.aliases.get(id2)).label : summary?.displayTitle ?? node.label;
+        const haystack = [name, byId[root]?.displayTitle].join(" ").normalize("NFKC").toLocaleLowerCase();
+        if (!terms.every((term) => haystack.includes(term))) return [];
+        return [{
+          name,
+          icon: "session",
+          section: "\u4F1A\u8BDD",
+          description: node?.subagent ? "\u961F\u5458" : tree.parents.has(id2) ? "\u5B50\u4F1A\u8BDD" : void 0,
+          value: id2
+        }];
+      });
+      const compact = compactMentions(rows, "sessions", request2.query);
+      if (!category && !text2) compact.push({ name: "\u6D4F\u89C8\u6587\u4EF6\u4E0E\u6587\u4EF6\u5939", section: "\u6587\u4EF6", value: "@\u6587\u4EF6:" });
+      return compact;
+    },
+    onPick({ candidate }) {
+      if (!candidate.icon) return { text: candidate.value, continue: true };
+      const bytes = new TextEncoder().encode(JSON.stringify(candidate.value));
+      const encoded = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
+      const label = candidate.name.replace(/[\r\n\]]/gu, " ").trim();
+      const ref = `@[${label}](dsh-session:${encoded})`;
+      return { insert: { source: "reference", appearance: "session", ref, label: candidate.name, clipboardText: ref } };
+    }
+  };
+}
+function compactNativeReferences(registry2) {
+  if (!Array.isArray(registry2.live?.sources)) return () => {
+  };
+  const restore = [];
+  const wrap = (source2) => {
+    if (source2.name !== "reference" || source2.trigger !== "@") return;
+    const original = source2.candidates;
+    const header = source2.header;
+    const projected = (request2) => request2.quoted ? { category: void 0, text: request2.query } : mentionQuery(request2.query);
+    source2.candidates = async (session, request2) => {
+      const { category, text: text2 } = projected(request2);
+      if (category && category !== "files" || !category && !text2 && !request2.quoted) return [];
+      if (!category && !request2.quoted) {
+        await new Promise((resolve) => {
+          const finish = () => {
+            clearTimeout(timer);
+            request2.signal.removeEventListener("abort", finish);
+            resolve();
+          };
+          const timer = setTimeout(finish, 150);
+          request2.signal.addEventListener("abort", finish, { once: true });
+          if (request2.signal.aborted) finish();
+        });
+      }
+      if (request2.signal.aborted) return [];
+      const rows = await original.call(source2, session, { ...request2, query: text2 });
+      return rows.filter((row) => row.icon !== "session").slice(0, category || request2.quoted ? 40 : 4);
+    };
+    if (header) source2.header = (session, request2) => {
+      const { category, text: text2 } = projected(request2);
+      return category && category !== "files" ? void 0 : header.call(source2, session, { ...request2, query: text2 });
+    };
+    restore.push(() => {
+      source2.candidates = original;
+      if (header) source2.header = header;
+    });
+  };
+  registry2.live.sources.forEach(wrap);
+  const register = registry2.registerSource;
+  registry2.registerSource = function(source2) {
+    wrap(source2);
+    return register.call(this, source2);
+  };
+  return () => {
+    registry2.registerSource = register;
+    restore.forEach((dispose) => dispose());
+  };
+}
+
+// src/bookmark-mention.ts
+var source = "sessivra-bookmark";
+async function readCandidates(saved, load) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const { sessionId, turn } of saved) {
+    const turns = groups.get(sessionId);
+    if (turns) turns.push(turn);
+    else groups.set(sessionId, [turn]);
+  }
+  const pending = [...groups];
+  const rows = /* @__PURE__ */ new Map();
+  const read2 = async () => {
+    for (let group = pending.shift(); group; group = pending.shift()) {
+      const [id2, turns] = group;
+      for (let start = 0; start < turns.length; start += 100) {
+        const session = await load(id2, turns.slice(start, start + 100)).catch(() => void 0);
+        if (!session) continue;
+        for (const item of session.items) {
+          if (!item.prompt && !item.response) continue;
+          const name = `${session.title} \xB7 \u7B2C ${item.turn} \u8F6E`;
+          rows.set(JSON.stringify([id2, item.turn]), {
+            name,
+            section: "\u6536\u85CF",
+            description: item.prompt || item.response,
+            value: JSON.stringify({ origin: item.anchor, turn: item.turn, name }),
+            searchText: `${name} ${item.prompt} ${item.response}`.normalize("NFKC").toLocaleLowerCase()
+          });
+        }
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, pending.length) }, read2));
+  return saved.flatMap(({ sessionId, turn }) => rows.get(JSON.stringify([sessionId, turn])) ?? []);
+}
+function createBookmarkMentionSource(load, resolve) {
+  let cached2;
+  const prepare = () => {
+    const saved = listTurnBookmarks(window);
+    const key = JSON.stringify(saved);
+    if (cached2?.key !== key || cached2.expires <= Date.now()) {
+      cached2 = { key, expires: Date.now() + 6e4, rows: readCandidates(saved, load) };
+    }
+    return cached2.rows;
+  };
+  return {
+    name: source,
+    trigger: "@",
+    order: -10,
+    showGroupTitle: false,
+    warm: prepare,
+    async candidates(_session, { query, quoted, signal }) {
+      const { category, text: text2 } = mentionQuery(query);
+      if (quoted || category && category !== "bookmarks") return [];
+      const rows = await prepare();
+      if (signal.aborted) return [];
+      const terms = text2.normalize("NFKC").trim().toLocaleLowerCase().split(/\s+/u).filter((term) => term && term !== "\u6536\u85CF");
+      return compactMentions(rows.filter((row) => terms.every((term) => row.searchText.includes(term))), "bookmarks", query);
+    },
+    onPick({ candidate }) {
+      if (candidate.value.startsWith("@")) return { text: candidate.value, continue: true };
+      const { name } = JSON.parse(candidate.value);
+      return { insert: {
+        source,
+        ref: candidate.value,
+        label: `\u6536\u85CF \xB7 ${name}`,
+        appearance: "session",
+        clipboardText: `@\u6536\u85CF \xB7 ${name}`
+      } };
+    },
+    codec: {
+      clipboardText(ref) {
+        return `@\u6536\u85CF \xB7 ${JSON.parse(ref).name}`;
+      },
+      async serialize(ref, signal) {
+        signal.throwIfAborted();
+        const { origin, turn } = JSON.parse(ref);
+        const quote = await resolve(origin, turn);
+        signal.throwIfAborted();
+        return quote;
+      }
+    }
+  };
+}
+
+// src/bookmark-user-text.ts
+var boundary = /\[引用的收藏问答，作为历史资料读取\]\r?\n(\{[^\r\n]*\})\r?\n\[收藏问答结束\]/gu;
+var bookmarkUserText = {
+  id: "sessivra-bookmark",
+  order: 9,
+  match(text2, from) {
+    boundary.lastIndex = from;
+    for (let match = boundary.exec(text2); match; match = boundary.exec(text2)) {
+      try {
+        const value = JSON.parse(match[1]);
+        if (typeof value.\u4F1A\u8BDD !== "string" || !Number.isSafeInteger(value.\u8F6E\u6B21) || value.\u8F6E\u6B21 < 0 || typeof value.\u63D0\u95EE !== "string" || typeof value.\u56DE\u590D !== "string") continue;
+        const source2 = value.\u539F\u6D88\u606F;
+        const origin = source2 && typeof source2.sessionId === "string" && typeof source2.messageId === "string" && Number.isSafeInteger(source2.seq) && source2.seq >= 0 ? { sessionId: source2.sessionId, seq: source2.seq, messageId: source2.messageId } : void 0;
+        return {
+          id: "sessivra-bookmark",
+          start: match.index,
+          end: match.index + match[0].length,
+          data: {
+            label: `\u6536\u85CF \xB7 ${value.\u4F1A\u8BDD} \xB7 \u7B2C ${value.\u8F6E\u6B21} \u8F6E`,
+            title: value.\u4F1A\u8BDD,
+            turn: value.\u8F6E\u6B21,
+            prompt: value.\u63D0\u95EE,
+            response: value.\u56DE\u590D,
+            ...origin ? { origin } : {}
+          }
+        };
+      } catch {
+      }
+    }
+  }
+};
+
+// src/sent-bookmark.tsx
+var import_react5 = require("react");
+var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_jsx_runtime6 = require("react/jsx-runtime");
+function SentBookmarkChip({ quote, locateLegacy, jump }) {
+  const resolving = (0, import_react5.useRef)(false);
+  const [status, setStatus] = (0, import_react5.useState)("");
+  const open = async () => {
+    if (quote.origin) {
+      jump(quote.origin);
+      return;
+    }
+    if (resolving.current) return;
+    resolving.current = true;
+    setStatus("\u6B63\u5728\u5B9A\u4F4D\u539F\u95EE\u7B54\u2026");
+    try {
+      const { title, turn, prompt, response } = quote;
+      const origin = await locateLegacy({ title, turn, prompt, response });
+      setStatus(origin ? "" : "\u65E0\u6CD5\u552F\u4E00\u5B9A\u4F4D\u539F\u95EE\u7B54");
+      if (origin) jump(origin);
+    } catch {
+      setStatus("\u6682\u65F6\u65E0\u6CD5\u5B9A\u4F4D\u539F\u95EE\u7B54\uFF0C\u8BF7\u91CD\u8BD5");
+    } finally {
+      resolving.current = false;
+    }
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+    import_dsh_client_ui_primitives.HoverCard,
+    {
+      inline: true,
+      openDelayMs: 230,
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(import_dsh_client_ui_primitives.ReferenceChip, { appearance: "session", label: quote.label, title: "", onActivate: () => void open() }),
+      content: /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { minWidth: 0, width: "min(272px, 65vw)", maxWidth: "100%", textAlign: "start", fontSize: 13, lineHeight: "1.45" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 8, fontWeight: 500, overflowWrap: "anywhere" }, children: [
+          quote.title,
+          " \xB7 \u7B2C ",
+          quote.turn,
+          " \u8F6E"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u63D0\u95EE", text: quote.prompt }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u56DE\u590D", text: quote.response }),
+        status && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { role: "status", style: { marginTop: 6 }, children: status })
+      ] })
+    }
+  );
+}
+function PreviewText({ title, text: text2 }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 6 }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { fontSize: 12, opacity: 0.72 }, children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 5, overflow: "hidden", whiteSpace: "pre-line", overflowWrap: "anywhere" }, children: text2 || "\u2014" })
+  ] });
+}
+
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
@@ -1838,10 +2895,10 @@ function cached(getter) {
 function nullish(input) {
   return input === null || input === void 0;
 }
-function cleanRegex(source) {
-  const start = source.startsWith("^") ? 1 : 0;
-  const end = source.endsWith("$") ? source.length - 1 : source.length;
-  return source.slice(start, end);
+function cleanRegex(source2) {
+  const start = source2.startsWith("^") ? 1 : 0;
+  const end = source2.endsWith("$") ? source2.length - 1 : source2.length;
+  return source2.slice(start, end);
 }
 function floatSafeRemainder(val, step) {
   const ratio = val / step;
@@ -5324,12 +6381,12 @@ var $ZodTemplateLiteral = /* @__PURE__ */ $constructor("$ZodTemplateLiteral", (i
       if (!part._zod.pattern) {
         throw new Error(`Invalid template literal part, no pattern found: ${[...part._zod.traits].shift()}`);
       }
-      const source = part._zod.pattern instanceof RegExp ? part._zod.pattern.source : part._zod.pattern;
-      if (!source)
+      const source2 = part._zod.pattern instanceof RegExp ? part._zod.pattern.source : part._zod.pattern;
+      if (!source2)
         throw new Error(`Invalid template literal part: ${part._zod.traits}`);
-      const start = source.startsWith("^") ? 1 : 0;
-      const end = source.endsWith("$") ? source.length - 1 : source.length;
-      regexParts.push(source.slice(start, end));
+      const start = source2.startsWith("^") ? 1 : 0;
+      const end = source2.endsWith("$") ? source2.length - 1 : source2.length;
+      regexParts.push(source2.slice(start, end));
     } else if (part === null || primitiveTypes.has(typeof part)) {
       regexParts.push(escapeRegex(`${part}`));
     } else {
@@ -15710,6 +16767,21 @@ var panelQuery = external_exports.object({
 // src/validation.ts
 var policyInput = external_exports.object({ mode: external_exports.enum(["accept", "hold", "refuse"]), senders: external_exports.array(external_exports.string()).max(64), operatorSources: external_exports.array(external_exports.string()).max(64).optional(), crossWorkspace: external_exports.boolean(), alias: external_exports.string().max(80) }).strict();
 
+// src/message-history.ts
+var messageLocation = external_exports.object({
+  sessionId: external_exports.string().min(1).max(256),
+  seq: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+}).strict();
+var messageOrigin = messageLocation.extend({ messageId: external_exports.string().min(1).max(256) });
+var bookmarkedTurnNumbers = external_exports.array(external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)).min(1).max(100);
+var bookmarkedTurn = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+var legacyBookmarkQuote = external_exports.object({
+  title: external_exports.string().min(1).max(2e3),
+  turn: bookmarkedTurn,
+  prompt: external_exports.string().max(12016),
+  response: external_exports.string().max(12016)
+}).strict();
+
 // src/contract.ts
 var codec2 = (name, schema) => ({ mode: "strict", typeSymbol: `dsh-session-messenger#${name}`, create: () => schema });
 var parameter = (name, schema) => ({ name, wire: name, source: "json", codec: codec2(name, schema) });
@@ -15735,7 +16807,11 @@ var descriptors = [
     { method: "operation", parameters: [parameter("id", external_exports.string().uuid())] },
     { method: "detail", parameters: [parameter("id", external_exports.string().max(160))] },
     { method: "preview", parameters: [parameter("id", external_exports.string().max(160)), parameter("index", external_exports.number().int().min(0).max(63))] },
-    { method: "command", parameters: [parameter("command", panelCommand)] }
+    { method: "command", parameters: [parameter("command", panelCommand)] },
+    { method: "locateMessage", parameters: [parameter("location", messageLocation), parameter("expectedId", external_exports.string().max(256))] },
+    { method: "bookmarkedTurns", parameters: [parameter("sessionId", external_exports.string().min(1).max(256)), parameter("turns", bookmarkedTurnNumbers)] },
+    { method: "bookmarkReference", parameters: [parameter("origin", messageOrigin), parameter("turn", bookmarkedTurn)] },
+    { method: "locateLegacyBookmark", parameters: [parameter("quote", legacyBookmarkQuote)] }
   ].map((e) => ({ ...e, id: "dsh-plugin-sessivra#sessivraTaskPanel/" + e.method, service: "sessivraTaskPanel", namespace: "sessivraTaskPanel", invocation: { kind: "direct" }, result: codec2("panel-result", external_exports.json()) })),
   ...endpoints.map((e) => ({ ...e, id: `dsh-session-messenger#sessionMessenger/${e.method}`, service: "sessionMessenger", namespace: "sessionMessenger", invocation: { kind: "direct" }, result: codec2("result", external_exports.json()) })),
   { method: "tree", parameters: [], id: "dsh-session-messenger#sessionCollaboration/tree", service: "sessionCollaboration", namespace: "sessionCollaboration", invocation: { kind: "direct" }, result: codec2("tree-result", external_exports.json()) },
@@ -15759,409 +16835,17 @@ function createLegacyRecipientSource() {
 }
 
 // src/client.tsx
-var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-
-// src/session-tree.tsx
-var import_react2 = require("react");
-var import_react_dom = require("react-dom");
-var import_jsx_runtime3 = require("react/jsx-runtime");
-function sessionForest(sessions) {
-  const offered = new Map(sessions.map((session) => [session.id, session]));
-  const rooted = (session) => {
-    if (!session.subagent) return true;
-    if (!["teammate", "standalone", "unknown"].includes(session.subagentKind)) return false;
-    const seen = /* @__PURE__ */ new Set([session.id]);
-    let parent = offered.get(session.parentId);
-    while (parent) {
-      if (seen.has(parent.id)) return false;
-      if (!parent.subagent) return true;
-      seen.add(parent.id);
-      parent = offered.get(parent.parentId);
-    }
-    return false;
-  };
-  const nodes = new Map(sessions.filter(rooted).map((session) => [session.id, { ...session, children: [] }]));
-  const roots = [];
-  for (const node of nodes.values()) {
-    const seen = /* @__PURE__ */ new Set([node.id]);
-    let parent = node.parentId && nodes.get(node.parentId);
-    let cursor = parent;
-    while (cursor) {
-      if (seen.has(cursor.id)) {
-        parent = void 0;
-        break;
-      }
-      seen.add(cursor.id);
-      cursor = cursor.parentId ? nodes.get(cursor.parentId) : void 0;
-    }
-    if (parent) parent.children.push(node);
-    else roots.push(node);
-  }
-  return roots;
-}
-var expansionKey = "sessivra.tree.expansion.v1";
-var aliasesKey = "sessivra.tree.aliases.v1";
-function browserStorage() {
-  try {
-    return globalThis.localStorage;
-  } catch {
-    return void 0;
-  }
-}
-function createSessionTreeStore(api, storage = browserStorage()) {
-  let expansion = /* @__PURE__ */ new Map();
-  try {
-    const saved = JSON.parse(storage?.getItem(expansionKey) ?? "[]");
-    if (Array.isArray(saved)) expansion = new Map(saved.filter((entry) => Array.isArray(entry) && entry.length === 2 && typeof entry[0] === "string" && typeof entry[1] === "boolean").slice(-2e3));
-  } catch {
-  }
-  let aliases = /* @__PURE__ */ new Map();
-  try {
-    const saved = JSON.parse(storage?.getItem(aliasesKey) ?? "[]");
-    if (Array.isArray(saved)) aliases = new Map(saved.filter((entry) => Array.isArray(entry) && entry.length === 2 && typeof entry[0] === "string" && typeof entry[1] === "string" && entry[1].trim().length > 0 && entry[1].length <= 60));
-  } catch {
-  }
-  let snapshot = { nodes: /* @__PURE__ */ new Map(), parents: /* @__PURE__ */ new Map(), hiddenSessions: /* @__PURE__ */ new Set(), rows: /* @__PURE__ */ new Set(), problem: "", loaded: false, refreshing: false, expansion, aliases };
-  const listeners = /* @__PURE__ */ new Set();
-  let timer, inFlight = false, disposed = false, lastRevealed;
-  const emit = (patch) => {
-    snapshot = { ...snapshot, ...patch };
-    for (const listener of listeners) listener();
-  };
-  const refresh = async () => {
-    if (inFlight || disposed || !listeners.size) return;
-    inFlight = true;
-    emit({ refreshing: true });
-    try {
-      const result = await api.tree();
-      if (disposed || !listeners.size) return;
-      if (!result.ok) {
-        emit({ problem: "\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" });
-        return;
-      }
-      const nodes = /* @__PURE__ */ new Map(), parents = /* @__PURE__ */ new Map();
-      const visit = (node) => {
-        nodes.set(node.id, node);
-        for (const child of node.children) {
-          parents.set(child.id, node.id);
-          visit(child);
-        }
-      };
-      sessionForest(result.value.filter((session) => !session.subagent || session.subagentKind === "teammate")).forEach(visit);
-      const hiddenSessions = new Set(result.value.filter((session) => session.subagent && !nodes.has(session.id)).map((session) => session.id));
-      emit({ nodes, parents, hiddenSessions, problem: "", loaded: true });
-    } catch {
-      if (!disposed && listeners.size) emit({ problem: "\u5B50\u4F1A\u8BDD\u5217\u8868\u8FDE\u63A5\u4E2D\u65AD" });
-    } finally {
-      inFlight = false;
-      if (!disposed) emit({ refreshing: false });
-    }
-  };
-  const saveExpansion = (next) => {
-    const bounded = new Map([...next].slice(-2e3));
-    try {
-      storage?.setItem(expansionKey, JSON.stringify([...bounded]));
-    } catch {
-    }
-    emit({ expansion: bounded });
-  };
-  const isExpanded = (id2) => snapshot.expansion.get(id2) ?? !snapshot.parents.has(snapshot.parents.get(id2) ?? "");
-  return {
-    getSnapshot: () => snapshot,
-    refresh,
-    isExpanded,
-    setAlias: (id2, name) => {
-      const node = snapshot.nodes.get(id2);
-      if (!node?.subagent || node.subagentKind !== "teammate") throw new Error("\u4EC5\u56E2\u961F\u961F\u5458\u652F\u6301\u663E\u793A\u540D\u79F0");
-      const value = name.trim();
-      if (value.length > 60) throw new Error("\u663E\u793A\u540D\u79F0\u6700\u591A 60 \u4E2A\u5B57\u7B26");
-      const next = new Map(snapshot.aliases);
-      if (value) next.set(id2, value);
-      else next.delete(id2);
-      if (!storage) throw new Error("\u65E0\u6CD5\u4FDD\u5B58\u672C\u673A\u663E\u793A\u540D\u79F0");
-      storage.setItem(aliasesKey, JSON.stringify([...next]));
-      emit({ aliases: next });
-    },
-    toggle: (id2) => {
-      const next = new Map(snapshot.expansion);
-      next.delete(id2);
-      next.set(id2, !isExpanded(id2));
-      saveExpansion(next);
-    },
-    reveal: (id2, force = false) => {
-      if (!id2) {
-        lastRevealed = void 0;
-        return;
-      }
-      if (!force && id2 === lastRevealed || !snapshot.nodes.has(id2)) return;
-      lastRevealed = id2;
-      const next = new Map(snapshot.expansion);
-      let parent = snapshot.parents.get(id2), changed = false;
-      while (parent) {
-        if (!isExpanded(parent)) {
-          next.set(parent, true);
-          changed = true;
-        }
-        parent = snapshot.parents.get(parent);
-      }
-      if (changed) saveExpansion(next);
-    },
-    subscribe: (listener) => {
-      listeners.add(listener);
-      if (!timer && !disposed) {
-        void refresh();
-        timer = setInterval(() => void refresh(), 2e3);
-      }
-      return () => {
-        listeners.delete(listener);
-        if (!listeners.size) {
-          clearInterval(timer);
-          timer = void 0;
-        }
-      };
-    },
-    attach: (target2) => {
-      emit({ rows: /* @__PURE__ */ new Set([...snapshot.rows, target2]) });
-      return () => {
-        const rows = new Set(snapshot.rows);
-        rows.delete(target2);
-        emit({ rows });
-      };
-    },
-    dispose: () => {
-      disposed = true;
-      clearInterval(timer);
-      timer = void 0;
-      listeners.clear();
-    }
-  };
-}
-function treePresentation(child, status, alias) {
-  const description = child.subagent ? child.description?.trim() : void 0;
-  const label = alias || (description && description.length <= 60 && !/[\r\n]/.test(description) && !/^(你是|你将|you\s+(are|will)\b)/i.test(description) ? description : child.label);
-  const kind = status?.pendingInteraction?.kind;
-  const waiting = kind === "approval" ? "\u7B49\u5F85\u6279\u51C6" : kind === "plan-review" ? "\u7B49\u5F85\u65B9\u6848\u786E\u8BA4" : kind === "question" ? "\u7B49\u5F85\u56DE\u7B54" : "";
-  const taskState = child.task && `${child.task.label}${child.task.pendingUpdate && child.task.appliedRevision > 0 ? " \xB7 \u5F85\u540C\u6B65" : ""}`;
-  const state = waiting || taskState || (child.subagent && child.note !== "\u53EA\u8BFB" ? child.note : "") || (status?.running ?? child.running ? "\u8FD0\u884C\u4E2D" : "") || (child.subagent && child.subagentMode === "continuable" && child.parentAvailable === false ? "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" : "") || (child.subagent ? child.note : "") || "";
-  return { label, state, waiting: Boolean(waiting) || Boolean(child.task && ["waiting-decision", "blocked", "review"].includes(child.task.status)), title: [label, child.subagent && `\u961F\u5458\uFF1A${child.subagentKind === "teammate" ? child.teammateName || child.label : child.label}`, description !== label && description, state, child.task && `${child.task.title} \xB7 \u5DF2\u91C7\u7528 v${child.task.appliedRevision} / \u5F53\u524D v${child.task.revision}${child.task.queued ? ` \xB7 \u540E\u7EED ${child.task.queued} \u9879` : ""}`].filter(Boolean).join(" \xB7 ") };
-}
-var styles = `
-[data-dshsm-nested=true],[data-dshsm-hidden=true]{display:none!important}
-[data-dshsm-parent=true]{position:relative;padding-inline-start:calc(40px + var(--dsh-workspace-indent,0px))!important}
-.dshsm-native-children{font:inherit;color:var(--dsw-alias-label-primary);min-width:0;margin-inline-start:calc(40px + var(--dsh-workspace-indent,0px));--dshsm-tree-guide:var(--dsw-alias-border-l2,var(--dsw-alias-label-tertiary))}
-.dshsm-native-children *{box-sizing:border-box}
-.dshsm-native-children button,.dshsm-native-toggle{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer}
-.dshsm-native-toggle{position:absolute;inset-inline-start:calc(4px + var(--dsh-workspace-indent,0px));top:2px;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm,4px)}
-.dshsm-native-toggle:hover,.dshsm-native-children .dshsm-tree-toggle:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
-.dshsm-native-toggle:active,.dshsm-native-children .dshsm-tree-toggle:active{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px currentColor}
-.dshsm-native-children button:focus-visible,.dshsm-native-toggle:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
-.dshsm-tree-branch{position:relative;min-width:0}
-.dshsm-tree-branch::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;border-inline-start:1px solid var(--dshsm-tree-guide);pointer-events:none}
-.dshsm-tree-branch:last-child::before{bottom:auto;height:16px}
-.dshsm-tree-branch::after{content:"";position:absolute;inset-inline-start:0;top:16px;width:8px;border-top:1px solid var(--dshsm-tree-guide);pointer-events:none}
-.dshsm-tree-row{position:relative;display:flex;align-items:center;gap:4px;height:32px;min-width:0;padding:0 4px 0 8px;border-radius:var(--dsw-radius-md);font-size:14px;line-height:20px;user-select:none}
-.dshsm-tree-row[data-selected=true]{background:var(--dsw-alias-interactive-bg-hover)}
-.dshsm-native-children .dshsm-tree-toggle{display:flex;align-items:center;justify-content:center;flex:0 0 28px;width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm,4px);color:var(--dsw-alias-label-secondary)}
-.dshsm-tree-spacer{display:flex;align-items:center;justify-content:center;flex:0 0 4px;width:4px;height:28px}
-.dshsm-tree-spacer::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--dshsm-tree-guide)}
-.dshsm-native-children .dshsm-tree-name{display:flex;align-items:center;gap:6px;flex:1;min-width:0;height:100%;margin:0;padding:0 4px;text-align:left;line-height:20px;border-radius:var(--dsw-radius-sm,4px)}
-.dshsm-native-children .dshsm-tree-name:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
-.dshsm-tree-label{display:block;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dshsm-tree-label[data-long=true]{display:flex;text-overflow:clip}
-.dshsm-tree-label-start{min-width:0;overflow:hidden;text-overflow:ellipsis}
-.dshsm-tree-label-end{flex:none;max-width:50%;overflow:hidden}
-.dshsm-tree-running{flex:0 0 6px;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary)}
-.dshsm-tree-member{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary)}
-.dshsm-tree-status{flex:none;max-width:5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--dsw-alias-label-secondary)}
-.dshsm-tree-status[data-attention=true]{color:var(--dsw-alias-state-warning,#aa6700)}
-.dshsm-tree-current{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary);pointer-events:none}
-.dshsm-native-current{position:absolute;inset-inline-start:calc(28px + var(--dsh-workspace-indent,0px));top:4px}
-.dshsm-tree-row .dshsm-session-actions{display:none}
-.dshsm-tree-row:hover .dshsm-session-actions,.dshsm-tree-row:focus-within .dshsm-session-actions,.dshsm-tree-row .dshsm-session-actions[data-open=true]{display:inline-flex}
-@media(hover:none){.dshsm-tree-row .dshsm-session-actions{display:inline-flex}}
-.dshsm-tree-pin{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary)}
-.dshsm-tree-notice button{margin-inline-start:8px;text-decoration:underline}
-.dshsm-native-children .dshsm-tree-name:disabled{cursor:default;opacity:.75}
-.dshsm-tree-children{margin-inline-start:28px}
-.dshsm-tree-notice{font-size:12px;line-height:18px;padding:8px;color:var(--dsw-alias-label-tertiary)}
-`;
-var Chevron = ({ expanded }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", style: { transform: expanded ? "rotate(90deg)" : void 0 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m6 4 4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) });
-function TreeLabel({ label }) {
-  const chars = Array.from(label), long = chars.length > 18;
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-label", "data-long": long, children: long ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-label-start", children: chars.slice(0, -6).join("") }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-label-end", children: chars.slice(-6).join("") })
-  ] }) : label });
-}
-function TreeToggle({ expanded, label, className, onToggle }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-    "button",
-    {
-      type: "button",
-      className,
-      "aria-label": `${expanded ? "\u6536\u8D77" : "\u5C55\u5F00"}${label}\u7684\u5B50\u4F1A\u8BDD`,
-      "aria-expanded": expanded,
-      title: `${expanded ? "\u6536\u8D77" : "\u5C55\u5F00"}\u5B50\u4F1A\u8BDD`,
-      draggable: false,
-      onPointerDown: (event) => event.stopPropagation(),
-      onMouseDown: (event) => {
-        event.stopPropagation();
-        if (event.button === 0) {
-          event.preventDefault();
-          event.currentTarget.focus();
-        }
-      },
-      onDoubleClick: (event) => event.stopPropagation(),
-      onDragStart: (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-      },
-      onKeyDown: (event) => {
-        if (event.key === "Enter" || event.key === " ") event.stopPropagation();
-      },
-      onKeyUp: (event) => {
-        if (event.key === "Enter" || event.key === " ") event.stopPropagation();
-      },
-      onClick: (event) => {
-        event.stopPropagation();
-        onToggle();
-      },
-      children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Chevron, { expanded })
-    }
-  );
-}
-function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions, openTask }) {
-  const anchor = (0, import_react2.useRef)(null);
-  const [target2, setTarget] = (0, import_react2.useState)();
-  const revealed = (0, import_react2.useRef)();
-  const snapshot = (0, import_react2.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const node = snapshot.nodes.get(sessionId);
-  const hidden = snapshot.hiddenSessions.has(sessionId);
-  (0, import_react2.useEffect)(() => {
-    const row = anchor.current?.closest("[data-row-key]");
-    if (!row || row.dataset.rowKey !== `session:${sessionId}`) return;
-    const children = row.ownerDocument.createElement("div");
-    children.className = "dshsm-native-children";
-    const mounted = { sessionId, row, children };
-    const position2 = () => {
-      if (row.isConnected && row.nextSibling !== children) row.after(children);
-    };
-    position2();
-    const observer = new MutationObserver(position2);
-    if (row.parentElement) observer.observe(row.parentElement, { childList: true });
-    setTarget(mounted);
-    const detach = store.attach(mounted);
-    return () => {
-      observer.disconnect();
-      detach();
-      delete row.dataset.dshsmNested;
-      delete row.dataset.dshsmHidden;
-      delete row.dataset.dshsmParent;
-      children.remove();
-    };
-  }, [sessionId, store]);
-  let nested = false;
-  let parentId = snapshot.parents.get(sessionId);
-  while (parentId) {
-    if ([...snapshot.rows].some((item) => item.sessionId === parentId && item.row.isConnected)) {
-      nested = true;
-      break;
-    }
-    parentId = snapshot.parents.get(parentId);
-  }
-  const noticeOwner = [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId) && !snapshot.parents.has(item.sessionId)) ?? [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId));
-  const showNotice = !hidden && !nested && noticeOwner === target2 && Boolean(snapshot.problem || !snapshot.loaded);
-  (0, import_react2.useEffect)(() => {
-    if (!target2) return;
-    if (nested) target2.row.dataset.dshsmNested = "true";
-    else delete target2.row.dataset.dshsmNested;
-    if (hidden) target2.row.dataset.dshsmHidden = "true";
-    else delete target2.row.dataset.dshsmHidden;
-    if (!hidden && !nested && node?.children.length) target2.row.dataset.dshsmParent = "true";
-    else delete target2.row.dataset.dshsmParent;
-    target2.children.hidden = hidden || nested || !node?.children.length && !showNotice;
-  }, [target2, hidden, nested, node, showNotice]);
-  (0, import_react2.useEffect)(() => {
-    store.reveal(currentId);
-  }, [store, currentId, snapshot.nodes]);
-  (0, import_react2.useEffect)(() => {
-    if (!currentId) {
-      revealed.current = void 0;
-      return;
-    }
-    if (!target2 || hidden || nested || revealed.current === currentId) return;
-    const selected = [...target2.children.querySelectorAll("[data-session-id]")].find((element) => element.dataset.sessionId === currentId);
-    if (selected) {
-      selected.scrollIntoView?.({ block: "nearest" });
-      revealed.current = currentId;
-    }
-  }, [target2, currentId, hidden, nested, snapshot.expansion, snapshot.nodes]);
-  const ordered = (children) => pinnedIds ? [...children].sort((a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id))) : children;
-  const containsCurrent = (id2) => {
-    let parent = currentId && snapshot.parents.get(currentId);
-    while (parent) {
-      if (parent === id2) return true;
-      parent = snapshot.parents.get(parent);
-    }
-    return false;
-  };
-  const marker = (native = false) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: `dshsm-tree-current${native ? " dshsm-native-current" : ""}`, role: "img", "aria-label": "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD", title: "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD\uFF0C\u5C55\u5F00\u53EF\u5B9A\u4F4D" });
-  const branch = (child) => {
-    const expanded2 = store.isExpanded(child.id), selected = currentId === child.id;
-    const display = treePresentation(child, statuses?.get(child.id), snapshot.aliases.get(child.id));
-    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
-        event.stopPropagation();
-        event.dataTransfer.setData("text/plain", child.id);
-        event.dataTransfer.effectAllowed = "copy";
-      }, children: [
-        child.children.length ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TreeToggle, { className: "dshsm-tree-toggle", label: display.label, expanded: expanded2, onToggle: () => store.toggle(child.id) }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-spacer", "aria-hidden": "true" }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { type: "button", className: "dshsm-tree-name", disabled: child.subagent && !child.openable, "aria-current": selected ? "page" : void 0, "aria-label": `${child.subagent && !child.openable ? child.note ?? "\u6682\u4E0D\u53EF\u6253\u5F00" : "\u6253\u5F00\u4F1A\u8BDD"}\uFF1A${display.label}`, title: display.title, onClick: (event) => {
-          event.stopPropagation();
-          openSession(child);
-        }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TreeLabel, { label: display.label }),
-          pinnedIds?.has(child.id) && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-pin", title: "\u5DF2\u7F6E\u9876", children: "\u7F6E\u9876" }),
-          child.subagent && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-member", children: "\u961F\u5458" }),
-          display.state && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dshsm-tree-status", "data-attention": display.waiting, title: display.state, children: display.state === "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" ? "\u9700\u5F00\u7236\u4F1A\u8BDD" : display.state })
-        ] }),
-        !expanded2 && containsCurrent(child.id) && marker(),
-        renderActions?.(child)
-      ] }),
-      child.children.length > 0 && expanded2 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { role: "list", "aria-label": `${display.label}\u7684\u5B50\u4F1A\u8BDD`, className: "dshsm-tree-children", children: ordered(child.children).map(branch) })
-    ] }, child.id);
-  };
-  const expanded = store.isExpanded(sessionId), hasChildren = Boolean(node?.children.length);
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { ref: anchor, hidden: true }),
-    target2 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-      (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: styles }),
-        showNotice && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { role: snapshot.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
-          snapshot.problem ? `${snapshot.problem}${snapshot.loaded ? "\uFF0C\u5F53\u524D\u663E\u793A\u4E0A\u6B21\u7ED3\u679C" : ""}` : "\u6B63\u5728\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u2026",
-          snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", disabled: snapshot.refreshing, onClick: () => void store.refresh(), children: snapshot.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
-        ] }),
-        !hidden && !nested && expanded && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: hasChildren && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { role: "list", "aria-label": `${node.label}\u7684\u5B50\u4F1A\u8BDD`, onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: ordered(node.children).map(branch) }) })
-      ] }), target2.children),
-      !hidden && !nested && node?.task && openTask && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", title: node.task.title, "aria-label": "\u67E5\u770B\u4EFB\u52A1 " + node.task.title, onClick: (event) => {
-        event.stopPropagation();
-        openTask(node.task.id);
-      }, children: node.task.label }),
-      !hidden && !nested && hasChildren && (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target2.row),
-      !hidden && !nested && !expanded && containsCurrent(sessionId) && (0, import_react_dom.createPortal)(marker(true), target2.row)
-    ] })
-  ] });
-}
+var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/session-tree-host.tsx
-var import_react5 = require("react");
+var import_react8 = require("react");
 
 // src/session-actions.tsx
-var import_react4 = require("react");
+var import_react7 = require("react");
 
 // src/session-dialog.tsx
-var import_react3 = require("react");
-var import_jsx_runtime4 = require("react/jsx-runtime");
+var import_react6 = require("react");
+var import_jsx_runtime7 = require("react/jsx-runtime");
 function createSessionDialogStore() {
   let owner;
   let content = null;
@@ -16196,28 +16880,28 @@ function createSessionDialogStore() {
   };
 }
 function SessionDialogRequest({ dialogs, children }) {
-  const owner = (0, import_react3.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
-  (0, import_react3.useLayoutEffect)(() => {
+  const owner = (0, import_react6.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
+  (0, import_react6.useLayoutEffect)(() => {
     if (children) dialogs.show(owner, children);
     else dialogs.hide(owner);
   }, [dialogs, owner, children]);
-  (0, import_react3.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
+  (0, import_react6.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
   return null;
 }
 function SessionDialogOutlet({ dialogs }) {
-  const content = (0, import_react3.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(import_jsx_runtime4.Fragment, { children: content });
+  const content = (0, import_react6.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_jsx_runtime7.Fragment, { children: content });
 }
 
 // src/session-actions.tsx
-var import_jsx_runtime5 = require("react/jsx-runtime");
+var import_jsx_runtime8 = require("react/jsx-runtime");
 function SessionActionsMenu({ session, pinned, actions: actions2, controls, dialogs, onChanged, alias, setAlias }) {
-  const [open, setOpen] = (0, import_react4.useState)(false);
-  const [dialog, setDialog] = (0, import_react4.useState)();
-  const [title, setTitle] = (0, import_react4.useState)(session.label);
-  const [busy, setBusy] = (0, import_react4.useState)(false);
-  const [error51, setError] = (0, import_react4.useState)("");
-  const composing = (0, import_react4.useRef)(false);
+  const [open, setOpen] = (0, import_react7.useState)(false);
+  const [dialog, setDialog] = (0, import_react7.useState)();
+  const [title, setTitle] = (0, import_react7.useState)(session.label);
+  const [busy, setBusy] = (0, import_react7.useState)(false);
+  const [error51, setError] = (0, import_react7.useState)("");
+  const composing = (0, import_react7.useRef)(false);
   const { Menu: Menu2, Modal: Modal2, Button: Button2 } = controls;
   const member = session.subagent && session.subagentKind === "teammate";
   const close = () => {
@@ -16248,9 +16932,9 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
     if (dialog === "rename") void run(() => member ? Promise.resolve(setAlias(title.trim())) : actions2.rename(session.id, title.trim()), member ? "\u663E\u793A\u540D\u79F0\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002" : void 0);
     else if (dialog === "archive") void run(() => actions2.archive(session.id), "\u5F52\u6863\u672A\u5B8C\u6210\u3002\u4F1A\u8BDD\u82E5\u6B63\u5728\u8FD0\u884C\uFF0C\u8BF7\u5148\u505C\u6B62\u540E\u518D\u91CD\u8BD5\u3002");
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
       Menu2,
       {
         open,
@@ -16258,7 +16942,7 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
         align: "end",
         autoFocus: true,
         onClose: () => setOpen(false),
-        anchor: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
+        anchor: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
         items: member ? [{ id: "rename", label: "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" }] : [{ id: "rename", label: "\u91CD\u547D\u540D" }, { id: "pin", label: pinned ? "\u53D6\u6D88\u7F6E\u9876" : "\u7F6E\u9876" }, { id: "archive", label: "\u5F52\u6863", disabled: session.running }],
         onSelect: (id2) => {
           setOpen(false);
@@ -16272,23 +16956,23 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
         }
       }
     ),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
       Modal2,
       {
         open: true,
         title: dialog === "rename" ? member ? "\u8BBE\u7F6E\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u91CD\u547D\u540D\u4F1A\u8BDD" : dialog === "archive" ? "\u5F52\u6863\u4F1A\u8BDD" : "\u64CD\u4F5C\u672A\u5B8C\u6210",
         closeLabel: "\u5173\u95ED",
         onClose: close,
-        footer: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Button2, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
-          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Button2, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
+        footer: /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Button2, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
+          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Button2, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
         ] }),
-        children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
+        children: /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
           event.preventDefault();
           confirm();
         }, children: [
-          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
+          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
               setTitle(event.target.value);
               setError("");
             }, onCompositionStart: () => {
@@ -16301,17 +16985,17 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
                 if (!event.nativeEvent.isComposing) confirm();
               }
             } }),
-            member && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("p", { className: "dshsm-session-hint", children: [
+            member && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { className: "dshsm-session-hint", children: [
               "\u539F\u540D\uFF1A",
               session.label,
               "\u3002\u663E\u793A\u540D\u79F0\u4EC5\u4FDD\u5B58\u5728\u672C\u673A\uFF0C\u7559\u7A7A\u6062\u590D\u9ED8\u8BA4\u540D\u79F0\u3002"
             ] })
-          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("p", { children: [
+          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { children: [
             "\u5F52\u6863\u201C",
             session.label,
             "\u201D\u540E\u53EF\u5728\u5BBF\u4E3B\u7684\u5F52\u6863\u5217\u8868\u4E2D\u6062\u590D\u3002"
           ] }) : null,
-          error51 && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { role: "alert", children: error51 })
+          error51 && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { role: "alert", children: error51 })
         ] })
       }
     ) })
@@ -16319,49 +17003,49 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
 }
 
 // src/session-tree-host.tsx
-var import_jsx_runtime6 = require("react/jsx-runtime");
+var import_jsx_runtime9 = require("react/jsx-runtime");
 function NativeSessionTreeHost(props) {
   const selected = props.useSessions((list) => Object.values(list.byId).find((session) => (session.retainedBy.mainView ?? 0) > 0)?.id);
   const panelActive = props.usePanelInfo((info) => info.activePanelId !== null);
   const statuses = props.useSessionStatus((state) => state);
   const pinnedIds = new Set(props.useWorkspaces((state) => state.pinnedSessionIds));
-  const snapshot = (0, import_react5.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+  const snapshot = (0, import_react8.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
     NativeSessionChildren,
     {
       ...props,
       currentId: panelActive ? void 0 : selected,
       statuses,
       pinnedIds,
-      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
-        session.task && props.openTask && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", className: "dshsm-session-actions", title: "\u67E5\u770B\u4EFB\u52A1", onClick: (e) => {
+      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+        session.task && props.openTask && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { type: "button", className: "dshsm-session-actions", title: "\u67E5\u770B\u4EFB\u52A1", onClick: (e) => {
           e.stopPropagation();
           props.openTask?.(session.task.id);
         }, children: "\u4EFB\u52A1" }),
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
       ] })
     }
   );
 }
 
 // src/session-navigation.tsx
-var import_react6 = __toESM(require("react"), 1);
-var import_react_dom2 = require("react-dom");
-var import_jsx_runtime7 = require("react/jsx-runtime");
+var import_react9 = __toESM(require("react"), 1);
+var import_react_dom3 = require("react-dom");
+var import_jsx_runtime10 = require("react/jsx-runtime");
 function createWorkspaceArchiveSource(slots) {
   let entry;
-  let source;
+  let source2;
   const current = () => {
     const next = slots.entriesOfSlot("sidebar.workspaces")[0];
     if (next !== entry) {
       entry = next;
-      source = void 0;
+      source2 = void 0;
       if (next?.locale === "workspace" && next.children?.["sidebar.workspaces.session.row.action"] && next.store && typeof next.store === "object" && "create" in next.store && typeof next.store.create === "function") {
         const instance = next.store.create();
-        if (instance && typeof instance === "object" && "getSnapshot" in instance && typeof instance.getSnapshot === "function" && "subscribe" in instance && typeof instance.subscribe === "function") source = instance;
+        if (instance && typeof instance === "object" && "getSnapshot" in instance && typeof instance.getSnapshot === "function" && "subscribe" in instance && typeof instance.subscribe === "function") source2 = instance;
       }
     }
-    return source;
+    return source2;
   };
   return {
     getSnapshot: () => {
@@ -16479,16 +17163,16 @@ function revealNativeBranch(doc, store, id2, workspaces) {
   return stop;
 }
 function SearchMatches({ store, openSession, target: target2, query, reveal, archivedIds }) {
-  const snapshot = (0, import_react6.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const snapshot = (0, import_react9.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const matches = searchTeamMembers(store, query, archivedIds);
   const hasSupplement = matches.length > 0 || !snapshot.loaded || Boolean(snapshot.problem);
-  const [container] = (0, import_react6.useState)(() => target2.results.ownerDocument.createElement("div"));
-  (0, import_react6.useEffect)(() => {
+  const [container] = (0, import_react9.useState)(() => target2.results.ownerDocument.createElement("div"));
+  (0, import_react9.useEffect)(() => {
     container.dataset.dshsmSearch = "true";
     target2.results.after(container);
     return () => container.remove();
   }, [target2.results, container]);
-  (0, import_react6.useEffect)(() => {
+  (0, import_react9.useEffect)(() => {
     const marked = /* @__PURE__ */ new Set();
     const mark = () => {
       if (hasSupplement) for (const sibling of target2.results.parentElement?.children ?? []) {
@@ -16515,29 +17199,29 @@ function SearchMatches({ store, openSession, target: target2, query, reveal, arc
     openSession(node);
     reveal(node.id);
   };
-  return (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
-    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "dshsm-search-heading", children: [
+  return (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_jsx_runtime10.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
+    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "dshsm-search-heading", children: [
         "\u961F\u5458 \xB7 ",
         matches.length
       ] }),
-      matches.slice(0, 50).map(({ node, display, path }) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
+      matches.slice(0, 50).map(({ node, display, path }) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
 ${path}`, onClick: () => open(node), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: display.label }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: display.label }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("small", { children: [
           node.teammateName,
           display.state ? ` \xB7 ${display.state}` : ""
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { children: path })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: path })
       ] }, node.id)),
-      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
+      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
     ] }),
-    !snapshot.loaded && !snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
-    snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
+    !snapshot.loaded && !snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
+    snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
       "\u961F\u5458\u641C\u7D22\u6682\u672A\u66F4\u65B0\uFF0C",
       snapshot.problem,
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
     ] })
   ] }), container);
 }
@@ -16545,10 +17229,10 @@ function NativeTeamSearch(props) {
   const workspaces = props.useWorkspaces((state) => state.items);
   const archivedIds = props.useWorkspaces((state) => state.archivedSessionIds);
   const archiveFilter = props.useArchiveFilter((filter) => filter);
-  const pendingReveal = import_react6.default.useRef();
-  (0, import_react6.useEffect)(() => () => pendingReveal.current?.(), []);
-  const [search, setSearch] = (0, import_react6.useState)();
-  (0, import_react6.useEffect)(() => {
+  const pendingReveal = import_react9.default.useRef();
+  (0, import_react9.useEffect)(() => () => pendingReveal.current?.(), []);
+  const [search, setSearch] = (0, import_react9.useState)();
+  (0, import_react9.useEffect)(() => {
     let queued = false, stopped = false;
     let workspace;
     const scan = () => {
@@ -16579,7 +17263,7 @@ function NativeTeamSearch(props) {
       document.removeEventListener("input", scan);
     };
   }, []);
-  return search && (archiveFilter === "default" || archiveFilter === "show") ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(SearchMatches, { ...props, ...search, archivedIds, reveal: (id2) => {
+  return search && (archiveFilter === "default" || archiveFilter === "show") ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(SearchMatches, { ...props, ...search, archivedIds, reveal: (id2) => {
     pendingReveal.current?.();
     pendingReveal.current = revealNativeBranch(document, props.store, id2, workspaces);
   } }) : null;
@@ -16589,21 +17273,21 @@ function selectParentUnavailable(owner) {
   return child?.address.mode === "continuable" && child.parentAvailable === false && owner.session?.running !== true ? { parentId: child.address.parentSessionId } : null;
 }
 function ParentUnavailableComposer({ store, openSession, matched, Button: Button2 }) {
-  const snapshot = (0, import_react6.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const snapshot = (0, import_react9.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const parent = snapshot.nodes.get(matched.parentId);
-  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Button2, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
+  return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Button2, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
       if (parent) openSession(parent);
     }, children: "\u6253\u5F00\u7236\u4F1A\u8BDD" })
   ] });
 }
 
 // src/session-views.tsx
-var import_react8 = require("react");
-var import_react_dom4 = require("react-dom");
+var import_react11 = require("react");
+var import_react_dom5 = require("react-dom");
 
 // src/split-layout.ts
 var MAIN_PANE = "$main";
@@ -16622,13 +17306,13 @@ function promotePane(node, id2) {
   const rename = (branch) => branch.kind === "pane" ? branch.id === id2 ? { ...branch, id: MAIN_PANE } : branch : { ...branch, first: rename(branch.first), second: rename(branch.second) };
   return rename(removePane(node, MAIN_PANE) ?? node);
 }
-function dockPane(node, source, target2, edge, splitId) {
-  if (source === target2 || !paneIds(node).includes(target2)) return node;
-  const pruned = removePane(node, source) ?? node;
+function dockPane(node, source2, target2, edge, splitId) {
+  if (source2 === target2 || !paneIds(node).includes(target2)) return node;
+  const pruned = removePane(node, source2) ?? node;
   const insert = (branch) => {
     if (branch.kind === "split") return { ...branch, first: insert(branch.first), second: insert(branch.second) };
     if (branch.id !== target2) return branch;
-    const added = { kind: "pane", id: source }, before = edge === "left" || edge === "top";
+    const added = { kind: "pane", id: source2 }, before = edge === "left" || edge === "top";
     return {
       kind: "split",
       id: splitId,
@@ -16671,9 +17355,9 @@ function edgePreview(rect, edge) {
 }
 
 // src/compact-headers.tsx
-var import_react7 = __toESM(require("react"), 1);
-var import_react_dom3 = require("react-dom");
-var import_jsx_runtime8 = require("react/jsx-runtime");
+var import_react10 = __toESM(require("react"), 1);
+var import_react_dom4 = require("react-dom");
+var import_jsx_runtime11 = require("react/jsx-runtime");
 var css2 = `
 [data-sessivra-compact]{height:40px!important;min-height:40px!important;padding:4px 12px!important;overflow:hidden}
 [data-sessivra-compact] [data-sessivra-tab-row]{display:none!important}
@@ -16683,12 +17367,12 @@ var css2 = `
 .sessivra-header-menu button.sessivra-pane-close{width:24px;height:28px}
 `;
 function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
-  const [open, setOpen] = (0, import_react7.useState)(false);
-  const registry2 = (0, import_react7.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
+  const [open, setOpen] = (0, import_react10.useState)(false);
+  const registry2 = (0, import_react10.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
   const native = sessionId ? registry2.get(sessionId) : void 0;
   const views = native?.views ?? seat.tabs.map((tab, index) => ({ id: String(index), label: tab.textContent?.trim() ?? "" }));
   if (!views.length) return null;
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
     Menu2,
     {
       open,
@@ -16696,8 +17380,8 @@ function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
       autoFocus: true,
       align: "start",
       onClose: () => setOpen(false),
-      anchor: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
-      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", {}) })),
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
+      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", {}) })),
       onSelect: (id2) => {
         setOpen(false);
         if (native) native.selectView(id2);
@@ -16707,8 +17391,8 @@ function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
   ) });
 }
 function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, current }) {
-  const [seats, setSeats] = (0, import_react7.useState)([]);
-  (0, import_react7.useLayoutEffect)(() => {
+  const [seats, setSeats] = (0, import_react10.useState)([]);
+  (0, import_react10.useLayoutEffect)(() => {
     const markedHeaders = /* @__PURE__ */ new Set(), markedTabs = /* @__PURE__ */ new Set();
     const scan = () => {
       const headers = [...host.querySelectorAll("[data-sessivra-main-header],.sessivra-pane-native-header header")];
@@ -16739,23 +17423,23 @@ function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, curre
       for (const row of markedTabs) delete row.dataset.sessivraTabRow;
     };
   }, [host]);
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("style", { children: css2 }),
-    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_react7.default.Fragment, { children: [
-      seat.menu && (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime8.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
-      (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: css2 }),
+    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_react10.default.Fragment, { children: [
+      seat.menu && (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime11.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
+      (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
         event.preventDefault();
         event.stopPropagation();
       }, onClick: (event) => {
         event.stopPropagation();
         close(seat.id);
-      }, children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
+      }, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
     ] }, seat.id))
   ] });
 }
 
 // src/session-views.tsx
-var import_jsx_runtime9 = require("react/jsx-runtime");
+var import_jsx_runtime12 = require("react/jsx-runtime");
 function SessionViewContent(props) {
   const session = props.useSession((value) => value);
   const conversation = props.useConversation((value) => value);
@@ -16764,7 +17448,7 @@ function SessionViewContent(props) {
   const pending = session.subagent?.address.mode === "continuable" && session.subagent.parentAvailable === void 0;
   const settling = !active && session.openState === "loading" && blank !== true || pending;
   const hero = !active && (session.openState === "open" || blank === true);
-  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_jsx_runtime9.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(import_jsx_runtime12.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
 }
 function createSessionViews(sessions) {
   let snapshot = [];
@@ -16811,11 +17495,18 @@ function createSessionViews(sessions) {
     }
   };
 }
-var styles2 = `
+var styles4 = `
 [data-sessivra-views]{display:flex!important;flex-direction:column;position:relative!important;min-height:0;isolation:isolate;overflow:hidden}
 [data-sessivra-views]>[data-conversation-content]{position:absolute!important;left:var(--sessivra-main-left,0px)!important;top:var(--sessivra-main-top,0px)!important;width:var(--sessivra-main-width,100%)!important;height:var(--sessivra-main-height,0px)!important;min-width:0!important;min-height:0!important;max-width:none!important;box-sizing:border-box;z-index:1;overflow:hidden}
 [data-sessivra-views][data-sessivra-split=true] [data-sessivra-main-header]{position:absolute!important;left:var(--sessivra-main-left,0px);top:var(--sessivra-header-top,0px);width:var(--sessivra-main-width,100%);min-width:0;box-sizing:border-box;z-index:4}
 [data-sessivra-visible=true]{background:var(--dsw-alias-interactive-bg-hover)!important}
+/* DSH rc.1's native TurnNavigator owns the outline, previews and history jumps. */
+@container (width >= 112px){
+  [data-conversation-scroll] .SNx2jG_slot>.SNx2jG_frame{display:block;left:2px;right:auto;width:14px}
+}
+[data-conversation-scroll] .SNx2jG_mark::before{left:0;right:auto;width:12px;transform-origin:left center}
+[data-conversation-scroll] .SNx2jG_mark:focus-visible::after{width:14px;inset:0}
+[data-conversation-scroll] .SNx2jG_frame>.SNx2jG_preview{left:calc(100% + 6px);right:auto;width:min(300px,calc(100cqw - 8px))}
 .sessivra-pane:focus-visible,.sessivra-pane-close:focus-visible,.sessivra-divider:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}
 .sessivra-canvas{flex:1;min-height:0;min-width:0;position:relative;pointer-events:none;z-index:2}
 .sessivra-pane{position:absolute;box-sizing:border-box;min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l2);overflow:hidden;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);pointer-events:auto}
@@ -16834,25 +17525,27 @@ var styles2 = `
 `;
 var position = (rect) => ({ left: rect.x, top: rect.y, width: rect.width, height: rect.height });
 function SessionViews(props) {
-  const panes = (0, import_react8.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
-  (0, import_react8.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  const panes = (0, import_react11.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
+  (0, import_react11.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
   const listedCurrent = props.useSessions((list) => Object.values(list.byId).find((row) => (row.retainedBy.mainView ?? 0) > 0)?.id);
-  const [nativeCurrent, setNativeCurrent] = (0, import_react8.useState)();
+  const [nativeCurrent, setNativeCurrent] = (0, import_react11.useState)();
   const current = listedCurrent ?? nativeCurrent;
   const panel = props.usePanelInfo((info) => info.activePanelId);
-  const [host, setHost] = (0, import_react8.useState)();
-  const [canvas, setCanvas] = (0, import_react8.useState)(null);
-  const [size, setSize] = (0, import_react8.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
-  const [layout, setLayout] = (0, import_react8.useState)(mainLayout);
-  const [notice, setNotice] = (0, import_react8.useState)("");
-  const [preview, setPreview] = (0, import_react8.useState)();
-  const drag = (0, import_react8.useRef)({ consumed: false });
-  const resize = (0, import_react8.useRef)();
-  const pointerDock = (0, import_react8.useRef)();
-  const suppressClick = (0, import_react8.useRef)(0);
-  const splitSerial = (0, import_react8.useRef)(0);
-  const promotion = (0, import_react8.useRef)();
-  const [promoting, setPromoting] = (0, import_react8.useState)();
+  const [host, setHost] = (0, import_react11.useState)();
+  const { fish } = props;
+  (0, import_react11.useEffect)(() => host && fish && panel === null ? mountTurnBookmarks(host, fish) : void 0, [host, fish, panel]);
+  const [canvas, setCanvas] = (0, import_react11.useState)(null);
+  const [size, setSize] = (0, import_react11.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
+  const [layout, setLayout] = (0, import_react11.useState)(mainLayout);
+  const [notice, setNotice] = (0, import_react11.useState)("");
+  const [preview, setPreview] = (0, import_react11.useState)();
+  const drag = (0, import_react11.useRef)({ consumed: false });
+  const resize = (0, import_react11.useRef)();
+  const pointerDock = (0, import_react11.useRef)();
+  const suppressClick = (0, import_react11.useRef)(0);
+  const splitSerial = (0, import_react11.useRef)(0);
+  const promotion = (0, import_react11.useRef)();
+  const [promoting, setPromoting] = (0, import_react11.useState)();
   const labelFor = (id2) => props.store.getSnapshot().nodes.get(id2 === MAIN_PANE ? current ?? "" : id2)?.label ?? panes.find((pane) => pane.id === id2)?.label ?? "\u4F1A\u8BDD";
   const close = (id2) => {
     if (id2 !== MAIN_PANE) {
@@ -16867,7 +17560,7 @@ function SessionViews(props) {
     promotion.current = { closed: current ?? "", replacement: replacement.id };
     setPromoting(replacement.id);
   };
-  (0, import_react8.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     if (!promoting || promotion.current?.replacement !== promoting) return;
     const node = props.store.getSnapshot().nodes.get(promoting);
     props.selectSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: node.id, mode: node.subagentMode } : promoting);
@@ -16879,15 +17572,15 @@ function SessionViews(props) {
     }, 1e4);
     return () => window.clearTimeout(timer);
   }, [promoting, props.selectSession, props.store]);
-  const geometry = (0, import_react8.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
+  const geometry = (0, import_react11.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
   const focus = (id2) => queueMicrotask(() => [...document.querySelectorAll("[data-sessivra-pane]")].find((element) => element.dataset.sessivraPane === id2)?.focus());
   const dock = (id2, destination, edge) => {
-    const source = id2 === current ? MAIN_PANE : id2;
-    if (source === destination) return;
+    const source2 = id2 === current ? MAIN_PANE : id2;
+    if (source2 === destination) return;
     if (!paneIds(layout).includes(destination)) return;
-    if (source !== MAIN_PANE) {
-      const existing = panes.find((pane) => pane.id === source);
-      const node = props.store.getSnapshot().nodes.get(source);
+    if (source2 !== MAIN_PANE) {
+      const existing = panes.find((pane) => pane.id === source2);
+      const node = props.store.getSnapshot().nodes.get(source2);
       if (!existing && (!node || node.subagent && !node.openable)) return;
       try {
         if (!existing && node) props.views.open(node.subagent ? { parentSessionId: node.parentId, childSessionId: node.id, mode: node.subagentMode } : node.id, node.label);
@@ -16897,11 +17590,11 @@ function SessionViews(props) {
       }
     }
     const splitId = `split-${++splitSerial.current}`;
-    setLayout((previous) => dockPane(previous, source, destination, edge, splitId));
+    setLayout((previous) => dockPane(previous, source2, destination, edge, splitId));
     setNotice("");
-    focus(source);
+    focus(source2);
   };
-  (0, import_react8.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     let mounted;
     const scan = () => {
       const content = [...document.querySelectorAll("[data-conversation-content]")].find((element) => !element.closest("[data-sessivra-pane]") && element.parentElement?.hasAttribute("data-phase"));
@@ -16915,7 +17608,7 @@ function SessionViews(props) {
     scan();
     return () => observer.disconnect();
   }, []);
-  (0, import_react8.useLayoutEffect)(() => {
+  (0, import_react11.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     host.dataset.sessivraViews = "true";
     return () => {
@@ -16923,7 +17616,7 @@ function SessionViews(props) {
       for (const name of ["left", "top", "width", "height"]) host.style.removeProperty(`--sessivra-main-${name}`);
     };
   }, [host, panel]);
-  (0, import_react8.useLayoutEffect)(() => {
+  (0, import_react11.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const header = host.querySelector(':scope > [data-slot="conversation.header"] header') ?? host.querySelector(":scope > header");
     host.dataset.sessivraSplit = String(panes.length > 0);
@@ -16941,7 +17634,7 @@ function SessionViews(props) {
       }
     };
   }, [host, panel, panes.length, current]);
-  (0, import_react8.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     const visible = new Set(panel === null ? [current, ...panes.map((pane) => pane.id)] : []);
     const marked = /* @__PURE__ */ new Set();
     const sync = () => {
@@ -16961,7 +17654,7 @@ function SessionViews(props) {
       for (const row of marked) delete row.dataset.sessivraVisible;
     };
   }, [current, panes, panel]);
-  (0, import_react8.useLayoutEffect)(() => {
+  (0, import_react11.useLayoutEffect)(() => {
     if (!canvas || !host) return;
     const measure = () => {
       const rect = canvas.getBoundingClientRect(), outer = host.getBoundingClientRect();
@@ -16980,7 +17673,7 @@ function SessionViews(props) {
       window.removeEventListener("resize", measure);
     };
   }, [canvas, host, panes.length, current]);
-  (0, import_react8.useLayoutEffect)(() => {
+  (0, import_react11.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const rect = geometry.panes.get(MAIN_PANE);
     if (!rect) return;
@@ -16991,11 +17684,11 @@ function SessionViews(props) {
       host.style.removeProperty("--sessivra-header-top");
     };
   }, [host, panel, geometry, size.x, size.y, size.header, panes.length]);
-  (0, import_react8.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     const retained = new Set(panes.map((pane) => pane.id));
     setLayout((previous) => paneIds(previous).filter((id2) => id2 !== MAIN_PANE && !retained.has(id2)).reduce((next, id2) => removePane(next, id2) ?? mainLayout(), previous));
   }, [panes]);
-  (0, import_react8.useLayoutEffect)(() => {
+  (0, import_react11.useLayoutEffect)(() => {
     if (current && promotion.current?.replacement === current) {
       setLayout((previous) => promotePane(previous, current));
       promotion.current = void 0;
@@ -17006,7 +17699,7 @@ function SessionViews(props) {
     }
     if (current) props.views.close(current);
   }, [current, props.views]);
-  (0, import_react8.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     if (!host || !canvas || panel !== null) return;
     const hit = (event) => {
       const bounds = canvas.getBoundingClientRect(), x = event.clientX - bounds.left, y = event.clientY - bounds.top;
@@ -17020,10 +17713,10 @@ function SessionViews(props) {
       const pane = composer.closest("[data-sessivra-pane]");
       return pane?.dataset.sessivraPane ?? current;
     };
-    const place = (source, event) => {
+    const place = (source2, event) => {
       const target2 = composerAt(event);
       if (target2) {
-        const id2 = source === MAIN_PANE ? current : source;
+        const id2 = source2 === MAIN_PANE ? current : source2;
         const label = id2 && (props.store.getSnapshot().nodes.get(id2)?.label ?? panes.find((pane) => pane.id === id2)?.label);
         if (!id2 || !label || !props.referenceDrop.insert(target2, id2, label)) setNotice("\u5F53\u524D\u8F93\u5165\u6846\u6682\u65F6\u65E0\u6CD5\u63D2\u5165\u5F15\u7528\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
         else setNotice("");
@@ -17031,7 +17724,7 @@ function SessionViews(props) {
       }
       const location = hit(event);
       if (!location) return false;
-      dock(source, location.target, location.edge);
+      dock(source2, location.target, location.edge);
       return true;
     };
     const sourceAt = (event) => {
@@ -17041,8 +17734,8 @@ function SessionViews(props) {
     };
     const pointerDown = (event) => {
       if (event.button !== 0 || event.target instanceof Element && event.target.closest("button:not([data-view-source]),input,select,textarea,[contenteditable=true]")) return;
-      const source = sourceAt(event);
-      pointerDock.current = source ? { source, x: event.clientX, y: event.clientY, overCanvas: false } : void 0;
+      const source2 = sourceAt(event);
+      pointerDock.current = source2 ? { source: source2, x: event.clientX, y: event.clientY, overCanvas: false } : void 0;
     };
     const pointerMove = (event) => {
       const active = pointerDock.current;
@@ -17101,12 +17794,12 @@ function SessionViews(props) {
       else setPreview((previous) => previous?.target === location.target && previous.edge === location.edge ? previous : location);
     };
     const drop = (event) => {
-      const location = hit(event), source = drag.current.source;
-      if (!source || !location) return;
+      const location = hit(event), source2 = drag.current.source;
+      if (!source2 || !location) return;
       event.preventDefault();
       event.stopPropagation();
       drag.current.consumed = true;
-      place(source, event);
+      place(source2, event);
       setPreview(void 0);
     };
     const end = (event) => {
@@ -17161,26 +17854,26 @@ function SessionViews(props) {
   };
   const previewSource = drag.current.source ?? pointerDock.current?.source;
   if (!host || panel !== null) return null;
-  return (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("style", { children: styles2 }),
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
-      notice && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
+  return (0, import_react_dom5.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("style", { children: styles4 }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
+      notice && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
       panes.map((pane) => {
         const rect = geometry.panes.get(pane.id);
         if (!rect) return null;
-        return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
             event.dataTransfer.setData("text/plain", pane.id);
             event.dataTransfer.effectAllowed = "move";
           }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
-            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
+            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
+            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
         ] }, pane.id);
       }),
-      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
         "div",
         {
           role: "separator",
@@ -17230,13 +17923,13 @@ function SessionViews(props) {
         },
         node.id
       )),
-      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
+      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
     ] })
   ] }), host);
 }
 
 // src/native-pane-header.tsx
-var import_jsx_runtime10 = require("react/jsx-runtime");
+var import_jsx_runtime13 = require("react/jsx-runtime");
 function mirrorNativePaneHeader(slots) {
   let disposed = false, queued = false;
   let cleanup = [];
@@ -17245,10 +17938,10 @@ function mirrorNativePaneHeader(slots) {
     cleanup.reverse().forEach((dispose) => dispose());
     cleanup = [];
     const watched = /* @__PURE__ */ new Set();
-    const mirror = (source, target2) => {
-      if (!watched.has(source)) {
-        watched.add(source);
-        cleanup.push(slots.subscribe(source, () => {
+    const mirror = (source2, target2) => {
+      if (!watched.has(source2)) {
+        watched.add(source2);
+        cleanup.push(slots.subscribe(source2, () => {
           if (queued || disposed) return;
           queued = true;
           queueMicrotask(() => {
@@ -17257,7 +17950,7 @@ function mirrorNativePaneHeader(slots) {
           });
         }));
       }
-      for (const entry of slots.entriesOfSlot(source)) {
+      for (const entry of slots.entriesOfSlot(source2)) {
         const children = {};
         const names = /* @__PURE__ */ new Map();
         for (const [name, spec] of Object.entries(entry.children ?? {})) {
@@ -17272,7 +17965,7 @@ function mirrorNativePaneHeader(slots) {
             if (!alias) throw new Error(`Undeclared native header child: ${name}`);
             return props[method](alias, ...args);
           };
-          return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
+          return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
         };
         cleanup.push(slots.register({
           name: target2,
@@ -17297,7 +17990,7 @@ function mirrorNativePaneHeader(slots) {
 }
 
 // src/header-views.tsx
-var import_react9 = require("react");
+var import_react12 = require("react");
 function createHeaderViews() {
   let snapshot = /* @__PURE__ */ new Map();
   const listeners = /* @__PURE__ */ new Set();
@@ -17327,7 +18020,7 @@ function createHeaderViews() {
 }
 function HeaderViewsBridge(props) {
   const views = props.useConversationViews((views2) => views2), current = props.useStore((state) => state.view);
-  (0, import_react9.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
+  (0, import_react12.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
   return null;
 }
 function wireHeaderViews(slots, headerViews) {
@@ -17354,13 +18047,13 @@ function wireHeaderViews(slots, headerViews) {
 }
 
 // src/session-reference-drop.tsx
-var import_react10 = require("react");
+var import_react13 = require("react");
 function createSessionReferenceDrop() {
   const inputs = /* @__PURE__ */ new Map();
   return {
     register(id2, actions2, input) {
-      const insert = (source, label) => {
-        const encoded = btoa(Array.from(new TextEncoder().encode(JSON.stringify(source)), (byte) => String.fromCharCode(byte)).join("")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
+      const insert = (source2, label) => {
+        const encoded = btoa(Array.from(new TextEncoder().encode(JSON.stringify(source2)), (byte) => String.fromCharCode(byte)).join("")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
         const mention = `@[${label.replace(/[\\\[\]]/g, "\\$&")}](dsh-session:${encoded})`;
         const selection = actions2.captureInsertion();
         const inserted = input.insertReference({ source: "reference", ref: mention, label, appearance: "session", clipboardText: mention }, { ...selection, start: selection.end });
@@ -17375,20 +18068,21 @@ function createSessionReferenceDrop() {
         if (inputs.get(id2) === insert) inputs.delete(id2);
       };
     },
-    insert(target2, source, label) {
-      return inputs.get(target2)?.(source, label) ?? false;
+    insert(target2, source2, label) {
+      return inputs.get(target2)?.(source2, label) ?? false;
     }
   };
 }
 function SessionReferenceDropInput(props) {
-  (0, import_react10.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
+  (0, import_react13.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
   return null;
 }
 
 // src/client.tsx
-var import_jsx_runtime11 = require("react/jsx-runtime");
+var import_jsx_runtime14 = require("react/jsx-runtime");
 var reportLabels = { code: { copyLabel: "\u590D\u5236\u4EE3\u7801", copiedLabel: "\u5DF2\u590D\u5236" }, footnotes: "\u811A\u6CE8" };
-var renderReport = (text2) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(import_dsh_client_ui_primitives.MarkdownText, { text: text2, labels: reportLabels });
+var renderReport = (text2) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(import_dsh_client_ui_primitives2.MarkdownText, { text: text2, labels: reportLabels });
+var bookmarkFish = { path: import_dsh_client_ui_primitives2.FISH_LOGO_PATH, ...import_dsh_client_ui_primitives2.FISH_LOGO_VIEWBOX };
 var inject = ["slots", "remote"];
 async function apply(ctx) {
   await ctx.remote.$mount(remoteContribution);
@@ -17398,6 +18092,15 @@ async function apply(ctx) {
       const store = createSessionTreeStore(treeCtx.remote.sessionCollaboration);
       const dialogs = createSessionDialogStore();
       const sessions = treeCtx.sessions;
+      const archiveView = createWorkspaceArchiveSource(treeSlots);
+      treeCtx.inject(["inputTriggers", "workspaces"], (mentionCtx) => {
+        const host = mentionCtx;
+        const registry2 = host.inputTriggers;
+        if (!Array.isArray(registry2.live?.sources)) return;
+        const source2 = createSidebarMentionSource(sessions, store, () => host.workspaces.list.getSnapshot(), archiveView.getSnapshot);
+        mentionCtx.effect(() => compactNativeReferences(registry2), "sessivra: compact native file candidates");
+        mentionCtx.effect(() => registry2.registerSource(source2), "sessivra: sidebar mention candidates");
+      });
       const views = createSessionViews(sessions);
       const referenceDrop = createSessionReferenceDrop();
       const headerViews = createHeaderViews();
@@ -17406,30 +18109,94 @@ async function apply(ctx) {
       treeCtx.inject(["remote.sessivraTaskPanel", "layout"], (panelCtx) => {
         const panelId = "sessivra-tasks";
         const listeners = /* @__PURE__ */ new Set();
+        const api = panelCtx.remote.sessivraTaskPanel;
         showTask = (id2) => {
           requestedTask = id2;
           panelCtx.layout.selectPanel(panelId);
           for (const notify of listeners) notify();
         };
+        const navigator2 = createMessageNavigator(sessions, (target2) => panelCtx.uiWorkspace.openSession(target2), async (location, expected) => {
+          const result = await api.locateMessage(location, expected);
+          if (!result.ok) throw new Error(result.error.message);
+          return result.value;
+        });
         panelCtx.effect(() => () => {
           showTask = void 0;
+          navigator2.dismiss();
         });
         const panelSlots = panelCtx.slots;
+        const bookmarkPanelId = "sessivra-bookmarks";
+        const loadBookmarks2 = async (sessionId, turns) => {
+          const result = await api.bookmarkedTurns(sessionId, turns);
+          if (!result.ok) throw new Error(result.error.message);
+          return result.value;
+        };
+        panelCtx.inject(["inputTriggers"], (mentionCtx) => {
+          const source2 = createBookmarkMentionSource(loadBookmarks2, async (origin, turn) => {
+            const result = await api.bookmarkReference(origin, turn);
+            if (!result.ok) throw new Error(result.error.message);
+            return result.value;
+          });
+          const { inputTriggers } = mentionCtx;
+          mentionCtx.effect(() => {
+            const dispose = inputTriggers.registerSource(source2);
+            const warm = () => {
+              void source2.warm();
+            };
+            const timer = window.setTimeout(warm, 800);
+            window.addEventListener(turnBookmarksChanged, warm);
+            window.addEventListener("storage", warm);
+            return () => {
+              clearTimeout(timer);
+              window.removeEventListener(turnBookmarksChanged, warm);
+              window.removeEventListener("storage", warm);
+              dispose();
+            };
+          }, "sessivra: bookmark mentions");
+        });
+        const jumpBookmark = ({ sessionId, seq, messageId }) => {
+          void navigator2.jump({ sessionId, seq }, messageId, true);
+        };
+        panelCtx.inject(["uiConversation"], (textCtx) => {
+          const { uiConversation } = textCtx;
+          textCtx.effect(() => uiConversation.userText.register(bookmarkUserText), "sessivra: display sent bookmark references");
+          panelSlots.inject("conversation.user.text.node", () => panelSlots.register({
+            name: "conversation.user.text.node",
+            key: bookmarkUserText.id,
+            priority: 100
+          }, ({ node }) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(SentBookmarkChip, { quote: node.data, jump: jumpBookmark, locateLegacy: async (quote) => {
+            const result = await api.locateLegacyBookmark(quote);
+            if (!result.ok) throw new Error(result.error.message);
+            return result.value;
+          } })));
+        });
+        panelSlots.inject("sidebar.panellist", () => panelSlots.register({
+          name: "sidebar.panellist",
+          id: bookmarkPanelId,
+          order: 21,
+          label: () => "\u6536\u85CF"
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("svg", { width: size, height: size, viewBox: `-1 -1 ${bookmarkFish.width + 2} ${bookmarkFish.height + 2}`, fill: "none", stroke: "currentColor", strokeWidth: "1.4", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("path", { d: bookmarkFish.path }) })));
+        panelSlots.inject("main", () => panelSlots.register({ name: "main", key: bookmarkPanelId }, () => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(BookmarkLibrary, { load: loadBookmarks2, jump: jumpBookmark, Menu: import_dsh_client_ui_primitives2.Menu })));
+        panelSlots.inject("shell.overlay", () => panelSlots.register({
+          name: "shell.overlay",
+          id: "sessivra-message-origin",
+          inject: () => ({ navigator: navigator2 })
+        }, MessageJumpNotice));
         panelSlots.inject("sidebar.panellist", () => panelSlots.register({
           name: "sidebar.panellist",
           id: panelId,
           order: 20,
           label: () => taskPanelTitle
-        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9" }) })));
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("path", { d: "m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9" }) })));
         panelSlots.inject("main", () => panelSlots.register({ name: "main", key: panelId }, function Mounted(props) {
           const current = props.useSessions((s) => Object.values(s.byId).find((row) => row.retainedBy.mainView)?.id);
-          const task = import_react11.default.useSyncExternalStore((listener) => {
+          const task = import_react14.default.useSyncExternalStore((listener) => {
             listeners.add(listener);
             return () => {
               listeners.delete(listener);
             };
           }, () => requestedTask);
-          return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(TaskPanel, { initialSession: current, initialTask: task, api: panelCtx.remote.sessivraTaskPanel, renderMarkdown: renderReport, open: (id2) => {
+          return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(TaskPanel, { initialSession: current, initialTask: task, api: panelCtx.remote.sessivraTaskPanel, renderMarkdown: renderReport, open: (id2) => {
             const node = store.getSnapshot().nodes.get(id2);
             if (node?.subagent && !node.openable) throw new Error("\u4F1A\u8BDD\u5F53\u524D\u4E0D\u53EF\u6253\u5F00");
             panelCtx.uiWorkspace.openSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: id2, mode: node.subagentMode } : id2);
@@ -17451,7 +18218,7 @@ async function apply(ctx) {
         name: "shell.overlay",
         id: "sessivra-session-views",
         children: { "sessivra.conversation.pane": { kind: "single", scope: "session" }, "sessivra.conversation.header": { kind: "single", scope: "session" } },
-        inject: () => ({ views, store, referenceDrop, headerViews, Menu: import_dsh_client_ui_primitives.Menu, selectSession: (target2) => treeCtx.uiWorkspace.openSession(target2), startSession: () => treeCtx.uiWorkspace.startSession() })
+        inject: () => ({ views, store, referenceDrop, headerViews, Menu: import_dsh_client_ui_primitives2.Menu, fish: bookmarkFish, selectSession: (target2) => treeCtx.uiWorkspace.openSession(target2), startSession: () => treeCtx.uiWorkspace.startSession() })
       }, SessionViews));
       treeSlots.inject("sessivra.conversation.pane", () => treeSlots.register({ name: "sessivra.conversation.pane" }, SessionViewContent));
       treeSlots.inject("sessivra.conversation.header", () => mirrorNativePaneHeader(treeCtx.slots));
@@ -17469,7 +18236,7 @@ async function apply(ctx) {
       treeSlots.inject("shell.overlay", () => treeSlots.register({
         name: "shell.overlay",
         id: "sessivra-team-search",
-        inject: () => ({ store, openSession, hooks: { archiveFilter: createWorkspaceArchiveSource(treeSlots) } })
+        inject: () => ({ store, openSession, hooks: { archiveFilter: archiveView } })
       }, NativeTeamSearch));
       treeSlots.inject("conversation.composer", () => treeSlots.register({
         // Chain seats use ascending priority; the native read-only entry is -10.
@@ -17477,7 +18244,7 @@ async function apply(ctx) {
         id: "sessivra-parent-unavailable",
         priority: -20,
         select: selectParentUnavailable,
-        inject: () => ({ store, openSession, Button: import_dsh_client_ui_primitives.Button })
+        inject: () => ({ store, openSession, Button: import_dsh_client_ui_primitives2.Button })
       }, ParentUnavailableComposer));
       treeSlots.inject("sidebar.workspaces.session.row.action", () => treeSlots.register({
         name: "sidebar.workspaces.session.row.action",
@@ -17486,7 +18253,7 @@ async function apply(ctx) {
         inject: () => ({
           store,
           openTask: (id2) => showTask?.(id2),
-          controls: { Menu: import_dsh_client_ui_primitives.Menu, Modal: import_dsh_client_ui_primitives.Modal, Button: import_dsh_client_ui_primitives.Button },
+          controls: { Menu: import_dsh_client_ui_primitives2.Menu, Modal: import_dsh_client_ui_primitives2.Modal, Button: import_dsh_client_ui_primitives2.Button },
           dialogs,
           sessionActions: {
             rename: async (id2, title) => {
