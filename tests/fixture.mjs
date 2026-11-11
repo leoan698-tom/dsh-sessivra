@@ -13,7 +13,7 @@ import Typert from '@deepseek-ai/dsh-typert-registry';
 import Gateway from '@deepseek-ai/dsh-api-gateway';
 import RemoteAccess from '@deepseek-ai/dsh-api-remote-access';
 import * as Plugin from '../dist/index.js';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, basename, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -36,7 +36,8 @@ export class FreeAdapter extends LlmAdapter {
 }
 export async function host(root, pluginModule = productUnderTest) {
   const ownsRoot = root === undefined;
-  root ??= await mkdtemp(join(tmpdir(),'dshsm-'));
+  const tempRoot = ownsRoot ? await realpath(tmpdir()) : undefined;
+  root ??= await mkdtemp(join(tempRoot,'dshsm-'));
   const ctx=new Context();
   for (const p of [Typert,Projections,Session,Llm,Tools,Prompt,agent.default,Storage.default]) await ctx.plugin(p);
   // DSH 0.2.2 separates executor selection from the tool registry.
@@ -67,7 +68,7 @@ export async function host(root, pluginModule = productUnderTest) {
       await ctx.fiber.dispose();
       if (ownsRoot) {
         // Only the exact mkdtemp child this fixture created; never a supplied profile path.
-        if (dirname(resolve(root)) !== resolve(tmpdir()) || !/^dshsm-[a-zA-Z0-9_-]+$/.test(basename(root))) throw new Error('UNSAFE_TEST_CLEANUP');
+        if (dirname(resolve(root)) !== tempRoot || !/^dshsm-[a-zA-Z0-9_-]+$/.test(basename(root))) throw new Error('UNSAFE_TEST_CLEANUP');
         await rm(root,{recursive:true,force:true});
       }
     }
