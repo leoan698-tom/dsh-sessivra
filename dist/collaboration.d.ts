@@ -135,6 +135,7 @@ export declare class Collaboration extends TypertRemoteService {
         error: string;
         recovery: string;
     }>;
+    linkImported(id: string, parentId: string, label: string): Promise<void>;
     close(): Promise<void>;
 }
 export {};

@@ -1,5 +1,6 @@
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client';
 import { treePresentation, type TreeStore } from './session-tree.js';
+import { isImportedSession } from './import-contract.js';
 
 export type MentionQuery = { query: string; quoted: boolean; signal: AbortSignal };
 export type MentionRow = { name: string; value: string; description?: string; section?: string; icon?: 'session' };
@@ -45,13 +46,16 @@ export function createSidebarMentionSource(sessions: Pick<ISessions, 'list'>, st
         const summary = byId[id as keyof typeof byId], node = tree.nodes.get(id);
         if (id === session.sessionId) return [];
         if (tree.hiddenSessions.has(id) || (!summary && !node) || (summary?.origin === 'subagent' && !node)) return [];
-        if (summary?.blank && !summary.retainedBy.mainView) return [];
+        const imported = isImportedSession(id) && node && !node.subagent && node.label !== '未命名会话';
+        if (summary?.blank && !summary.retainedBy.mainView && !imported) return [];
         let root = id;
         while (tree.parents.has(root)) root = tree.parents.get(root)!;
         const isArchived = archived.has(id) || archived.has(root);
         if (filter === 'only' ? !isArchived : filter !== 'show' && isArchived) return [];
-        const name = node && (node.subagent || tree.parents.has(id)) ? treePresentation(node, undefined, tree.aliases.get(id)).label : summary?.displayTitle ?? node!.label;
-        const haystack = [name, byId[root as keyof typeof byId]?.displayTitle].join(' ').normalize('NFKC').toLocaleLowerCase();
+        const name = node && (node.subagent || tree.parents.has(id) || imported)
+          ? treePresentation(node, undefined, tree.aliases.get(id)).label : summary?.displayTitle ?? node!.label;
+        const haystack = [name, tree.nodes.get(root)?.label, byId[root as keyof typeof byId]?.displayTitle]
+          .join(' ').normalize('NFKC').toLocaleLowerCase();
         if (!terms.every(term => haystack.includes(term))) return [];
         return [{ name, icon: 'session' as const, section: '会话', description: node?.subagent ? '队员' : tree.parents.has(id) ? '子会话' : undefined,
           value: id }];
@@ -64,7 +68,7 @@ export function createSidebarMentionSource(sessions: Pick<ISessions, 'list'>, st
       if (!candidate.icon) return { text: candidate.value, continue: true };
       const bytes = new TextEncoder().encode(JSON.stringify(candidate.value));
       const encoded = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
-      const label = candidate.name.replace(/[\r\n\]]/gu, ' ').trim();
+      const label = candidate.name.replace(/[\r\n]/gu, ' ').trim().replace(/[\\\[\]]/gu, '\\$&');
       const ref = `@[${label}](dsh-session:${encoded})`;
       return { insert: { source: 'reference', appearance: 'session', ref, label: candidate.name, clipboardText: ref } };
     },

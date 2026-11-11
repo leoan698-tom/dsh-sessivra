@@ -6,16 +6,111 @@ import React, {act} from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
 import * as reactDom from 'react-dom';
 import {createRoot} from 'react-dom/client';
-import {JSDOM} from 'jsdom';
+import {JSDOM, VirtualConsole} from 'jsdom';
 import {createSessionTreeStore,NativeSessionChildren,treePresentation} from '../dist/session-tree.js';
 import {NativeSessionTreeHost} from '../dist/session-tree-host.js';
 import {SessionActionsMenu} from '../dist/session-actions.js';
 import {createSessionDialogStore,SessionDialogOutlet} from '../dist/session-dialog.js';
 import {createWorkspaceArchiveSource,NativeTeamSearch,searchTeamMembers,selectParentUnavailable,ParentUnavailableComposer} from '../dist/session-navigation.js';
+import {TaskPanel} from '../dist/task-panel.js';
+import {createMessageNavigator,MessageJumpNotice} from '../dist/message-navigation.js';
+
+test('locating an original message highlights its row without inserting a banner', async () => {
+  const dom = new JSDOM('<div id="app"></div><div data-conversation-session="session"><div data-chat-node-key="row">原消息</div></div>');
+  const previous = {window: globalThis.window, document: globalThis.document, IS_REACT_ACT_ENVIRONMENT: globalThis.IS_REACT_ACT_ENVIRONMENT};
+  Object.assign(globalThis, {window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true});
+  const root = createRoot(document.getElementById('app'));
+  const row = document.querySelector('[data-chat-node-key]');
+  row.parentElement.getClientRects = row.getClientRects = () => [{}];
+  const calls = [];
+  row.scrollIntoView = options => calls.push(['scroll', options]);
+  const origin = {sessionId: 'session', seq: 2, messageId: 'message'};
+  const navigator = createMessageNavigator({
+    using: async (_target, _options, run) => run({
+      binding: {session: {loadThrough: async seq => calls.push(['load', seq])}},
+    }),
+  }, target => calls.push(['open', target]), async () => ({origin, nodeKey: 'row'}));
+  try {
+    const Button = ({size, variant, ...props}) => { void size; void variant; return React.createElement('button', props); };
+    await act(async () => root.render(React.createElement(MessageJumpNotice, {navigator, Button})));
+    await act(async () => navigator.jump(origin));
+    assert.deepEqual(calls, [['open', 'session'], ['load', 2], ['scroll', {block: 'center'}]]);
+    assert.equal(row.textContent, '原消息');
+    assert.ok(row.hasAttribute('data-sessivra-message-highlight'));
+    await act(async () => new Promise(resolve => setTimeout(resolve, 2500)));
+    assert.equal(row.hasAttribute('data-sessivra-message-highlight'), false);
+  } finally {
+    await act(async () => root.unmount());
+    dom.window.close();
+    Object.assign(globalThis, previous);
+  }
+});
+
+test('task creation preview waits for session names and explains when work can start', async () => {
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.sendTo(console, {omitJSDOMErrors: true});
+  virtualConsole.on('jsdomError', error => {
+    // JSDOM cannot parse the panel's existing CSS container queries.
+    if (error.type !== 'css parsing') console.error(error);
+  });
+  const dom = new JSDOM('<div id="app"></div>', {virtualConsole});
+  const previous = {
+    window: globalThis.window,
+    document: globalThis.document,
+    IS_REACT_ACT_ENVIRONMENT: globalThis.IS_REACT_ACT_ENVIRONMENT,
+  };
+  Object.assign(globalThis, {window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true});
+  const root = createRoot(document.getElementById('app'));
+  const coordinatorId = 'session-unresolved';
+  const assigneeId = 'session-executor';
+  let resolveParticipants;
+  const participants = new Promise(resolve => { resolveParticipants = resolve; });
+  const api = {
+    participants: () => participants,
+    list: async () => ({
+      ok: true,
+      value: {items: [{assignee: assigneeId, status: 'running'}], attention: [], groups: []},
+    }),
+  };
+  const preview = () => document.querySelector('form > p').textContent;
+  const choose = async (index, value) => act(async () => {
+    const select = document.querySelectorAll('form > label > select')[index];
+    select.value = value;
+    select.dispatchEvent(new dom.window.Event('change', {bubbles: true}));
+  });
+  try {
+    await act(async () => root.render(React.createElement(TaskPanel, {api, initialSession: coordinatorId})));
+    await act(async () => document.querySelector('.st-primary').click());
+    assert.equal(preview(), '请选择负责协调的会话。');
+
+    await act(async () => resolveParticipants({ok: true, value: [
+      {id: coordinatorId, label: '需求讨论', workspace: '/project'},
+      {id: assigneeId, label: '页面实现', workspace: '/project'},
+    ]}));
+    assert.match(preview(), /「需求讨论」负责协调。将新建子会话执行任务。/);
+    assert.match(preview(), /如有前置问题，请先答复。执行会话和所需资源可用后，系统会安排任务。/);
+
+    await choose(1, assigneeId);
+    assert.match(preview(), /「页面实现」负责执行。执行会话有其他待处理任务，本任务可能需要排队。/);
+    assert.doesNotMatch(preview(), /session-|\/project/);
+
+    await choose(0, 'new');
+    assert.match(preview(), /将新建会话负责协调。将新建子会话执行任务。/);
+    await choose(0, '');
+    assert.equal(preview(), '请选择负责协调的会话。');
+  } finally {
+    await act(async () => root.unmount());
+    dom.window.close();
+    Object.assign(globalThis, previous);
+  }
+});
 
 test('native workspace stays registered; row navigation uses original ordinary and child addresses',async()=>{
   let bundle;
-  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{window:{__ModuleLoader__:{load:value=>{bundle=value;}}},console,TextEncoder,TextDecoder,setInterval,clearInterval});
+  vm.runInNewContext(await readFile(new URL('../dist/client.js',import.meta.url),'utf8'),{
+    window:{__ModuleLoader__:{load:value=>{bundle=value;}},setTimeout:()=>0,addEventListener:()=>{},removeEventListener:()=>{}},
+    console,TextEncoder,TextDecoder,setInterval,clearInterval,clearTimeout,
+  });
   const client=bundle.factory(name=>name==='react'?React:name==='react/jsx-runtime'?jsxRuntime:name==='react-dom'?reactDom:name==='@deepseek-ai/dsh-client-ui-primitives'?{}:undefined);
   const active=new Set(),opened=[],selected=[],disposals=[],operations=[];
   const ctx={
@@ -23,9 +118,10 @@ test('native workspace stays registered; row navigation uses original ordinary a
     uiWorkspace:{openSession:id=>opened.push(id),pinSession:async id=>operations.push(['pin',id]),unpinSession:async id=>operations.push(['unpin',id]),archiveSession:async(...args)=>operations.push(['archive',...args])},
     sessions:{using:async(id,options,fn)=>{operations.push(['using',id,options]);return fn({binding:{session:{rename:async title=>{operations.push(['rename',title]);return{ok:true};}}}});}},
     slots:{subscribe:()=>()=>{},entriesOfSlot:()=>[],inject:(_name,register)=>register(),register:(entry,component)=>{const row={entry,component};active.add(row);return()=>active.delete(row);}},
-    inputTriggers:{registerSource:()=>()=>{}},effect:fn=>disposals.push(fn()),
+    inputTriggers:{registerSource:()=>()=>{}},uiConversation:{userText:{register:()=>()=>{}}},
+    effect:fn=>disposals.push(fn()),
   };
-  ctx.inject=async(deps,fn)=>{if(!deps.some(dep=>['remote.sessivraTaskPanel','workspaces','uiConversation'].includes(dep))) return fn(ctx);};
+  ctx.inject=async(_deps,fn)=>fn(ctx);
   await client.apply(ctx);
   assert.equal([...active].some(row=>row.entry.name==='sidebar.workspaces'),false);
   assert.equal([...active].some(row=>row.entry.name==='sidebar.panellist.actions'),false);
@@ -354,6 +450,44 @@ test('teammate search respects live archive filters and removes newly archived b
     filter=undefined;await render();assert.equal(document.querySelector('[data-dshsm-search]'),null);
     assert.equal(document.querySelector('[data-native-result]').textContent,'原生结果');
   }finally{await act(async()=>env.root.unmount());store.dispose();env.restore();}
+});
+
+test('message search separates navigation from preparing a task draft', async () => {
+  const env = installDom();
+  const store = createSessionTreeStore({tree: async () => ({ok: true, value: []})});
+  const location = {sessionId: 'session', seq: 2};
+  const actions = [];
+  const Button = ({size, variant, ...props}) => { void size; void variant; return React.createElement('button', props); };
+  const search = React.createElement(NativeTeamSearch, {
+    store, showTeam: false,
+    useArchiveFilter: selector => selector('default'),
+    useWorkspaces: selector => selector({items: [], archivedSessionIds: []}),
+    searchHistory: async () => ({items: [{...location, title: '会话', snippet: '消息', cwd: '/project'}]}),
+    openMessage: value => actions.push(['jump', value]),
+    taskAction: {Button, open: async (value, signal) => {
+      assert.equal(signal.aborted, false);
+      actions.push(['draft', value]);
+    }},
+  });
+  try {
+    await act(async () => env.root.render(React.createElement(React.Fragment, null,
+      React.createElement('div', null,
+        React.createElement('header', null, React.createElement('div', null, React.createElement('div', null,
+          React.createElement('input', {placeholder: '搜索会话名称', defaultValue: '消息'})))),
+        React.createElement('div', null, React.createElement('div', {role: 'tree', 'aria-label': '搜索结果'}))),
+      search)));
+    await act(async () => new Promise(resolve => setTimeout(resolve, 320)));
+    const hit = document.querySelector('.dshsm-search-hit');
+    assert.ok(hit);
+    await act(async () => hit.querySelector('.dshsm-search-result').click());
+    assert.deepEqual(actions, [['jump', location]]);
+    await act(async () => hit.querySelector('button[aria-label="整理成任务"]').click());
+    assert.deepEqual(actions, [['jump', location], ['draft', location]]);
+  } finally {
+    await act(async () => env.root.unmount());
+    store.dispose();
+    env.restore();
+  }
 });
 
 test('teammate identity remains visible alongside every live or read-only state',async()=>{

@@ -38,9 +38,14 @@ export class SessivraPanel extends TypertRemoteService {
   ) {
     super(ctx, 'sessivraTaskPanel');
     this.history = new MessageHistory(ctx);
+    ctx.effect(() => () => this.history.close());
   }
   private owner() {
     if (this.ctx.invocation?.peer.principal.kind !== 'owner') throw new Error('PANEL_OWNER_REQUIRED');
+  }
+  @Remote async searchHistory(query: string) {
+    this.owner();
+    return this.history.search(query);
   }
   @Remote async locateMessage(location: MessageLocation, expectedId: string) {
     this.owner();
@@ -263,6 +268,14 @@ export class SessivraPanel extends TypertRemoteService {
         throw new Error('请选择存在的绝对工作目录');
     }
     const coordinatorId = c.coordinator ?? 'sessivra-coordinator-' + c.operationId;
+    const requestId = 'panel-' + c.operationId;
+    const id = taskIdFor(coordinatorId, requestId);
+    const previous = this.tasks.panelLookup(id);
+    if (previous) {
+      if (previous.panelReceipts?.[requestId] !== fingerprint) throw new Error('TASK_REQUEST_ID_CONFLICT');
+      return { id };
+    }
+    if (c.origin) await readMessageOrigin(this.ctx, c.origin, c.origin.messageId);
     if (c.coordinatorDirectory) {
       const controller = this.ctx.get('sessionController');
       if (!controller) throw new Error('TASK_SESSION_CONTROLLER_UNAVAILABLE');
@@ -276,13 +289,6 @@ export class SessivraPanel extends TypertRemoteService {
     }
     const owner = await this.coordinator(coordinatorId);
     this.tasks.transport.caller(owner);
-    const requestId = 'panel-' + c.operationId,
-      id = taskIdFor(owner.id, requestId);
-    const previous = this.tasks.panelLookup(id);
-    if (previous) {
-      if (previous.panelReceipts?.[requestId] !== fingerprint) throw new Error('TASK_REQUEST_ID_CONFLICT');
-      return { id };
-    }
     const assign = (target: string) =>
       this.tasks.assign(
         owner,
@@ -295,6 +301,7 @@ export class SessivraPanel extends TypertRemoteService {
           scope: c.scope ?? requestId,
           resources: c.resources,
           requiredQuestions: c.requiredQuestions,
+          ...(c.origin ? { origin: c.origin } : {}),
         },
         { scopeLabel: c.scopeLabel, fingerprint },
       );

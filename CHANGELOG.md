@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-dev.29
+
+- Import Claude Code and Codex conversations and memory, including compressed Codex logs and Claude conversation trees. Continue imported chats in DSH and download their original records.
+- Recover the local project directory for imported chats when the original worktree is unavailable.
+- Search conversation text with a profile-local index that survives restarts, jump to original messages, and use native `@` references to include imported history in another conversation.
+
 ## 0.3.0-dev.28
 
 - Collect conversation turns with the DeepSeek bookmark control and browse them from the sidebar, with a session filter and direct navigation.

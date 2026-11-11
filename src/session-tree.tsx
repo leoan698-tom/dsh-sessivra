@@ -151,11 +151,14 @@ export function treePresentation(child: TreeSession, status?: TreeStatus, alias?
 }
 const styles = `
 [data-dshsm-nested=true],[data-dshsm-hidden=true]{display:none!important}
-[data-dshsm-parent=true]{position:relative;padding-inline-start:calc(40px + var(--dsh-workspace-indent,0px))!important}
-.dshsm-native-children{font:inherit;color:var(--dsw-alias-label-primary);min-width:0;margin-inline-start:calc(40px + var(--dsh-workspace-indent,0px));--dshsm-tree-guide:var(--dsw-alias-border-l2,var(--dsw-alias-label-tertiary))}
+/* The host renders a display:contents slot anchor even when no leading item exists. */
+[data-dshsm-parent=true]{position:relative;--dshsm-tree-toggle-width:28px}
+[data-dshsm-parent=true]>span:first-child+span{font-weight:500}
+[data-dshsm-parent=true]:has(> span:first-child > :not([data-slot]),> span:first-child > [data-slot] > *){padding-inline-start:calc(var(--dshsm-tree-toggle-width) + var(--dsh-workspace-indent,0px))!important}
+.dshsm-native-children{font:inherit;color:var(--dsw-alias-label-primary);min-width:0;margin-inline-start:calc(28px + var(--dsh-workspace-indent,0px));--dshsm-tree-guide:var(--dsw-alias-border-l2,var(--dsw-alias-label-tertiary))}
 .dshsm-native-children *{box-sizing:border-box}
 .dshsm-native-children button,.dshsm-native-toggle{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer}
-.dshsm-native-toggle{position:absolute;inset-inline-start:calc(4px + var(--dsh-workspace-indent,0px));top:2px;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm,4px)}
+.dshsm-native-toggle{position:absolute;inset-inline-start:var(--dsh-workspace-indent,0px);top:2px;width:var(--dshsm-tree-toggle-width);height:28px;padding:0;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm,4px)}
 .dshsm-native-toggle:hover,.dshsm-native-children .dshsm-tree-toggle:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .dshsm-native-toggle:active,.dshsm-native-children .dshsm-tree-toggle:active{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px currentColor}
 .dshsm-native-children button:focus-visible,.dshsm-native-toggle:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
@@ -179,7 +182,7 @@ const styles = `
 .dshsm-tree-status{flex:none;max-width:5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--dsw-alias-label-secondary)}
 .dshsm-tree-status[data-attention=true]{color:var(--dsw-alias-state-warning,#aa6700)}
 .dshsm-tree-current{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary);pointer-events:none}
-.dshsm-native-current{position:absolute;inset-inline-start:calc(28px + var(--dsh-workspace-indent,0px));top:4px}
+.dshsm-native-current{position:absolute;inset-inline-start:calc(var(--dshsm-tree-toggle-width) + var(--dsh-workspace-indent,0px) - 6px);top:4px}
 .dshsm-tree-row .dshsm-session-actions{display:none}
 .dshsm-tree-row:hover .dshsm-session-actions,.dshsm-tree-row:focus-within .dshsm-session-actions,.dshsm-tree-row .dshsm-session-actions[data-open=true]{display:inline-flex}
 @media(hover:none){.dshsm-tree-row .dshsm-session-actions{display:inline-flex}}

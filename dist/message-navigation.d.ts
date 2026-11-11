@@ -1,11 +1,11 @@
 import React from 'react';
 import type { ISessions, SessionTarget } from '@deepseek-ai/dsh-api-session-controller/client';
+import type { Button as HostButton } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { MessageLocation, ResolvedMessage } from './message-history.js';
 interface JumpState {
     loading?: boolean;
     error?: string;
     row?: HTMLElement;
-    message?: ResolvedMessage;
 }
 export declare function createMessageNavigator(sessions: ISessions, open: (target: SessionTarget) => void, resolve: (location: MessageLocation, expectedId: string) => Promise<ResolvedMessage>): {
     subscribe(notify: () => void): () => void;
@@ -13,8 +13,8 @@ export declare function createMessageNavigator(sessions: ISessions, open: (targe
     dismiss(): void;
     jump(location: MessageLocation, expectedId?: string, bookmark?: boolean): Promise<void>;
 };
-export declare function MessageJumpNotice({ navigator, organize }: {
+export declare function MessageJumpNotice({ navigator, Button }: {
     navigator: ReturnType<typeof createMessageNavigator>;
-    organize?(message: ResolvedMessage): void;
+    Button: typeof HostButton;
 }): React.JSX.Element | null;
 export {};

@@ -36,13 +36,29 @@ export declare class MessageHistory {
     private ctx;
     private cache;
     private refreshing?;
+    private index?;
+    private persistenceIdentity?;
     constructor(ctx: Context);
+    close(): Promise<void>;
     private refresh;
     locateLegacyBookmark({ title, turn, prompt, response }: LegacyBookmarkQuote): Promise<{
         sessionId: string;
         seq: number;
         messageId: string;
     } | null>;
+    search(query: string): Promise<{
+        items: {
+            sessionId: string;
+            seq: number;
+            time: number;
+            snippet: string;
+            title: string;
+            cwd: string;
+            child: boolean;
+        }[];
+        more: boolean;
+        partial: boolean;
+    }>;
 }
 export declare function readMessageOrigin(ctx: Context, location: MessageLocation, expectedId?: string): Promise<{
     nodeKey: string;
@@ -61,3 +77,4 @@ export declare function readMessageOrigin(ctx: Context, location: MessageLocatio
     };
 }>;
 export type ResolvedMessage = Awaited<ReturnType<typeof readMessageOrigin>>;
+export type HistoryResults = Awaited<ReturnType<MessageHistory['search']>>;

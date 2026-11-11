@@ -10,11 +10,11 @@ var __export = (target2, all) => {
   for (var name in all)
     __defProp(target2, name, { get: all[name], enumerable: true });
 };
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
+var __copyProps = (to, from2, except, desc) => {
+  if (from2 && typeof from2 === "object" || typeof from2 === "function") {
+    for (let key of __getOwnPropNames(from2))
       if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+        __defProp(to, key, { get: () => from2[key], enumerable: !(desc = __getOwnPropDesc(from2, key)) || desc.enumerable });
   }
   return to;
 };
@@ -35,7 +35,7 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react14 = __toESM(require("react"), 1);
+var import_react15 = __toESM(require("react"), 1);
 
 // src/task-panel.tsx
 var import_react = require("react");
@@ -251,21 +251,21 @@ function when(at, compact = false) {
 function taskFiles(task) {
   const files = [...task.checkpoint.artifacts];
   for (const evidence of task.result?.evidence ?? []) {
-    const path = evidence.trim();
-    if (/^(?:[A-Za-z]:[\\/]|\/)[^\r\n]+?\.[\w+-]+$/.test(path) && !path.includes("::") && !files.includes(path))
-      files.push(path);
+    const path2 = evidence.trim();
+    if (/^(?:[A-Za-z]:[\\/]|\/)[^\r\n]+?\.[\w+-]+$/.test(path2) && !path2.includes("::") && !files.includes(path2))
+      files.push(path2);
   }
   return files;
 }
-var fileName = (path) => path.split(/[\\/]/).filter(Boolean).pop() || path;
+var fileName = (path2) => path2.split(/[\\/]/).filter(Boolean).pop() || path2;
 
 // src/task-result-overview.ts
-function resultOverview(result) {
-  const paragraphs = result.summary.trim().split(/\r?\n\s*\r?\n/);
+function resultOverview(result2) {
+  const paragraphs = result2.summary.trim().split(/\r?\n\s*\r?\n/);
   const paragraph = paragraphs[0].replace(/(?:^|(?<=[。！？\n]))\s*(?:等待|等候)(?:桌面)?(?:人工|用户)?验收[。.!！]?\s*$/, "").trim();
   const facts = /* @__PURE__ */ new Map();
   if (paragraphs.length === 1 && paragraph.length > 90) {
-    for (const source2 of [paragraph, ...result.evidence]) {
+    for (const source2 of [paragraph, ...result2.evidence]) {
       for (const clause of source2.split(/[，、；。\n]/u)) {
         const match = /^(总[\p{Script=Han}]{1,4})\s*[:：]?\s*(\d+(?:\.\d+)?\s*[\p{Script=Han}]{1,3})$/u.exec(clause.trim());
         if (!match) continue;
@@ -349,7 +349,7 @@ function RecordList({ title, items }) {
   ] }) : null;
 }
 function ResultHeader({ task, name }) {
-  const result = task.result && resultOverview(task.result);
+  const result2 = task.result && resultOverview(task.result);
   const review = task.review;
   let status = "\u5C1A\u672A\u63D0\u4EA4\u9A8C\u6536";
   let at;
@@ -366,10 +366,10 @@ function ResultHeader({ task, name }) {
     at = review.at;
   }
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "st-outcome", "aria-label": "\u7ED3\u679C\u4E0E\u9A8C\u6536", children: [
-    result && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+    result2 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EFB\u52A1\u7ED3\u679C" }),
-      result.highlights.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "st-figures", children: result.highlights.join(" \xB7 ") }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: result.text })
+      result2.highlights.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "st-figures", children: result2.highlights.join(" \xB7 ") }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: result2.text })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-review-state", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "\u5F53\u524D\u9A8C\u6536\u72B6\u6001" }),
@@ -396,10 +396,13 @@ function TaskPanel({
   open,
   renderMarkdown,
   initialSession,
-  initialTask
+  initialTask,
+  source: initialSource,
+  openOrigin
 }) {
   const [query, setQuery] = (0, import_react.useState)({ view: "attention" }), [page, setPage] = (0, import_react.useState)(), [sessions, setSessions] = (0, import_react.useState)([]);
-  const [id2, select] = (0, import_react.useState)(initialTask ?? ""), [item, detail] = (0, import_react.useState)(), [mode, setMode] = (0, import_react.useState)(""), [question, setQuestion] = (0, import_react.useState)("");
+  const [source2, setSource] = (0, import_react.useState)(initialSource);
+  const [id2, select] = (0, import_react.useState)(initialTask ?? ""), [item, detail] = (0, import_react.useState)(), [mode, setMode] = (0, import_react.useState)(source2 ? "create" : ""), [question, setQuestion] = (0, import_react.useState)("");
   const [owner, setOwner] = (0, import_react.useState)(initialSession ?? ""), [executor, setExecutor] = (0, import_react.useState)(""), [tick, reload] = (0, import_react.useState)(0);
   const [filtersOpen, showFilters] = (0, import_react.useState)(false);
   const panel = (0, import_react.useRef)(null);
@@ -424,6 +427,7 @@ function TaskPanel({
     try {
       const receipt = await read(api.operation(pending));
       if (receipt) {
+        setSource(void 0);
         setMode("");
         select(receipt.id);
         reload((n) => n + 1);
@@ -446,14 +450,14 @@ function TaskPanel({
       if (active) {
         setSessions(rows);
         setOwner(
-          (current) => rows.some((s) => s.id === current && !s.child) ? current : rows.find((s) => !s.child)?.id ?? "new"
+          (current) => rows.some((s) => s.id === current && !s.child) ? current : rows.find((s) => !s.child && (!source2 || s.workspace === source2.cwd))?.id ?? "new"
         );
       }
     }).catch((e) => active && fail(problem(e)));
     return () => {
       active = false;
     };
-  }, [api, initialSession]);
+  }, [api, initialSession, source2]);
   (0, import_react.useEffect)(() => {
     let active = true;
     let timer;
@@ -523,6 +527,7 @@ function TaskPanel({
         scopeLabel: group ? page?.groups.find((g) => g.id === group)?.label : str(f, "groupLabel") || void 0,
         cwd: !executor ? str(f, "cwd") || void 0 : void 0,
         reasoningEffort: !executor ? str(f, "effort") || void 0 : void 0,
+        ...source2 ? { origin: source2.origin } : {},
         requiredQuestions: prerequisite ? [
           {
             topic: str(f, "topic") || prerequisite,
@@ -597,10 +602,11 @@ function TaskPanel({
         sessionStorage.setItem(pendingKey + "/digest", digest);
       } catch {
       }
-      const result = await read(api.command({ ...JSON.parse(key), operationId: operation.current.id }));
+      const result2 = await read(api.command({ ...JSON.parse(key), operationId: operation.current.id }));
       rememberPending("");
+      setSource(void 0);
       setMode("");
-      select(result.id);
+      select(result2.id);
       if (mode === "create") setSessions(await read(api.participants()));
       if (mode === "archive") setQuery({ view: "history" });
       reload((n) => n + 1);
@@ -612,7 +618,11 @@ function TaskPanel({
       setBusy(false);
     }
   }
-  const queuedFor = executor && sessions.find((s) => s.id === executor);
+  const coordinator = sessions.find((s) => s.id === owner && !s.child);
+  const assignee = sessions.find((s) => s.id === executor);
+  const assigneeHasTasks = assignee && page?.items.some(
+    (t) => t.assignee === assignee.id && !["completed", "cancelled", "failed"].includes(t.status)
+  );
   const files = selected ? taskFiles(selected) : [];
   const qs = selected?.questions.filter((q) => !q.mergedInto) ?? [];
   const chips = ["workspace", "status", "coordinator", "assignee", "scope"].filter((k) => query[k]);
@@ -626,6 +636,10 @@ function TaskPanel({
   };
   const actionForm = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("form", { onSubmit: submit, "aria-label": actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1", children: [
     /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1" }),
+    mode === "create" && source2 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { className: "st-question", children: [
+      "\u6765\u6E90 \xB7 ",
+      source2.title
+    ] }),
     (mode === "create" || mode === "update") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
         "\u6807\u9898",
@@ -635,11 +649,11 @@ function TaskPanel({
             required: true,
             name: "title",
             maxLength: 160,
-            defaultValue: mode === "update" ? base.current?.title : ""
+            defaultValue: mode === "update" ? base.current?.title : source2?.excerpt.trim().split(/\r?\n/, 1)[0]?.slice(0, 120)
           }
         )
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u76EE\u6807", name: "goal", required: true, value: mode === "update" ? base.current?.goal : "" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u76EE\u6807", name: "goal", required: true, value: mode === "update" ? base.current?.goal : source2?.excerpt }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
         Notes,
         {
@@ -676,7 +690,7 @@ function TaskPanel({
       ] }),
       owner === "new" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
         "\u534F\u8C03\u4F1A\u8BDD\u5DE5\u4F5C\u76EE\u5F55",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "coordinatorDirectory", required: true, defaultValue: query.workspace ?? sessions.find((s) => s.id === initialSession)?.workspace ?? "" })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "coordinatorDirectory", required: true, defaultValue: source2?.cwd ?? query.workspace ?? sessions.find((s) => s.id === initialSession)?.workspace ?? "" })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
         "\u6267\u884C\u4F1A\u8BDD",
@@ -766,20 +780,26 @@ function TaskPanel({
       ),
       "\u6211\u5DF2\u6838\u5BF9\u4E0B\u65B9\u6700\u65B0\u8981\u6C42\u4E0E\u7ED3\u679C\uFF0C\u4F7F\u7528\u5F53\u524D\u7248\u672C"
     ] }),
-    mode === "create" && owner && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
-      owner === "new" ? "\u65B0\u5EFA\u4F1A\u8BDD" : name(owner),
-      " \u534F\u8C03\uFF0C\u5C06\u4EA4\u7ED9",
-      queuedFor ? queuedFor.label : "\u65B0\u5EFA\u7684\u666E\u901A\u5B50\u4F1A\u8BDD",
-      "\u6267\u884C\u3002",
-      executor && sessions.find((s) => s.id === executor)?.workspace,
-      " ",
-      queuedFor && page?.items.some(
-        (t) => t.assignee === executor && !["completed", "cancelled", "failed"].includes(t.status)
-      ) ? "\u6267\u884C\u4F1A\u8BDD\u5DF2\u6709\u4EFB\u52A1\uFF0C\u5C06\u6392\u961F\u3002" : "\u63D0\u4EA4\u540E\u6309\u524D\u7F6E\u95EE\u9898\u3001\u4F1A\u8BDD\u548C\u8D44\u6E90\u53EF\u7528\u60C5\u51B5\u5B89\u6392\u3002"
-    ] }),
+    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: coordinator || owner === "new" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      coordinator ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+        "\u300C",
+        coordinator.label,
+        "\u300D\u8D1F\u8D23\u534F\u8C03\u3002"
+      ] }) : "\u5C06\u65B0\u5EFA\u4F1A\u8BDD\u8D1F\u8D23\u534F\u8C03\u3002",
+      assignee ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+        "\u300C",
+        assignee.label,
+        "\u300D\u8D1F\u8D23\u6267\u884C\u3002"
+      ] }) : "\u5C06\u65B0\u5EFA\u5B50\u4F1A\u8BDD\u6267\u884C\u4EFB\u52A1\u3002",
+      assigneeHasTasks && "\u6267\u884C\u4F1A\u8BDD\u6709\u5176\u4ED6\u5F85\u5904\u7406\u4EFB\u52A1\uFF0C\u672C\u4EFB\u52A1\u53EF\u80FD\u9700\u8981\u6392\u961F\u3002",
+      "\u5982\u6709\u524D\u7F6E\u95EE\u9898\uFF0C\u8BF7\u5148\u7B54\u590D\u3002\u6267\u884C\u4F1A\u8BDD\u548C\u6240\u9700\u8D44\u6E90\u53EF\u7528\u540E\uFF0C\u7CFB\u7EDF\u4F1A\u5B89\u6392\u4EFB\u52A1\u3002"
+    ] }) : "\u8BF7\u9009\u62E9\u8D1F\u8D23\u534F\u8C03\u7684\u4F1A\u8BDD\u3002" }),
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-actions", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "submit", disabled: busy || stale && !checkedVersion, children: busy ? "\u63D0\u4EA4\u4E2D\u2026" : mode === "create" ? "\u521B\u5EFA\u5E76\u5B89\u6392" : "\u786E\u8BA4" + actions[mode] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", disabled: busy, onClick: () => setMode(""), children: "\u8FD4\u56DE" })
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", disabled: busy, onClick: () => {
+        setSource(void 0);
+        setMode("");
+      }, children: "\u8FD4\u56DE" })
     ] })
   ] }, mode + question);
   const showDetail = !!selected && mode !== "create";
@@ -1006,6 +1026,7 @@ function TaskPanel({
           ] }, index);
         })
       ] }),
+      selected.origin && openOrigin && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("section", { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => openOrigin(selected.origin), children: "\u67E5\u770B\u539F\u6D88\u606F" }) }),
       !selected.review && !selected.result && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-blocktitle", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EFB\u52A1\u76EE\u6807" }) }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.goal }),
@@ -1132,7 +1153,6 @@ function TaskPanel({
 
 // src/message-navigation.tsx
 var import_react2 = require("react");
-var import_react_dom = require("react-dom");
 var import_jsx_runtime3 = require("react/jsx-runtime");
 function findRow(message, mainOnly) {
   const chat = [...document.querySelectorAll("[data-conversation-session]")].find(
@@ -1143,7 +1163,7 @@ function findRow(message, mainOnly) {
   const turn = "turn" in message ? message.turn : void 0;
   return rows.find((row) => row.dataset.chatNodeKey === message.nodeKey && row.getClientRects().length > 0) ?? rows.find((row) => turn !== void 0 && row.dataset.chatTurn === String(turn) && row.getClientRects().length > 0);
 }
-function createMessageNavigator(sessions, open, resolve) {
+function createMessageNavigator(sessions, open, resolve2) {
   const listeners = /* @__PURE__ */ new Set();
   let state = {};
   let active;
@@ -1170,7 +1190,7 @@ function createMessageNavigator(sessions, open, resolve) {
       const { signal } = controller;
       publish({ loading: true });
       try {
-        const message = await resolve(location, expectedId);
+        const message = await resolve2(location, expectedId);
         signal.throwIfAborted();
         const childSessionId = message.origin.sessionId;
         const target2 = message.child ? { childSessionId, parentSessionId: message.child.parentSessionId, mode: message.child.mode } : childSessionId;
@@ -1185,10 +1205,10 @@ function createMessageNavigator(sessions, open, resolve) {
           const row = findRow(message, bookmark);
           if (row) {
             row.scrollIntoView({ block: "center" });
-            publish(bookmark ? {} : { row, message });
+            publish({ row });
             return;
           }
-          await new Promise((resolve2) => setTimeout(resolve2, 70));
+          await new Promise((resolve3) => setTimeout(resolve3, 70));
         }
         if (!signal.aborted) publish({ error: "\u5DF2\u6253\u5F00\u4F1A\u8BDD\uFF0C\u539F\u6D88\u606F\u672A\u80FD\u5B9A\u4F4D\u3002" });
       } catch (error51) {
@@ -1197,21 +1217,45 @@ function createMessageNavigator(sessions, open, resolve) {
     }
   };
 }
-function MessageJumpNotice({ navigator: navigator2, organize }) {
-  const { row, message, loading, error: error51 } = (0, import_react2.useSyncExternalStore)(navigator2.subscribe, navigator2.snapshot);
-  if (row && message) return (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "sessivra-message-origin", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: `.sessivra-message-origin{padding:6px 8px;margin:4px 0;border-inline-start:3px solid var(--dsw-alias-state-business-primary);background:var(--dsw-alias-bg-layer-1);display:flex;align-items:center;gap:10px}.sessivra-message-origin button{cursor:pointer;color:inherit;font:inherit}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "\u5DF2\u5B9A\u4F4D\u539F\u6D88\u606F" }),
-    organize && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", onClick: () => {
-      navigator2.dismiss();
-      organize(message);
-    }, children: "\u6574\u7406\u6210\u4EFB\u52A1" })
-  ] }), row);
+function MessageJumpNotice({ navigator: navigator2, Button: Button3 }) {
+  const state = (0, import_react2.useSyncExternalStore)(navigator2.subscribe, navigator2.snapshot);
+  const { row, loading, error: error51 } = state;
+  (0, import_react2.useEffect)(() => {
+    if (!row) return;
+    row.setAttribute("data-sessivra-message-highlight", "");
+    const timer = setTimeout(() => {
+      if (navigator2.snapshot() === state) navigator2.dismiss();
+    }, 2400);
+    return () => {
+      clearTimeout(timer);
+      row.removeAttribute("data-sessivra-message-highlight");
+    };
+  }, [navigator2, row, state]);
+  if (row) return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: `
+    [data-sessivra-message-highlight]{
+      outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));
+      outline-offset:3px;border-radius:var(--dsw-radius-md);
+    }
+  ` });
   if (!loading && !error51) return null;
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { role: error51 ? "alert" : "status", style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, padding: 12, borderRadius: 8, background: "var(--dsw-alias-bg-layer-1)", boxShadow: "var(--dsw-elevation-soft)" }, children: [
-    error51 ?? "\u6B63\u5728\u5B9A\u4F4D\u539F\u6D88\u606F\u2026",
-    " ",
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", onClick: () => navigator2.dismiss(), children: "\u5173\u95ED" })
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: {
+    position: "fixed",
+    bottom: 24,
+    right: 24,
+    zIndex: 100,
+    maxWidth: "calc(100vw - 48px)",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "6px 8px 6px 12px",
+    fontSize: 13,
+    borderRadius: "var(--dsw-radius-md)",
+    color: "var(--dsw-alias-label-primary)",
+    background: "var(--dsw-alias-bg-layer-1)",
+    boxShadow: "var(--dsw-elevation-soft)"
+  }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { role: error51 ? "alert" : "status", children: error51 ?? "\u6B63\u5728\u5B9A\u4F4D\u539F\u6D88\u606F\u2026" }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Button3, { size: "sm", variant: "ghost", onClick: () => navigator2.dismiss(), children: error51 ? "\u5173\u95ED" : "\u53D6\u6D88" })
   ] });
 }
 
@@ -1292,10 +1336,10 @@ function mountTurnBookmarks(host, fish) {
       const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("viewBox", `0 0 ${fish.width} ${fish.height}`);
       svg.setAttribute("aria-hidden", "true");
-      const path = doc.createElementNS(svg.namespaceURI, "path");
-      path.setAttribute("d", fish.path);
-      path.setAttribute("fill-rule", "evenodd");
-      svg.append(path);
+      const path2 = doc.createElementNS(svg.namespaceURI, "path");
+      path2.setAttribute("d", fish.path);
+      path2.setAttribute("fill-rule", "evenodd");
+      svg.append(path2);
       button.append(svg);
       if (preview) {
         button.tabIndex = -1;
@@ -1443,15 +1487,15 @@ function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
     const read2 = async () => {
       for (let group = pending.shift(); group && !disposed; group = pending.shift()) {
         const [id2, turns] = group;
-        let result = null;
+        let result2 = null;
         try {
-          result = await load(id2, turns.slice(0, 100));
+          result2 = await load(id2, turns.slice(0, 100));
           for (let i = 100; i < turns.length && !disposed; i += 100) {
-            result.items.push(...(await load(id2, turns.slice(i, i + 100))).items);
+            result2.items.push(...(await load(id2, turns.slice(i, i + 100))).items);
           }
         } catch {
         }
-        if (!disposed) setSessions((previous) => new Map(previous).set(id2, result));
+        if (!disposed) setSessions((previous) => new Map(previous).set(id2, result2));
       }
     };
     void Promise.all(Array.from({ length: Math.min(4, pending.length) }, read2));
@@ -1507,13 +1551,13 @@ function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
     }) }) })
   ] });
 }
-function Chevron({ path }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("svg", { "aria-hidden": "true", width: "12", height: "12", viewBox: "0 0 12 12", fill: "none", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { d: path, stroke: "currentColor", strokeWidth: "1.25", strokeLinecap: "round", strokeLinejoin: "round" }) });
+function Chevron({ path: path2 }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("svg", { "aria-hidden": "true", width: "12", height: "12", viewBox: "0 0 12 12", fill: "none", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { d: path2, stroke: "currentColor", strokeWidth: "1.25", strokeLinecap: "round", strokeLinejoin: "round" }) });
 }
 
 // src/session-tree.tsx
 var import_react4 = require("react");
-var import_react_dom2 = require("react-dom");
+var import_react_dom = require("react-dom");
 var import_jsx_runtime5 = require("react/jsx-runtime");
 function sessionForest(sessions) {
   const offered = new Map(sessions.map((session) => [session.id, session]));
@@ -1571,11 +1615,11 @@ function createSessionTreeStore(api, storage = browserStorage()) {
     if (Array.isArray(saved)) aliases = new Map(saved.filter((entry) => Array.isArray(entry) && entry.length === 2 && typeof entry[0] === "string" && typeof entry[1] === "string" && entry[1].trim().length > 0 && entry[1].length <= 60));
   } catch {
   }
-  let snapshot = { nodes: /* @__PURE__ */ new Map(), parents: /* @__PURE__ */ new Map(), hiddenSessions: /* @__PURE__ */ new Set(), rows: /* @__PURE__ */ new Set(), problem: "", loaded: false, refreshing: false, expansion, aliases };
+  let snapshot2 = { nodes: /* @__PURE__ */ new Map(), parents: /* @__PURE__ */ new Map(), hiddenSessions: /* @__PURE__ */ new Set(), rows: /* @__PURE__ */ new Set(), problem: "", loaded: false, refreshing: false, expansion, aliases };
   const listeners = /* @__PURE__ */ new Set();
   let timer, inFlight = false, disposed = false, lastRevealed;
   const emit = (patch) => {
-    snapshot = { ...snapshot, ...patch };
+    snapshot2 = { ...snapshot2, ...patch };
     for (const listener of listeners) listener();
   };
   const refresh = async () => {
@@ -1583,9 +1627,9 @@ function createSessionTreeStore(api, storage = browserStorage()) {
     inFlight = true;
     emit({ refreshing: true });
     try {
-      const result = await api.tree();
+      const result2 = await api.tree();
       if (disposed || !listeners.size) return;
-      if (!result.ok) {
+      if (!result2.ok) {
         emit({ problem: "\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" });
         return;
       }
@@ -1597,8 +1641,8 @@ function createSessionTreeStore(api, storage = browserStorage()) {
           visit(child);
         }
       };
-      sessionForest(result.value.filter((session) => !session.subagent || session.subagentKind === "teammate")).forEach(visit);
-      const hiddenSessions = new Set(result.value.filter((session) => session.subagent && !nodes.has(session.id)).map((session) => session.id));
+      sessionForest(result2.value.filter((session) => !session.subagent || session.subagentKind === "teammate")).forEach(visit);
+      const hiddenSessions = new Set(result2.value.filter((session) => session.subagent && !nodes.has(session.id)).map((session) => session.id));
       emit({ nodes, parents, hiddenSessions, problem: "", loaded: true });
     } catch {
       if (!disposed && listeners.size) emit({ problem: "\u5B50\u4F1A\u8BDD\u5217\u8868\u8FDE\u63A5\u4E2D\u65AD" });
@@ -1615,17 +1659,17 @@ function createSessionTreeStore(api, storage = browserStorage()) {
     }
     emit({ expansion: bounded });
   };
-  const isExpanded = (id2) => snapshot.expansion.get(id2) ?? !snapshot.parents.has(snapshot.parents.get(id2) ?? "");
+  const isExpanded = (id2) => snapshot2.expansion.get(id2) ?? !snapshot2.parents.has(snapshot2.parents.get(id2) ?? "");
   return {
-    getSnapshot: () => snapshot,
+    getSnapshot: () => snapshot2,
     refresh,
     isExpanded,
     setAlias: (id2, name) => {
-      const node = snapshot.nodes.get(id2);
+      const node = snapshot2.nodes.get(id2);
       if (!node?.subagent || node.subagentKind !== "teammate") throw new Error("\u4EC5\u56E2\u961F\u961F\u5458\u652F\u6301\u663E\u793A\u540D\u79F0");
       const value = name.trim();
       if (value.length > 60) throw new Error("\u663E\u793A\u540D\u79F0\u6700\u591A 60 \u4E2A\u5B57\u7B26");
-      const next = new Map(snapshot.aliases);
+      const next = new Map(snapshot2.aliases);
       if (value) next.set(id2, value);
       else next.delete(id2);
       if (!storage) throw new Error("\u65E0\u6CD5\u4FDD\u5B58\u672C\u673A\u663E\u793A\u540D\u79F0");
@@ -1633,7 +1677,7 @@ function createSessionTreeStore(api, storage = browserStorage()) {
       emit({ aliases: next });
     },
     toggle: (id2) => {
-      const next = new Map(snapshot.expansion);
+      const next = new Map(snapshot2.expansion);
       next.delete(id2);
       next.set(id2, !isExpanded(id2));
       saveExpansion(next);
@@ -1643,16 +1687,16 @@ function createSessionTreeStore(api, storage = browserStorage()) {
         lastRevealed = void 0;
         return;
       }
-      if (!force && id2 === lastRevealed || !snapshot.nodes.has(id2)) return;
+      if (!force && id2 === lastRevealed || !snapshot2.nodes.has(id2)) return;
       lastRevealed = id2;
-      const next = new Map(snapshot.expansion);
-      let parent = snapshot.parents.get(id2), changed = false;
+      const next = new Map(snapshot2.expansion);
+      let parent = snapshot2.parents.get(id2), changed = false;
       while (parent) {
         if (!isExpanded(parent)) {
           next.set(parent, true);
           changed = true;
         }
-        parent = snapshot.parents.get(parent);
+        parent = snapshot2.parents.get(parent);
       }
       if (changed) saveExpansion(next);
     },
@@ -1671,9 +1715,9 @@ function createSessionTreeStore(api, storage = browserStorage()) {
       };
     },
     attach: (target2) => {
-      emit({ rows: /* @__PURE__ */ new Set([...snapshot.rows, target2]) });
+      emit({ rows: /* @__PURE__ */ new Set([...snapshot2.rows, target2]) });
       return () => {
-        const rows = new Set(snapshot.rows);
+        const rows = new Set(snapshot2.rows);
         rows.delete(target2);
         emit({ rows });
       };
@@ -1697,11 +1741,14 @@ function treePresentation(child, status, alias) {
 }
 var styles3 = `
 [data-dshsm-nested=true],[data-dshsm-hidden=true]{display:none!important}
-[data-dshsm-parent=true]{position:relative;padding-inline-start:calc(40px + var(--dsh-workspace-indent,0px))!important}
-.dshsm-native-children{font:inherit;color:var(--dsw-alias-label-primary);min-width:0;margin-inline-start:calc(40px + var(--dsh-workspace-indent,0px));--dshsm-tree-guide:var(--dsw-alias-border-l2,var(--dsw-alias-label-tertiary))}
+/* The host renders a display:contents slot anchor even when no leading item exists. */
+[data-dshsm-parent=true]{position:relative;--dshsm-tree-toggle-width:28px}
+[data-dshsm-parent=true]>span:first-child+span{font-weight:500}
+[data-dshsm-parent=true]:has(> span:first-child > :not([data-slot]),> span:first-child > [data-slot] > *){padding-inline-start:calc(var(--dshsm-tree-toggle-width) + var(--dsh-workspace-indent,0px))!important}
+.dshsm-native-children{font:inherit;color:var(--dsw-alias-label-primary);min-width:0;margin-inline-start:calc(28px + var(--dsh-workspace-indent,0px));--dshsm-tree-guide:var(--dsw-alias-border-l2,var(--dsw-alias-label-tertiary))}
 .dshsm-native-children *{box-sizing:border-box}
 .dshsm-native-children button,.dshsm-native-toggle{font:inherit;color:inherit;border:0;background:transparent;cursor:pointer}
-.dshsm-native-toggle{position:absolute;inset-inline-start:calc(4px + var(--dsh-workspace-indent,0px));top:2px;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm,4px)}
+.dshsm-native-toggle{position:absolute;inset-inline-start:var(--dsh-workspace-indent,0px);top:2px;width:var(--dshsm-tree-toggle-width);height:28px;padding:0;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-secondary);border-radius:var(--dsw-radius-sm,4px)}
 .dshsm-native-toggle:hover,.dshsm-native-children .dshsm-tree-toggle:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
 .dshsm-native-toggle:active,.dshsm-native-children .dshsm-tree-toggle:active{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px currentColor}
 .dshsm-native-children button:focus-visible,.dshsm-native-toggle:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-2px}
@@ -1725,7 +1772,7 @@ var styles3 = `
 .dshsm-tree-status{flex:none;max-width:5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--dsw-alias-label-secondary)}
 .dshsm-tree-status[data-attention=true]{color:var(--dsw-alias-state-warning,#aa6700)}
 .dshsm-tree-current{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-state-business-primary);pointer-events:none}
-.dshsm-native-current{position:absolute;inset-inline-start:calc(28px + var(--dsh-workspace-indent,0px));top:4px}
+.dshsm-native-current{position:absolute;inset-inline-start:calc(var(--dshsm-tree-toggle-width) + var(--dsh-workspace-indent,0px) - 6px);top:4px}
 .dshsm-tree-row .dshsm-session-actions{display:none}
 .dshsm-tree-row:hover .dshsm-session-actions,.dshsm-tree-row:focus-within .dshsm-session-actions,.dshsm-tree-row .dshsm-session-actions[data-open=true]{display:inline-flex}
 @media(hover:none){.dshsm-tree-row .dshsm-session-actions{display:inline-flex}}
@@ -1784,9 +1831,9 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
   const anchor = (0, import_react4.useRef)(null);
   const [target2, setTarget] = (0, import_react4.useState)();
   const revealed = (0, import_react4.useRef)();
-  const snapshot = (0, import_react4.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const node = snapshot.nodes.get(sessionId);
-  const hidden = snapshot.hiddenSessions.has(sessionId);
+  const snapshot2 = (0, import_react4.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const node = snapshot2.nodes.get(sessionId);
+  const hidden = snapshot2.hiddenSessions.has(sessionId);
   (0, import_react4.useEffect)(() => {
     const row = anchor.current?.closest("[data-row-key]");
     if (!row || row.dataset.rowKey !== `session:${sessionId}`) return;
@@ -1811,16 +1858,16 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
     };
   }, [sessionId, store]);
   let nested = false;
-  let parentId = snapshot.parents.get(sessionId);
+  let parentId = snapshot2.parents.get(sessionId);
   while (parentId) {
-    if ([...snapshot.rows].some((item) => item.sessionId === parentId && item.row.isConnected)) {
+    if ([...snapshot2.rows].some((item) => item.sessionId === parentId && item.row.isConnected)) {
       nested = true;
       break;
     }
-    parentId = snapshot.parents.get(parentId);
+    parentId = snapshot2.parents.get(parentId);
   }
-  const noticeOwner = [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId) && !snapshot.parents.has(item.sessionId)) ?? [...snapshot.rows].find((item) => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId));
-  const showNotice = !hidden && !nested && noticeOwner === target2 && Boolean(snapshot.problem || !snapshot.loaded);
+  const noticeOwner = [...snapshot2.rows].find((item) => item.row.isConnected && !snapshot2.hiddenSessions.has(item.sessionId) && !snapshot2.parents.has(item.sessionId)) ?? [...snapshot2.rows].find((item) => item.row.isConnected && !snapshot2.hiddenSessions.has(item.sessionId));
+  const showNotice = !hidden && !nested && noticeOwner === target2 && Boolean(snapshot2.problem || !snapshot2.loaded);
   (0, import_react4.useEffect)(() => {
     if (!target2) return;
     if (nested) target2.row.dataset.dshsmNested = "true";
@@ -1833,7 +1880,7 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
   }, [target2, hidden, nested, node, showNotice]);
   (0, import_react4.useEffect)(() => {
     store.reveal(currentId);
-  }, [store, currentId, snapshot.nodes]);
+  }, [store, currentId, snapshot2.nodes]);
   (0, import_react4.useEffect)(() => {
     if (!currentId) {
       revealed.current = void 0;
@@ -1845,20 +1892,20 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
       selected.scrollIntoView?.({ block: "nearest" });
       revealed.current = currentId;
     }
-  }, [target2, currentId, hidden, nested, snapshot.expansion, snapshot.nodes]);
+  }, [target2, currentId, hidden, nested, snapshot2.expansion, snapshot2.nodes]);
   const ordered = (children) => pinnedIds ? [...children].sort((a, b) => Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id))) : children;
   const containsCurrent = (id2) => {
-    let parent = currentId && snapshot.parents.get(currentId);
+    let parent = currentId && snapshot2.parents.get(currentId);
     while (parent) {
       if (parent === id2) return true;
-      parent = snapshot.parents.get(parent);
+      parent = snapshot2.parents.get(parent);
     }
     return false;
   };
   const marker = (native = false) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: `dshsm-tree-current${native ? " dshsm-native-current" : ""}`, role: "img", "aria-label": "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD", title: "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD\uFF0C\u5C55\u5F00\u53EF\u5B9A\u4F4D" });
   const branch = (child) => {
     const expanded2 = store.isExpanded(child.id), selected = currentId === child.id;
-    const display = treePresentation(child, statuses?.get(child.id), snapshot.aliases.get(child.id));
+    const display = treePresentation(child, statuses?.get(child.id), snapshot2.aliases.get(child.id));
     return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
       /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
         event.stopPropagation();
@@ -1885,11 +1932,11 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
   return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
     /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { ref: anchor, hidden: true }),
     target2 && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-      (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+      (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: styles3 }),
-        showNotice && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: snapshot.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
-          snapshot.problem ? `${snapshot.problem}${snapshot.loaded ? "\uFF0C\u5F53\u524D\u663E\u793A\u4E0A\u6B21\u7ED3\u679C" : ""}` : "\u6B63\u5728\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u2026",
-          snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", disabled: snapshot.refreshing, onClick: () => void store.refresh(), children: snapshot.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
+        showNotice && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: snapshot2.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
+          snapshot2.problem ? `${snapshot2.problem}${snapshot2.loaded ? "\uFF0C\u5F53\u524D\u663E\u793A\u4E0A\u6B21\u7ED3\u679C" : ""}` : "\u6B63\u5728\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u2026",
+          snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", disabled: snapshot2.refreshing, onClick: () => void store.refresh(), children: snapshot2.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
         ] }),
         !hidden && !nested && expanded && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(import_jsx_runtime5.Fragment, { children: hasChildren && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { role: "list", "aria-label": `${node.label}\u7684\u5B50\u4F1A\u8BDD`, onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: ordered(node.children).map(branch) }) })
       ] }), target2.children),
@@ -1897,293 +1944,9 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
         event.stopPropagation();
         openTask(node.task.id);
       }, children: node.task.label }),
-      !hidden && !nested && hasChildren && (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target2.row),
-      !hidden && !nested && !expanded && containsCurrent(sessionId) && (0, import_react_dom2.createPortal)(marker(true), target2.row)
+      !hidden && !nested && hasChildren && (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target2.row),
+      !hidden && !nested && !expanded && containsCurrent(sessionId) && (0, import_react_dom.createPortal)(marker(true), target2.row)
     ] })
-  ] });
-}
-
-// src/mention-menu.ts
-var categories = { sessions: "\u4F1A\u8BDD", bookmarks: "\u6536\u85CF", files: "\u6587\u4EF6" };
-var previewCount = 5;
-function mentionQuery(query) {
-  const match = /^(会话|收藏|文件)[:：](.*)$/u.exec(query);
-  const category = match && Object.keys(categories).find((key) => categories[key] === match[1]);
-  return { category, text: match ? match[2] : query };
-}
-function compactMentions(rows, category, query) {
-  if (mentionQuery(query).category === category || rows.length <= previewCount) return rows;
-  return [...rows.slice(0, previewCount), {
-    name: `\u5C55\u5F00\u5176\u4F59 ${rows.length - previewCount} \u9879`,
-    section: rows[0].section,
-    value: `@${categories[category]}:${query}`
-  }];
-}
-function createSidebarMentionSource(sessions, store, workspace, archive) {
-  return {
-    name: "sessivra-sidebar-session",
-    trigger: "@",
-    order: -20,
-    showGroupTitle: false,
-    async candidates(session, request2) {
-      const { category, text: text2 } = mentionQuery(request2.query);
-      if (request2.quoted || category && category !== "sessions") return [];
-      const { ids, byId } = sessions.list.getSnapshot();
-      const { archivedSessionIds, pinnedSessionIds, items } = workspace();
-      const archived = new Set(archivedSessionIds), filter = archive();
-      const tree = store.getSnapshot();
-      const terms = text2.normalize("NFKC").toLocaleLowerCase().trim().split(/\s+/u).filter(Boolean);
-      const members = new Set(items.flatMap((item) => item.sessionIds));
-      const ordered = [...pinnedSessionIds, ...ids.filter((id2) => members.has(id2)), ...ids, ...tree.nodes.keys()];
-      const rows = [...new Set(ordered)].flatMap((id2) => {
-        const summary = byId[id2], node = tree.nodes.get(id2);
-        if (id2 === session.sessionId) return [];
-        if (tree.hiddenSessions.has(id2) || !summary && !node || summary?.origin === "subagent" && !node) return [];
-        if (summary?.blank && !summary.retainedBy.mainView) return [];
-        let root = id2;
-        while (tree.parents.has(root)) root = tree.parents.get(root);
-        const isArchived = archived.has(id2) || archived.has(root);
-        if (filter === "only" ? !isArchived : filter !== "show" && isArchived) return [];
-        const name = node && (node.subagent || tree.parents.has(id2)) ? treePresentation(node, void 0, tree.aliases.get(id2)).label : summary?.displayTitle ?? node.label;
-        const haystack = [name, byId[root]?.displayTitle].join(" ").normalize("NFKC").toLocaleLowerCase();
-        if (!terms.every((term) => haystack.includes(term))) return [];
-        return [{
-          name,
-          icon: "session",
-          section: "\u4F1A\u8BDD",
-          description: node?.subagent ? "\u961F\u5458" : tree.parents.has(id2) ? "\u5B50\u4F1A\u8BDD" : void 0,
-          value: id2
-        }];
-      });
-      const compact = compactMentions(rows, "sessions", request2.query);
-      if (!category && !text2) compact.push({ name: "\u6D4F\u89C8\u6587\u4EF6\u4E0E\u6587\u4EF6\u5939", section: "\u6587\u4EF6", value: "@\u6587\u4EF6:" });
-      return compact;
-    },
-    onPick({ candidate }) {
-      if (!candidate.icon) return { text: candidate.value, continue: true };
-      const bytes = new TextEncoder().encode(JSON.stringify(candidate.value));
-      const encoded = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
-      const label = candidate.name.replace(/[\r\n\]]/gu, " ").trim();
-      const ref = `@[${label}](dsh-session:${encoded})`;
-      return { insert: { source: "reference", appearance: "session", ref, label: candidate.name, clipboardText: ref } };
-    }
-  };
-}
-function compactNativeReferences(registry2) {
-  if (!Array.isArray(registry2.live?.sources)) return () => {
-  };
-  const restore = [];
-  const wrap = (source2) => {
-    if (source2.name !== "reference" || source2.trigger !== "@") return;
-    const original = source2.candidates;
-    const header = source2.header;
-    const projected = (request2) => request2.quoted ? { category: void 0, text: request2.query } : mentionQuery(request2.query);
-    source2.candidates = async (session, request2) => {
-      const { category, text: text2 } = projected(request2);
-      if (category && category !== "files" || !category && !text2 && !request2.quoted) return [];
-      if (!category && !request2.quoted) {
-        await new Promise((resolve) => {
-          const finish = () => {
-            clearTimeout(timer);
-            request2.signal.removeEventListener("abort", finish);
-            resolve();
-          };
-          const timer = setTimeout(finish, 150);
-          request2.signal.addEventListener("abort", finish, { once: true });
-          if (request2.signal.aborted) finish();
-        });
-      }
-      if (request2.signal.aborted) return [];
-      const rows = await original.call(source2, session, { ...request2, query: text2 });
-      return rows.filter((row) => row.icon !== "session").slice(0, category || request2.quoted ? 40 : 4);
-    };
-    if (header) source2.header = (session, request2) => {
-      const { category, text: text2 } = projected(request2);
-      return category && category !== "files" ? void 0 : header.call(source2, session, { ...request2, query: text2 });
-    };
-    restore.push(() => {
-      source2.candidates = original;
-      if (header) source2.header = header;
-    });
-  };
-  registry2.live.sources.forEach(wrap);
-  const register = registry2.registerSource;
-  registry2.registerSource = function(source2) {
-    wrap(source2);
-    return register.call(this, source2);
-  };
-  return () => {
-    registry2.registerSource = register;
-    restore.forEach((dispose) => dispose());
-  };
-}
-
-// src/bookmark-mention.ts
-var source = "sessivra-bookmark";
-async function readCandidates(saved, load) {
-  const groups = /* @__PURE__ */ new Map();
-  for (const { sessionId, turn } of saved) {
-    const turns = groups.get(sessionId);
-    if (turns) turns.push(turn);
-    else groups.set(sessionId, [turn]);
-  }
-  const pending = [...groups];
-  const rows = /* @__PURE__ */ new Map();
-  const read2 = async () => {
-    for (let group = pending.shift(); group; group = pending.shift()) {
-      const [id2, turns] = group;
-      for (let start = 0; start < turns.length; start += 100) {
-        const session = await load(id2, turns.slice(start, start + 100)).catch(() => void 0);
-        if (!session) continue;
-        for (const item of session.items) {
-          if (!item.prompt && !item.response) continue;
-          const name = `${session.title} \xB7 \u7B2C ${item.turn} \u8F6E`;
-          rows.set(JSON.stringify([id2, item.turn]), {
-            name,
-            section: "\u6536\u85CF",
-            description: item.prompt || item.response,
-            value: JSON.stringify({ origin: item.anchor, turn: item.turn, name }),
-            searchText: `${name} ${item.prompt} ${item.response}`.normalize("NFKC").toLocaleLowerCase()
-          });
-        }
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(4, pending.length) }, read2));
-  return saved.flatMap(({ sessionId, turn }) => rows.get(JSON.stringify([sessionId, turn])) ?? []);
-}
-function createBookmarkMentionSource(load, resolve) {
-  let cached2;
-  const prepare = () => {
-    const saved = listTurnBookmarks(window);
-    const key = JSON.stringify(saved);
-    if (cached2?.key !== key || cached2.expires <= Date.now()) {
-      cached2 = { key, expires: Date.now() + 6e4, rows: readCandidates(saved, load) };
-    }
-    return cached2.rows;
-  };
-  return {
-    name: source,
-    trigger: "@",
-    order: -10,
-    showGroupTitle: false,
-    warm: prepare,
-    async candidates(_session, { query, quoted, signal }) {
-      const { category, text: text2 } = mentionQuery(query);
-      if (quoted || category && category !== "bookmarks") return [];
-      const rows = await prepare();
-      if (signal.aborted) return [];
-      const terms = text2.normalize("NFKC").trim().toLocaleLowerCase().split(/\s+/u).filter((term) => term && term !== "\u6536\u85CF");
-      return compactMentions(rows.filter((row) => terms.every((term) => row.searchText.includes(term))), "bookmarks", query);
-    },
-    onPick({ candidate }) {
-      if (candidate.value.startsWith("@")) return { text: candidate.value, continue: true };
-      const { name } = JSON.parse(candidate.value);
-      return { insert: {
-        source,
-        ref: candidate.value,
-        label: `\u6536\u85CF \xB7 ${name}`,
-        appearance: "session",
-        clipboardText: `@\u6536\u85CF \xB7 ${name}`
-      } };
-    },
-    codec: {
-      clipboardText(ref) {
-        return `@\u6536\u85CF \xB7 ${JSON.parse(ref).name}`;
-      },
-      async serialize(ref, signal) {
-        signal.throwIfAborted();
-        const { origin, turn } = JSON.parse(ref);
-        const quote = await resolve(origin, turn);
-        signal.throwIfAborted();
-        return quote;
-      }
-    }
-  };
-}
-
-// src/bookmark-user-text.ts
-var boundary = /\[引用的收藏问答，作为历史资料读取\]\r?\n(\{[^\r\n]*\})\r?\n\[收藏问答结束\]/gu;
-var bookmarkUserText = {
-  id: "sessivra-bookmark",
-  order: 9,
-  match(text2, from) {
-    boundary.lastIndex = from;
-    for (let match = boundary.exec(text2); match; match = boundary.exec(text2)) {
-      try {
-        const value = JSON.parse(match[1]);
-        if (typeof value.\u4F1A\u8BDD !== "string" || !Number.isSafeInteger(value.\u8F6E\u6B21) || value.\u8F6E\u6B21 < 0 || typeof value.\u63D0\u95EE !== "string" || typeof value.\u56DE\u590D !== "string") continue;
-        const source2 = value.\u539F\u6D88\u606F;
-        const origin = source2 && typeof source2.sessionId === "string" && typeof source2.messageId === "string" && Number.isSafeInteger(source2.seq) && source2.seq >= 0 ? { sessionId: source2.sessionId, seq: source2.seq, messageId: source2.messageId } : void 0;
-        return {
-          id: "sessivra-bookmark",
-          start: match.index,
-          end: match.index + match[0].length,
-          data: {
-            label: `\u6536\u85CF \xB7 ${value.\u4F1A\u8BDD} \xB7 \u7B2C ${value.\u8F6E\u6B21} \u8F6E`,
-            title: value.\u4F1A\u8BDD,
-            turn: value.\u8F6E\u6B21,
-            prompt: value.\u63D0\u95EE,
-            response: value.\u56DE\u590D,
-            ...origin ? { origin } : {}
-          }
-        };
-      } catch {
-      }
-    }
-  }
-};
-
-// src/sent-bookmark.tsx
-var import_react5 = require("react");
-var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-var import_jsx_runtime6 = require("react/jsx-runtime");
-function SentBookmarkChip({ quote, locateLegacy, jump }) {
-  const resolving = (0, import_react5.useRef)(false);
-  const [status, setStatus] = (0, import_react5.useState)("");
-  const open = async () => {
-    if (quote.origin) {
-      jump(quote.origin);
-      return;
-    }
-    if (resolving.current) return;
-    resolving.current = true;
-    setStatus("\u6B63\u5728\u5B9A\u4F4D\u539F\u95EE\u7B54\u2026");
-    try {
-      const { title, turn, prompt, response } = quote;
-      const origin = await locateLegacy({ title, turn, prompt, response });
-      setStatus(origin ? "" : "\u65E0\u6CD5\u552F\u4E00\u5B9A\u4F4D\u539F\u95EE\u7B54");
-      if (origin) jump(origin);
-    } catch {
-      setStatus("\u6682\u65F6\u65E0\u6CD5\u5B9A\u4F4D\u539F\u95EE\u7B54\uFF0C\u8BF7\u91CD\u8BD5");
-    } finally {
-      resolving.current = false;
-    }
-  };
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
-    import_dsh_client_ui_primitives.HoverCard,
-    {
-      inline: true,
-      openDelayMs: 230,
-      anchor: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(import_dsh_client_ui_primitives.ReferenceChip, { appearance: "session", label: quote.label, title: "", onActivate: () => void open() }),
-      content: /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { minWidth: 0, width: "min(272px, 65vw)", maxWidth: "100%", textAlign: "start", fontSize: 13, lineHeight: "1.45" }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 8, fontWeight: 500, overflowWrap: "anywhere" }, children: [
-          quote.title,
-          " \xB7 \u7B2C ",
-          quote.turn,
-          " \u8F6E"
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u63D0\u95EE", text: quote.prompt }),
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u56DE\u590D", text: quote.response }),
-        status && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { role: "status", style: { marginTop: 6 }, children: status })
-      ] })
-    }
-  );
-}
-function PreviewText({ title, text: text2 }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 6 }, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { fontSize: 12, opacity: 0.72 }, children: title }),
-    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 5, overflow: "hidden", whiteSpace: "pre-line", overflowWrap: "anywhere" }, children: text2 || "\u2014" })
   ] });
 }
 
@@ -2880,10 +2643,10 @@ function jsonStringifyReplacer(_, value) {
   return value;
 }
 function cached(getter) {
-  const set2 = false;
+  const set3 = false;
   return {
     get value() {
-      if (!set2) {
+      if (!set3) {
         const value = getter();
         Object.defineProperty(this, "value", { value });
         return value;
@@ -2953,10 +2716,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path) {
-  if (!path)
+function getElementAtPath(obj, path2) {
+  if (!path2)
     return obj;
-  return path.reduce((acc, key) => acc?.[key], obj);
+  return path2.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -3365,11 +3128,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path, issues) {
+function prefixIssues(path2, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path);
+    iss.path.unshift(path2);
     return iss;
   });
 }
@@ -3516,16 +3279,16 @@ function flattenError(error51, mapper = (issue2) => issue2.message) {
 }
 function formatError(error51, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error52, path = []) => {
+  const processError = (error52, path2 = []) => {
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else {
-        const fullpath = [...path, ...issue2.path];
+        const fullpath = [...path2, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -3551,23 +3314,23 @@ function formatError(error51, mapper = (issue2) => issue2.message) {
   return fieldErrors;
 }
 function treeifyError(error51, mapper = (issue2) => issue2.message) {
-  const result = { errors: [] };
-  const processError = (error52, path = []) => {
+  const result2 = { errors: [] };
+  const processError = (error52, path2 = []) => {
     var _a3, _b;
     for (const issue2 of error52.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path2, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path2, ...issue2.path]);
       } else {
-        const fullpath = [...path, ...issue2.path];
+        const fullpath = [...path2, ...issue2.path];
         if (fullpath.length === 0) {
-          result.errors.push(mapper(issue2));
+          result2.errors.push(mapper(issue2));
           continue;
         }
-        let curr = result;
+        let curr = result2;
         let i = 0;
         while (i < fullpath.length) {
           const el = fullpath[i];
@@ -3590,12 +3353,12 @@ function treeifyError(error51, mapper = (issue2) => issue2.message) {
     }
   };
   processError(error51);
-  return result;
+  return result2;
 }
 function toDotPath(_path) {
   const segs = [];
-  const path = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path) {
+  const path2 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path2) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -3624,52 +3387,52 @@ function prettifyError(error51) {
 // node_modules/zod/v4/core/parse.js
 var _parse = (_Err) => (schema, value, _ctx, _params) => {
   const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
-  const result = schema._zod.run({ value, issues: [] }, ctx);
-  if (result instanceof Promise) {
+  const result2 = schema._zod.run({ value, issues: [] }, ctx);
+  if (result2 instanceof Promise) {
     throw new $ZodAsyncError();
   }
-  if (result.issues.length) {
-    const e = new (_params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())));
+  if (result2.issues.length) {
+    const e = new (_params?.Err ?? _Err)(result2.issues.map((iss) => finalizeIssue(iss, ctx, config())));
     captureStackTrace(e, _params?.callee);
     throw e;
   }
-  return result.value;
+  return result2.value;
 };
 var parse = /* @__PURE__ */ _parse($ZodRealError);
 var _parseAsync = (_Err) => async (schema, value, _ctx, params) => {
   const ctx = _ctx ? { ..._ctx, async: true } : { async: true };
-  let result = schema._zod.run({ value, issues: [] }, ctx);
-  if (result instanceof Promise)
-    result = await result;
-  if (result.issues.length) {
-    const e = new (params?.Err ?? _Err)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())));
+  let result2 = schema._zod.run({ value, issues: [] }, ctx);
+  if (result2 instanceof Promise)
+    result2 = await result2;
+  if (result2.issues.length) {
+    const e = new (params?.Err ?? _Err)(result2.issues.map((iss) => finalizeIssue(iss, ctx, config())));
     captureStackTrace(e, params?.callee);
     throw e;
   }
-  return result.value;
+  return result2.value;
 };
 var parseAsync = /* @__PURE__ */ _parseAsync($ZodRealError);
 var _safeParse = (_Err) => (schema, value, _ctx) => {
   const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
-  const result = schema._zod.run({ value, issues: [] }, ctx);
-  if (result instanceof Promise) {
+  const result2 = schema._zod.run({ value, issues: [] }, ctx);
+  if (result2 instanceof Promise) {
     throw new $ZodAsyncError();
   }
-  return result.issues.length ? {
+  return result2.issues.length ? {
     success: false,
-    error: new (_Err ?? $ZodError)(result.issues.map((iss) => finalizeIssue(iss, ctx, config())))
-  } : { success: true, data: result.value };
+    error: new (_Err ?? $ZodError)(result2.issues.map((iss) => finalizeIssue(iss, ctx, config())))
+  } : { success: true, data: result2.value };
 };
 var safeParse = /* @__PURE__ */ _safeParse($ZodRealError);
 var _safeParseAsync = (_Err) => async (schema, value, _ctx) => {
   const ctx = _ctx ? { ..._ctx, async: true } : { async: true };
-  let result = schema._zod.run({ value, issues: [] }, ctx);
-  if (result instanceof Promise)
-    result = await result;
-  return result.issues.length ? {
+  let result2 = schema._zod.run({ value, issues: [] }, ctx);
+  if (result2 instanceof Promise)
+    result2 = await result2;
+  return result2.issues.length ? {
     success: false,
-    error: new _Err(result.issues.map((iss) => finalizeIssue(iss, ctx, config())))
-  } : { success: true, data: result.value };
+    error: new _Err(result2.issues.map((iss) => finalizeIssue(iss, ctx, config())))
+  } : { success: true, data: result2.value };
 };
 var safeParseAsync = /* @__PURE__ */ _safeParseAsync($ZodRealError);
 var _encode = (_Err) => (schema, value, _ctx) => {
@@ -4305,12 +4068,12 @@ var $ZodCheckUpperCase = /* @__PURE__ */ $constructor("$ZodCheckUpperCase", (ins
 var $ZodCheckIncludes = /* @__PURE__ */ $constructor("$ZodCheckIncludes", (inst, def) => {
   $ZodCheck.init(inst, def);
   const escapedRegex = escapeRegex(def.includes);
-  const pattern = new RegExp(typeof def.position === "number" ? `^.{${def.position}}${escapedRegex}` : escapedRegex);
-  def.pattern = pattern;
+  const pattern2 = new RegExp(typeof def.position === "number" ? `^.{${def.position}}${escapedRegex}` : escapedRegex);
+  def.pattern = pattern2;
   inst._zod.onattach.push((inst2) => {
     const bag = inst2._zod.bag;
     bag.patterns ?? (bag.patterns = /* @__PURE__ */ new Set());
-    bag.patterns.add(pattern);
+    bag.patterns.add(pattern2);
   });
   inst._zod.check = (payload) => {
     if (payload.value.includes(def.includes, def.position))
@@ -4328,12 +4091,12 @@ var $ZodCheckIncludes = /* @__PURE__ */ $constructor("$ZodCheckIncludes", (inst,
 });
 var $ZodCheckStartsWith = /* @__PURE__ */ $constructor("$ZodCheckStartsWith", (inst, def) => {
   $ZodCheck.init(inst, def);
-  const pattern = new RegExp(`^${escapeRegex(def.prefix)}.*`);
-  def.pattern ?? (def.pattern = pattern);
+  const pattern2 = new RegExp(`^${escapeRegex(def.prefix)}.*`);
+  def.pattern ?? (def.pattern = pattern2);
   inst._zod.onattach.push((inst2) => {
     const bag = inst2._zod.bag;
     bag.patterns ?? (bag.patterns = /* @__PURE__ */ new Set());
-    bag.patterns.add(pattern);
+    bag.patterns.add(pattern2);
   });
   inst._zod.check = (payload) => {
     if (payload.value.startsWith(def.prefix))
@@ -4351,12 +4114,12 @@ var $ZodCheckStartsWith = /* @__PURE__ */ $constructor("$ZodCheckStartsWith", (i
 });
 var $ZodCheckEndsWith = /* @__PURE__ */ $constructor("$ZodCheckEndsWith", (inst, def) => {
   $ZodCheck.init(inst, def);
-  const pattern = new RegExp(`.*${escapeRegex(def.suffix)}$`);
-  def.pattern ?? (def.pattern = pattern);
+  const pattern2 = new RegExp(`.*${escapeRegex(def.suffix)}$`);
+  def.pattern ?? (def.pattern = pattern2);
   inst._zod.onattach.push((inst2) => {
     const bag = inst2._zod.bag;
     bag.patterns ?? (bag.patterns = /* @__PURE__ */ new Set());
-    bag.patterns.add(pattern);
+    bag.patterns.add(pattern2);
   });
   inst._zod.check = (payload) => {
     if (payload.value.endsWith(def.suffix))
@@ -4372,22 +4135,22 @@ var $ZodCheckEndsWith = /* @__PURE__ */ $constructor("$ZodCheckEndsWith", (inst,
     });
   };
 });
-function handleCheckPropertyResult(result, payload, property) {
-  if (result.issues.length) {
-    payload.issues.push(...prefixIssues(property, result.issues));
+function handleCheckPropertyResult(result2, payload, property2) {
+  if (result2.issues.length) {
+    payload.issues.push(...prefixIssues(property2, result2.issues));
   }
 }
 var $ZodCheckProperty = /* @__PURE__ */ $constructor("$ZodCheckProperty", (inst, def) => {
   $ZodCheck.init(inst, def);
   inst._zod.check = (payload) => {
-    const result = def.schema._zod.run({
+    const result2 = def.schema._zod.run({
       value: payload.value[def.property],
       issues: []
     }, {});
-    if (result instanceof Promise) {
-      return result.then((result2) => handleCheckPropertyResult(result2, payload, def.property));
+    if (result2 instanceof Promise) {
+      return result2.then((result3) => handleCheckPropertyResult(result3, payload, def.property));
     }
-    handleCheckPropertyResult(result, payload, def.property);
+    handleCheckPropertyResult(result2, payload, def.property);
     return;
   };
 });
@@ -4549,13 +4312,13 @@ var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
         }
         return handleCanaryResult(canary, payload, ctx);
       }
-      const result = inst._zod.parse(payload, ctx);
-      if (result instanceof Promise) {
+      const result2 = inst._zod.parse(payload, ctx);
+      if (result2 instanceof Promise) {
         if (ctx.async === false)
           throw new $ZodAsyncError();
-        return result.then((result2) => runChecks(result2, checks, ctx));
+        return result2.then((result3) => runChecks(result3, checks, ctx));
       }
-      return runChecks(result, checks, ctx);
+      return runChecks(result2, checks, ctx);
     };
   }
   defineLazy(inst, "~standard", () => ({
@@ -5077,11 +4840,11 @@ var $ZodDate = /* @__PURE__ */ $constructor("$ZodDate", (inst, def) => {
     return payload;
   };
 });
-function handleArrayResult(result, final, index) {
-  if (result.issues.length) {
-    final.issues.push(...prefixIssues(index, result.issues));
+function handleArrayResult(result2, final, index) {
+  if (result2.issues.length) {
+    final.issues.push(...prefixIssues(index, result2.issues));
   }
-  final.value[index] = result.value;
+  final.value[index] = result2.value;
 }
 var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
   $ZodType.init(inst, def);
@@ -5100,14 +4863,14 @@ var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
     const proms = [];
     for (let i = 0; i < input.length; i++) {
       const item = input[i];
-      const result = def.element._zod.run({
+      const result2 = def.element._zod.run({
         value: item,
         issues: []
       }, ctx);
-      if (result instanceof Promise) {
-        proms.push(result.then((result2) => handleArrayResult(result2, payload, i)));
+      if (result2 instanceof Promise) {
+        proms.push(result2.then((result3) => handleArrayResult(result3, payload, i)));
       } else {
-        handleArrayResult(result, payload, i);
+        handleArrayResult(result2, payload, i);
       }
     }
     if (proms.length) {
@@ -5116,16 +4879,16 @@ var $ZodArray = /* @__PURE__ */ $constructor("$ZodArray", (inst, def) => {
     return payload;
   };
 });
-function handlePropertyResult(result, final, key, input, isOptionalIn, isOptionalOut) {
+function handlePropertyResult(result2, final, key, input, isOptionalIn, isOptionalOut) {
   const isPresent = key in input;
-  if (result.issues.length) {
+  if (result2.issues.length) {
     if (isOptionalIn && isOptionalOut && !isPresent) {
       return;
     }
-    final.issues.push(...prefixIssues(key, result.issues));
+    final.issues.push(...prefixIssues(key, result2.issues));
   }
   if (!isPresent && !isOptionalIn) {
-    if (!result.issues.length) {
+    if (!result2.issues.length) {
       final.issues.push({
         code: "invalid_type",
         expected: "nonoptional",
@@ -5135,12 +4898,12 @@ function handlePropertyResult(result, final, key, input, isOptionalIn, isOptiona
     }
     return;
   }
-  if (result.value === void 0) {
+  if (result2.value === void 0) {
     if (isPresent) {
       final.value[key] = void 0;
     }
   } else {
-    final.value[key] = result.value;
+    final.value[key] = result2.value;
   }
 }
 function normalizeDef(def) {
@@ -5388,9 +5151,9 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
   };
 });
 function handleUnionResults(results, final, inst, ctx) {
-  for (const result of results) {
-    if (result.issues.length === 0) {
-      final.value = result.value;
+  for (const result2 of results) {
+    if (result2.issues.length === 0) {
+      final.value = result2.value;
       return final;
     }
   }
@@ -5403,7 +5166,7 @@ function handleUnionResults(results, final, inst, ctx) {
     code: "invalid_union",
     input: final.value,
     inst,
-    errors: results.map((result) => result.issues.map((iss) => finalizeIssue(iss, ctx, config())))
+    errors: results.map((result2) => result2.issues.map((iss) => finalizeIssue(iss, ctx, config())))
   });
   return final;
 }
@@ -5432,17 +5195,17 @@ var $ZodUnion = /* @__PURE__ */ $constructor("$ZodUnion", (inst, def) => {
     let async = false;
     const results = [];
     for (const option of def.options) {
-      const result = option._zod.run({
+      const result2 = option._zod.run({
         value: payload.value,
         issues: []
       }, ctx);
-      if (result instanceof Promise) {
-        results.push(result);
+      if (result2 instanceof Promise) {
+        results.push(result2);
         async = true;
       } else {
-        if (result.issues.length === 0)
-          return result;
-        results.push(result);
+        if (result2.issues.length === 0)
+          return result2;
+        results.push(result2);
       }
     }
     if (!async)
@@ -5463,7 +5226,7 @@ function handleExclusiveUnionResults(results, final, inst, ctx) {
       code: "invalid_union",
       input: final.value,
       inst,
-      errors: results.map((result) => result.issues.map((iss) => finalizeIssue(iss, ctx, config())))
+      errors: results.map((result2) => result2.issues.map((iss) => finalizeIssue(iss, ctx, config())))
     });
   } else {
     final.issues.push({
@@ -5487,15 +5250,15 @@ var $ZodXor = /* @__PURE__ */ $constructor("$ZodXor", (inst, def) => {
     let async = false;
     const results = [];
     for (const option of def.options) {
-      const result = option._zod.run({
+      const result2 = option._zod.run({
         value: payload.value,
         issues: []
       }, ctx);
-      if (result instanceof Promise) {
-        results.push(result);
+      if (result2 instanceof Promise) {
+        results.push(result2);
         async = true;
       } else {
-        results.push(result);
+        results.push(result2);
       }
     }
     if (!async)
@@ -5631,7 +5394,7 @@ function mergeValues(a, b) {
   }
   return { valid: false, mergeErrorPath: [] };
 }
-function handleIntersectionResults(result, left, right) {
+function handleIntersectionResults(result2, left, right) {
   const unrecKeys = /* @__PURE__ */ new Map();
   let unrecIssue;
   for (const iss of left.issues) {
@@ -5643,7 +5406,7 @@ function handleIntersectionResults(result, left, right) {
         unrecKeys.get(k).l = true;
       }
     } else {
-      result.issues.push(iss);
+      result2.issues.push(iss);
     }
   }
   for (const iss of right.issues) {
@@ -5654,21 +5417,21 @@ function handleIntersectionResults(result, left, right) {
         unrecKeys.get(k).r = true;
       }
     } else {
-      result.issues.push(iss);
+      result2.issues.push(iss);
     }
   }
   const bothKeys = [...unrecKeys].filter(([, f]) => f.l && f.r).map(([k]) => k);
   if (bothKeys.length && unrecIssue) {
-    result.issues.push({ ...unrecIssue, keys: bothKeys });
+    result2.issues.push({ ...unrecIssue, keys: bothKeys });
   }
-  if (aborted(result))
-    return result;
+  if (aborted(result2))
+    return result2;
   const merged = mergeValues(left.value, right.value);
   if (!merged.valid) {
     throw new Error(`Unmergable intersection. Error path: ${JSON.stringify(merged.mergeErrorPath)}`);
   }
-  result.value = merged.data;
-  return result;
+  result2.value = merged.data;
+  return result2;
 }
 var $ZodTuple = /* @__PURE__ */ $constructor("$ZodTuple", (inst, def) => {
   $ZodType.init(inst, def);
@@ -5727,11 +5490,11 @@ var $ZodTuple = /* @__PURE__ */ $constructor("$ZodTuple", (inst, def) => {
       const rest = input.slice(items.length);
       for (const el of rest) {
         i++;
-        const result = def.rest._zod.run({ value: el, issues: [] }, ctx);
-        if (result instanceof Promise) {
-          proms.push(result.then((r) => handleTupleResult(r, payload, i)));
+        const result2 = def.rest._zod.run({ value: el, issues: [] }, ctx);
+        if (result2 instanceof Promise) {
+          proms.push(result2.then((r) => handleTupleResult(r, payload, i)));
         } else {
-          handleTupleResult(result, payload, i);
+          handleTupleResult(result2, payload, i);
         }
       }
     }
@@ -5748,11 +5511,11 @@ function getTupleOptStart(items, key) {
   }
   return 0;
 }
-function handleTupleResult(result, final, index) {
-  if (result.issues.length) {
-    final.issues.push(...prefixIssues(index, result.issues));
+function handleTupleResult(result2, final, index) {
+  if (result2.issues.length) {
+    final.issues.push(...prefixIssues(index, result2.issues));
   }
-  final.value[index] = result.value;
+  final.value[index] = result2.value;
 }
 function handleTupleResults(itemResults, final, items, input, optoutStart) {
   for (let i = 0; i < items.length; i++) {
@@ -5813,19 +5576,19 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
             continue;
           }
           const outKey = keyResult.value;
-          const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
-          if (result instanceof Promise) {
-            proms.push(result.then((result2) => {
-              if (result2.issues.length) {
-                payload.issues.push(...prefixIssues(key, result2.issues));
+          const result2 = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+          if (result2 instanceof Promise) {
+            proms.push(result2.then((result3) => {
+              if (result3.issues.length) {
+                payload.issues.push(...prefixIssues(key, result3.issues));
               }
-              payload.value[outKey] = result2.value;
+              payload.value[outKey] = result3.value;
             }));
           } else {
-            if (result.issues.length) {
-              payload.issues.push(...prefixIssues(key, result.issues));
+            if (result2.issues.length) {
+              payload.issues.push(...prefixIssues(key, result2.issues));
             }
-            payload.value[outKey] = result.value;
+            payload.value[outKey] = result2.value;
           }
         }
       }
@@ -5880,19 +5643,19 @@ var $ZodRecord = /* @__PURE__ */ $constructor("$ZodRecord", (inst, def) => {
           }
           continue;
         }
-        const result = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
-        if (result instanceof Promise) {
-          proms.push(result.then((result2) => {
-            if (result2.issues.length) {
-              payload.issues.push(...prefixIssues(key, result2.issues));
+        const result2 = def.valueType._zod.run({ value: input[key], issues: [] }, ctx);
+        if (result2 instanceof Promise) {
+          proms.push(result2.then((result3) => {
+            if (result3.issues.length) {
+              payload.issues.push(...prefixIssues(key, result3.issues));
             }
-            payload.value[keyResult.value] = result2.value;
+            payload.value[keyResult.value] = result3.value;
           }));
         } else {
-          if (result.issues.length) {
-            payload.issues.push(...prefixIssues(key, result.issues));
+          if (result2.issues.length) {
+            payload.issues.push(...prefixIssues(key, result2.issues));
           }
-          payload.value[keyResult.value] = result.value;
+          payload.value[keyResult.value] = result2.value;
         }
       }
     }
@@ -5979,22 +5742,22 @@ var $ZodSet = /* @__PURE__ */ $constructor("$ZodSet", (inst, def) => {
     const proms = [];
     payload.value = /* @__PURE__ */ new Set();
     for (const item of input) {
-      const result = def.valueType._zod.run({ value: item, issues: [] }, ctx);
-      if (result instanceof Promise) {
-        proms.push(result.then((result2) => handleSetResult(result2, payload)));
+      const result2 = def.valueType._zod.run({ value: item, issues: [] }, ctx);
+      if (result2 instanceof Promise) {
+        proms.push(result2.then((result3) => handleSetResult(result3, payload)));
       } else
-        handleSetResult(result, payload);
+        handleSetResult(result2, payload);
     }
     if (proms.length)
       return Promise.all(proms).then(() => payload);
     return payload;
   };
 });
-function handleSetResult(result, final) {
-  if (result.issues.length) {
-    final.issues.push(...result.issues);
+function handleSetResult(result2, final) {
+  if (result2.issues.length) {
+    final.issues.push(...result2.issues);
   }
-  final.value.add(result.value);
+  final.value.add(result2.value);
 }
 var $ZodEnum = /* @__PURE__ */ $constructor("$ZodEnum", (inst, def) => {
   $ZodType.init(inst, def);
@@ -6077,11 +5840,11 @@ var $ZodTransform = /* @__PURE__ */ $constructor("$ZodTransform", (inst, def) =>
     return payload;
   };
 });
-function handleOptionalResult(result, input) {
-  if (input === void 0 && (result.issues.length || result.fallback)) {
+function handleOptionalResult(result2, input) {
+  if (input === void 0 && (result2.issues.length || result2.fallback)) {
     return { issues: [], value: void 0 };
   }
-  return result;
+  return result2;
 }
 var $ZodOptional = /* @__PURE__ */ $constructor("$ZodOptional", (inst, def) => {
   $ZodType.init(inst, def);
@@ -6091,16 +5854,16 @@ var $ZodOptional = /* @__PURE__ */ $constructor("$ZodOptional", (inst, def) => {
     return def.innerType._zod.values ? /* @__PURE__ */ new Set([...def.innerType._zod.values, void 0]) : void 0;
   });
   defineLazy(inst._zod, "pattern", () => {
-    const pattern = def.innerType._zod.pattern;
-    return pattern ? new RegExp(`^(${cleanRegex(pattern.source)})?$`) : void 0;
+    const pattern2 = def.innerType._zod.pattern;
+    return pattern2 ? new RegExp(`^(${cleanRegex(pattern2.source)})?$`) : void 0;
   });
   inst._zod.parse = (payload, ctx) => {
     if (def.innerType._zod.optin === "optional") {
       const input = payload.value;
-      const result = def.innerType._zod.run(payload, ctx);
-      if (result instanceof Promise)
-        return result.then((r) => handleOptionalResult(r, input));
-      return handleOptionalResult(result, input);
+      const result2 = def.innerType._zod.run(payload, ctx);
+      if (result2 instanceof Promise)
+        return result2.then((r) => handleOptionalResult(r, input));
+      return handleOptionalResult(result2, input);
     }
     if (payload.value === void 0) {
       return payload;
@@ -6121,8 +5884,8 @@ var $ZodNullable = /* @__PURE__ */ $constructor("$ZodNullable", (inst, def) => {
   defineLazy(inst._zod, "optin", () => def.innerType._zod.optin);
   defineLazy(inst._zod, "optout", () => def.innerType._zod.optout);
   defineLazy(inst._zod, "pattern", () => {
-    const pattern = def.innerType._zod.pattern;
-    return pattern ? new RegExp(`^(${cleanRegex(pattern.source)}|null)$`) : void 0;
+    const pattern2 = def.innerType._zod.pattern;
+    return pattern2 ? new RegExp(`^(${cleanRegex(pattern2.source)}|null)$`) : void 0;
   });
   defineLazy(inst._zod, "values", () => {
     return def.innerType._zod.values ? /* @__PURE__ */ new Set([...def.innerType._zod.values, null]) : void 0;
@@ -6145,11 +5908,11 @@ var $ZodDefault = /* @__PURE__ */ $constructor("$ZodDefault", (inst, def) => {
       payload.value = def.defaultValue;
       return payload;
     }
-    const result = def.innerType._zod.run(payload, ctx);
-    if (result instanceof Promise) {
-      return result.then((result2) => handleDefaultResult(result2, def));
+    const result2 = def.innerType._zod.run(payload, ctx);
+    if (result2 instanceof Promise) {
+      return result2.then((result3) => handleDefaultResult(result3, def));
     }
-    return handleDefaultResult(result, def);
+    return handleDefaultResult(result2, def);
   };
 });
 function handleDefaultResult(payload, def) {
@@ -6179,11 +5942,11 @@ var $ZodNonOptional = /* @__PURE__ */ $constructor("$ZodNonOptional", (inst, def
     return v ? new Set([...v].filter((x) => x !== void 0)) : void 0;
   });
   inst._zod.parse = (payload, ctx) => {
-    const result = def.innerType._zod.run(payload, ctx);
-    if (result instanceof Promise) {
-      return result.then((result2) => handleNonOptionalResult(result2, inst));
+    const result2 = def.innerType._zod.run(payload, ctx);
+    if (result2 instanceof Promise) {
+      return result2.then((result3) => handleNonOptionalResult(result3, inst));
     }
-    return handleNonOptionalResult(result, inst);
+    return handleNonOptionalResult(result2, inst);
   };
 });
 function handleNonOptionalResult(payload, inst) {
@@ -6203,14 +5966,14 @@ var $ZodSuccess = /* @__PURE__ */ $constructor("$ZodSuccess", (inst, def) => {
     if (ctx.direction === "backward") {
       throw new $ZodEncodeError("ZodSuccess");
     }
-    const result = def.innerType._zod.run(payload, ctx);
-    if (result instanceof Promise) {
-      return result.then((result2) => {
-        payload.value = result2.issues.length === 0;
+    const result2 = def.innerType._zod.run(payload, ctx);
+    if (result2 instanceof Promise) {
+      return result2.then((result3) => {
+        payload.value = result3.issues.length === 0;
         return payload;
       });
     }
-    payload.value = result.issues.length === 0;
+    payload.value = result2.issues.length === 0;
     return payload;
   };
 });
@@ -6223,15 +5986,15 @@ var $ZodCatch = /* @__PURE__ */ $constructor("$ZodCatch", (inst, def) => {
     if (ctx.direction === "backward") {
       return def.innerType._zod.run(payload, ctx);
     }
-    const result = def.innerType._zod.run(payload, ctx);
-    if (result instanceof Promise) {
-      return result.then((result2) => {
-        payload.value = result2.value;
-        if (result2.issues.length) {
+    const result2 = def.innerType._zod.run(payload, ctx);
+    if (result2 instanceof Promise) {
+      return result2.then((result3) => {
+        payload.value = result3.value;
+        if (result3.issues.length) {
           payload.value = def.catchValue({
             ...payload,
             error: {
-              issues: result2.issues.map((iss) => finalizeIssue(iss, ctx, config()))
+              issues: result3.issues.map((iss) => finalizeIssue(iss, ctx, config()))
             },
             input: payload.value
           });
@@ -6241,12 +6004,12 @@ var $ZodCatch = /* @__PURE__ */ $constructor("$ZodCatch", (inst, def) => {
         return payload;
       });
     }
-    payload.value = result.value;
-    if (result.issues.length) {
+    payload.value = result2.value;
+    if (result2.issues.length) {
       payload.value = def.catchValue({
         ...payload,
         error: {
-          issues: result.issues.map((iss) => finalizeIssue(iss, ctx, config()))
+          issues: result2.issues.map((iss) => finalizeIssue(iss, ctx, config()))
         },
         input: payload.value
       });
@@ -6322,24 +6085,24 @@ var $ZodCodec = /* @__PURE__ */ $constructor("$ZodCodec", (inst, def) => {
     }
   };
 });
-function handleCodecAResult(result, def, ctx) {
-  if (result.issues.length) {
-    result.aborted = true;
-    return result;
+function handleCodecAResult(result2, def, ctx) {
+  if (result2.issues.length) {
+    result2.aborted = true;
+    return result2;
   }
   const direction = ctx.direction || "forward";
   if (direction === "forward") {
-    const transformed = def.transform(result.value, result);
+    const transformed = def.transform(result2.value, result2);
     if (transformed instanceof Promise) {
-      return transformed.then((value) => handleCodecTxResult(result, value, def.out, ctx));
+      return transformed.then((value) => handleCodecTxResult(result2, value, def.out, ctx));
     }
-    return handleCodecTxResult(result, transformed, def.out, ctx);
+    return handleCodecTxResult(result2, transformed, def.out, ctx);
   } else {
-    const transformed = def.reverseTransform(result.value, result);
+    const transformed = def.reverseTransform(result2.value, result2);
     if (transformed instanceof Promise) {
-      return transformed.then((value) => handleCodecTxResult(result, value, def.in, ctx));
+      return transformed.then((value) => handleCodecTxResult(result2, value, def.in, ctx));
     }
-    return handleCodecTxResult(result, transformed, def.in, ctx);
+    return handleCodecTxResult(result2, transformed, def.in, ctx);
   }
 }
 function handleCodecTxResult(left, value, nextSchema, ctx) {
@@ -6362,11 +6125,11 @@ var $ZodReadonly = /* @__PURE__ */ $constructor("$ZodReadonly", (inst, def) => {
     if (ctx.direction === "backward") {
       return def.innerType._zod.run(payload, ctx);
     }
-    const result = def.innerType._zod.run(payload, ctx);
-    if (result instanceof Promise) {
-      return result.then(handleReadonlyResult);
+    const result2 = def.innerType._zod.run(payload, ctx);
+    if (result2 instanceof Promise) {
+      return result2.then(handleReadonlyResult);
     }
-    return handleReadonlyResult(result);
+    return handleReadonlyResult(result2);
   };
 });
 function handleReadonlyResult(payload) {
@@ -6428,11 +6191,11 @@ var $ZodFunction = /* @__PURE__ */ $constructor("$ZodFunction", (inst, def) => {
     }
     return function(...args) {
       const parsedArgs = inst._def.input ? parse(inst._def.input, args) : args;
-      const result = Reflect.apply(func, this, parsedArgs);
+      const result2 = Reflect.apply(func, this, parsedArgs);
       if (inst._def.output) {
-        return parse(inst._def.output, result);
+        return parse(inst._def.output, result2);
       }
-      return result;
+      return result2;
     };
   };
   inst.implementAsync = (func) => {
@@ -6441,11 +6204,11 @@ var $ZodFunction = /* @__PURE__ */ $constructor("$ZodFunction", (inst, def) => {
     }
     return async function(...args) {
       const parsedArgs = inst._def.input ? await parseAsync(inst._def.input, args) : args;
-      const result = await Reflect.apply(func, this, parsedArgs);
+      const result2 = await Reflect.apply(func, this, parsedArgs);
       if (inst._def.output) {
-        return await parseAsync(inst._def.output, result);
+        return await parseAsync(inst._def.output, result2);
       }
-      return result;
+      return result2;
     };
   };
   inst._zod.parse = (payload, _ctx) => {
@@ -6534,8 +6297,8 @@ var $ZodCustom = /* @__PURE__ */ $constructor("$ZodCustom", (inst, def) => {
     return;
   };
 });
-function handleRefineResult(result, payload, input, inst) {
-  if (!result) {
+function handleRefineResult(result2, payload, input, inst) {
+  if (!result2) {
     const _iss = {
       code: "custom",
       input,
@@ -9910,12 +9673,12 @@ var error28 = () => {
     }
   };
   function getSizing(origin, unitType, inclusive, targetShouldBe) {
-    const result = Sizable[origin] ?? null;
-    if (result === null)
-      return result;
+    const result2 = Sizable[origin] ?? null;
+    if (result2 === null)
+      return result2;
     return {
-      unit: result.unit[unitType],
-      verb: result.verb[targetShouldBe][inclusive ? "inclusive" : "notInclusive"]
+      unit: result2.unit[unitType],
+      verb: result2.verb[targetShouldBe][inclusive ? "inclusive" : "notInclusive"]
     };
   }
   const FormatDictionary = {
@@ -13149,12 +12912,12 @@ function _length(length, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _regex(pattern, params) {
+function _regex(pattern2, params) {
   return new $ZodCheckRegex({
     check: "string_format",
     format: "regex",
     ...normalizeParams(params),
-    pattern
+    pattern: pattern2
   });
 }
 // @__NO_SIDE_EFFECTS__
@@ -13201,10 +12964,10 @@ function _endsWith(suffix, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _property(property, schema, params) {
+function _property(property2, schema, params) {
   return new $ZodCheckProperty({
     check: "property",
-    property,
+    property: property2,
     schema,
     ...normalizeParams(params)
   });
@@ -13630,11 +13393,11 @@ function process(schema, ctx, _params = { path: [], schemaPath: [] }) {
     }
     return seen.schema;
   }
-  const result = { schema: {}, count: 1, cycle: void 0, path: _params.path };
-  ctx.seen.set(schema, result);
+  const result2 = { schema: {}, count: 1, cycle: void 0, path: _params.path };
+  ctx.seen.set(schema, result2);
   const overrideSchema = schema._zod.toJSONSchema?.();
   if (overrideSchema) {
-    result.schema = overrideSchema;
+    result2.schema = overrideSchema;
   } else {
     const params = {
       ..._params,
@@ -13642,9 +13405,9 @@ function process(schema, ctx, _params = { path: [], schemaPath: [] }) {
       path: _params.path
     };
     if (schema._zod.processJSONSchema) {
-      schema._zod.processJSONSchema(ctx, result.schema, params);
+      schema._zod.processJSONSchema(ctx, result2.schema, params);
     } else {
-      const _json = result.schema;
+      const _json = result2.schema;
       const processor = ctx.processors[def.type];
       if (!processor) {
         throw new Error(`[toJSONSchema]: Non-representable type encountered: ${def.type}`);
@@ -13653,22 +13416,22 @@ function process(schema, ctx, _params = { path: [], schemaPath: [] }) {
     }
     const parent = schema._zod.parent;
     if (parent) {
-      if (!result.ref)
-        result.ref = parent;
+      if (!result2.ref)
+        result2.ref = parent;
       process(parent, ctx, params);
       ctx.seen.get(parent).isParent = true;
     }
   }
   const meta3 = ctx.metadataRegistry.get(schema);
   if (meta3)
-    Object.assign(result.schema, meta3);
+    Object.assign(result2.schema, meta3);
   if (ctx.io === "input" && isTransforming(schema)) {
-    delete result.schema.examples;
-    delete result.schema.default;
+    delete result2.schema.examples;
+    delete result2.schema.default;
   }
-  if (ctx.io === "input" && "_prefault" in result.schema)
-    (_a3 = result.schema).default ?? (_a3.default = result.schema._prefault);
-  delete result.schema._prefault;
+  if (ctx.io === "input" && "_prefault" in result2.schema)
+    (_a3 = result2.schema).default ?? (_a3.default = result2.schema._prefault);
+  delete result2.schema._prefault;
   const _result = ctx.seen.get(schema);
   return _result.schema;
 }
@@ -13831,13 +13594,13 @@ function finalize(ctx, schema) {
   for (const entry of [...ctx.seen.entries()].reverse()) {
     flattenRef(entry[0]);
   }
-  const result = {};
+  const result2 = {};
   if (ctx.target === "draft-2020-12") {
-    result.$schema = "https://json-schema.org/draft/2020-12/schema";
+    result2.$schema = "https://json-schema.org/draft/2020-12/schema";
   } else if (ctx.target === "draft-07") {
-    result.$schema = "http://json-schema.org/draft-07/schema#";
+    result2.$schema = "http://json-schema.org/draft-07/schema#";
   } else if (ctx.target === "draft-04") {
-    result.$schema = "http://json-schema.org/draft-04/schema#";
+    result2.$schema = "http://json-schema.org/draft-04/schema#";
   } else if (ctx.target === "openapi-3.0") {
   } else {
   }
@@ -13845,12 +13608,12 @@ function finalize(ctx, schema) {
     const id2 = ctx.external.registry.get(schema)?.id;
     if (!id2)
       throw new Error("Schema is missing an `id` property");
-    result.$id = ctx.external.uri(id2);
+    result2.$id = ctx.external.uri(id2);
   }
-  Object.assign(result, root.def ?? root.schema);
+  Object.assign(result2, root.def ?? root.schema);
   const rootMetaId = ctx.metadataRegistry.get(schema)?.id;
-  if (rootMetaId !== void 0 && result.id === rootMetaId)
-    delete result.id;
+  if (rootMetaId !== void 0 && result2.id === rootMetaId)
+    delete result2.id;
   const defs = ctx.external?.defs ?? {};
   for (const entry of ctx.seen.entries()) {
     const seen = entry[1];
@@ -13864,14 +13627,14 @@ function finalize(ctx, schema) {
   } else {
     if (Object.keys(defs).length > 0) {
       if (ctx.target === "draft-2020-12") {
-        result.$defs = defs;
+        result2.$defs = defs;
       } else {
-        result.definitions = defs;
+        result2.definitions = defs;
       }
     }
   }
   try {
-    const finalized = JSON.parse(JSON.stringify(result));
+    const finalized = JSON.parse(JSON.stringify(result2));
     Object.defineProperty(finalized, "~standard", {
       value: {
         ...schema["~standard"],
@@ -14129,11 +13892,11 @@ var nanProcessor = (_schema, ctx, _json, _params) => {
 };
 var templateLiteralProcessor = (schema, _ctx, json2, _params) => {
   const _json = json2;
-  const pattern = schema._zod.pattern;
-  if (!pattern)
+  const pattern2 = schema._zod.pattern;
+  if (!pattern2)
     throw new Error("Pattern not found in template literal");
   _json.type = "string";
-  _json.pattern = pattern.source;
+  _json.pattern = pattern2.source;
 };
 var fileProcessor = (schema, _ctx, json2, _params) => {
   const _json = json2;
@@ -14322,8 +14085,8 @@ var recordProcessor = (schema, ctx, _json, params) => {
       path: [...params.path, "patternProperties", "*"]
     });
     json2.patternProperties = {};
-    for (const pattern of patterns) {
-      json2.patternProperties[pattern.source] = valueSchema;
+    for (const pattern2 of patterns) {
+      json2.patternProperties[pattern2.source] = valueSchema;
     }
   } else {
     if (ctx.target === "draft-07" || ctx.target === "draft-2020-12") {
@@ -14568,8 +14331,8 @@ var JSONSchemaGenerator = class {
         this.ctx.external = _params.external;
     }
     extractDefs(this.ctx, schema);
-    const result = finalize(this.ctx, schema);
-    const { "~standard": _, ...plainResult } = result;
+    const result2 = finalize(this.ctx, schema);
+    const { "~standard": _, ...plainResult } = result2;
     return plainResult;
   }
 };
@@ -16287,13 +16050,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path = ref.slice(1).split("/").filter(Boolean);
-  if (path.length === 0) {
+  const path2 = ref.slice(1).split("/").filter(Boolean);
+  if (path2.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path[0] === defsKey) {
-    const key = path[1];
+  if (path2[0] === defsKey) {
+    const key = path2[1];
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -16503,9 +16266,9 @@ function convertBaseSchema(schema, ctx) {
         const patternProps = schema.patternProperties;
         const patternKeys = Object.keys(patternProps);
         const looseRecords = [];
-        for (const pattern of patternKeys) {
-          const patternValue = convertSchema(patternProps[pattern], ctx);
-          const keySchema = z.string().regex(new RegExp(pattern));
+        for (const pattern2 of patternKeys) {
+          const patternValue = convertSchema(patternProps[pattern2], ctx);
+          const keySchema = z.string().regex(new RegExp(pattern2));
           looseRecords.push(z.looseRecord(keySchema, patternValue));
         }
         const schemasToIntersect = [];
@@ -16518,11 +16281,11 @@ function convertBaseSchema(schema, ctx) {
         } else if (schemasToIntersect.length === 1) {
           zodSchema = schemasToIntersect[0];
         } else {
-          let result = z.intersection(schemasToIntersect[0], schemasToIntersect[1]);
+          let result2 = z.intersection(schemasToIntersect[0], schemasToIntersect[1]);
           for (let i = 2; i < schemasToIntersect.length; i++) {
-            result = z.intersection(result, schemasToIntersect[i]);
+            result2 = z.intersection(result2, schemasToIntersect[i]);
           }
-          zodSchema = result;
+          zodSchema = result2;
         }
         break;
       }
@@ -16607,12 +16370,12 @@ function convertSchema(schema, ctx) {
     if (schema.allOf.length === 0) {
       baseSchema = hasExplicitType ? baseSchema : z.any();
     } else {
-      let result = hasExplicitType ? baseSchema : convertSchema(schema.allOf[0], ctx);
+      let result2 = hasExplicitType ? baseSchema : convertSchema(schema.allOf[0], ctx);
       const startIdx = hasExplicitType ? 0 : 1;
       for (let i = startIdx; i < schema.allOf.length; i++) {
-        result = z.intersection(result, convertSchema(schema.allOf[i], ctx));
+        result2 = z.intersection(result2, convertSchema(schema.allOf[i], ctx));
       }
-      baseSchema = result;
+      baseSchema = result2;
     }
   }
   if (schema.nullable === true && ctx.version === "openapi-3.0") {
@@ -16701,6 +16464,1238 @@ function date4(params) {
 // node_modules/zod/v4/classic/external.js
 config(en_default());
 
+// src/import-contract.ts
+var path = external_exports.string().trim().min(1).max(4096);
+var importQuery = external_exports.object({
+  source: external_exports.enum(["claude", "codex"]),
+  scope: external_exports.enum(["catalog", "directory", "project", "session"]),
+  target: path.optional(),
+  home: path.optional(),
+  cwd: path.optional(),
+  memory: path.optional(),
+  includeAutomaticMemory: external_exports.boolean().optional(),
+  includeGlobalMemory: external_exports.boolean().optional(),
+  catalogOffset: external_exports.number().int().min(0).max(4e4).optional(),
+  catalogToken: external_exports.string().uuid().optional()
+}).strict().refine((query) => query.scope === "catalog" || !!query.target, { path: ["target"], message: "\u8BF7\u9009\u62E9\u5BFC\u5165\u4F4D\u7F6E\u3002" });
+var importToken = external_exports.string().uuid();
+var importBrowse = external_exports.object({
+  source: external_exports.enum(["claude", "codex"]),
+  kind: external_exports.enum(["directory", "session", "memory"]),
+  path: path.optional()
+}).strict();
+var importFileChoice = importBrowse.extend({ kind: external_exports.enum(["session", "memory"]) });
+var importSelection = external_exports.array(importToken).min(1).max(20);
+var importedId = external_exports.string().regex(/^sessivra-import-[a-f0-9]{32}$/);
+var importSessionPrefix = "sessivra-import-";
+function isImportedSession(id2) {
+  return id2.startsWith(importSessionPrefix) && /^[a-f0-9]{32}$/u.test(id2.slice(importSessionPrefix.length));
+}
+
+// src/mention-menu.ts
+var categories = { sessions: "\u4F1A\u8BDD", bookmarks: "\u6536\u85CF", files: "\u6587\u4EF6" };
+var previewCount = 5;
+function mentionQuery(query) {
+  const match = /^(会话|收藏|文件)[:：](.*)$/u.exec(query);
+  const category = match && Object.keys(categories).find((key) => categories[key] === match[1]);
+  return { category, text: match ? match[2] : query };
+}
+function compactMentions(rows, category, query) {
+  if (mentionQuery(query).category === category || rows.length <= previewCount) return rows;
+  return [...rows.slice(0, previewCount), {
+    name: `\u5C55\u5F00\u5176\u4F59 ${rows.length - previewCount} \u9879`,
+    section: rows[0].section,
+    value: `@${categories[category]}:${query}`
+  }];
+}
+function createSidebarMentionSource(sessions, store, workspace, archive) {
+  return {
+    name: "sessivra-sidebar-session",
+    trigger: "@",
+    order: -20,
+    showGroupTitle: false,
+    async candidates(session, request2) {
+      const { category, text: text2 } = mentionQuery(request2.query);
+      if (request2.quoted || category && category !== "sessions") return [];
+      const { ids, byId } = sessions.list.getSnapshot();
+      const { archivedSessionIds, pinnedSessionIds, items } = workspace();
+      const archived = new Set(archivedSessionIds), filter = archive();
+      const tree = store.getSnapshot();
+      const terms = text2.normalize("NFKC").toLocaleLowerCase().trim().split(/\s+/u).filter(Boolean);
+      const members = new Set(items.flatMap((item) => item.sessionIds));
+      const ordered = [...pinnedSessionIds, ...ids.filter((id2) => members.has(id2)), ...ids, ...tree.nodes.keys()];
+      const rows = [...new Set(ordered)].flatMap((id2) => {
+        const summary = byId[id2], node = tree.nodes.get(id2);
+        if (id2 === session.sessionId) return [];
+        if (tree.hiddenSessions.has(id2) || !summary && !node || summary?.origin === "subagent" && !node) return [];
+        const imported = isImportedSession(id2) && node && !node.subagent && node.label !== "\u672A\u547D\u540D\u4F1A\u8BDD";
+        if (summary?.blank && !summary.retainedBy.mainView && !imported) return [];
+        let root = id2;
+        while (tree.parents.has(root)) root = tree.parents.get(root);
+        const isArchived = archived.has(id2) || archived.has(root);
+        if (filter === "only" ? !isArchived : filter !== "show" && isArchived) return [];
+        const name = node && (node.subagent || tree.parents.has(id2) || imported) ? treePresentation(node, void 0, tree.aliases.get(id2)).label : summary?.displayTitle ?? node.label;
+        const haystack = [name, tree.nodes.get(root)?.label, byId[root]?.displayTitle].join(" ").normalize("NFKC").toLocaleLowerCase();
+        if (!terms.every((term) => haystack.includes(term))) return [];
+        return [{
+          name,
+          icon: "session",
+          section: "\u4F1A\u8BDD",
+          description: node?.subagent ? "\u961F\u5458" : tree.parents.has(id2) ? "\u5B50\u4F1A\u8BDD" : void 0,
+          value: id2
+        }];
+      });
+      const compact = compactMentions(rows, "sessions", request2.query);
+      if (!category && !text2) compact.push({ name: "\u6D4F\u89C8\u6587\u4EF6\u4E0E\u6587\u4EF6\u5939", section: "\u6587\u4EF6", value: "@\u6587\u4EF6:" });
+      return compact;
+    },
+    onPick({ candidate }) {
+      if (!candidate.icon) return { text: candidate.value, continue: true };
+      const bytes = new TextEncoder().encode(JSON.stringify(candidate.value));
+      const encoded = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
+      const label = candidate.name.replace(/[\r\n]/gu, " ").trim().replace(/[\\\[\]]/gu, "\\$&");
+      const ref = `@[${label}](dsh-session:${encoded})`;
+      return { insert: { source: "reference", appearance: "session", ref, label: candidate.name, clipboardText: ref } };
+    }
+  };
+}
+function compactNativeReferences(registry2) {
+  if (!Array.isArray(registry2.live?.sources)) return () => {
+  };
+  const restore = [];
+  const wrap = (source2) => {
+    if (source2.name !== "reference" || source2.trigger !== "@") return;
+    const original = source2.candidates;
+    const header = source2.header;
+    const projected = (request2) => request2.quoted ? { category: void 0, text: request2.query } : mentionQuery(request2.query);
+    source2.candidates = async (session, request2) => {
+      const { category, text: text2 } = projected(request2);
+      if (category && category !== "files" || !category && !text2 && !request2.quoted) return [];
+      if (!category && !request2.quoted) {
+        await new Promise((resolve2) => {
+          const finish = () => {
+            clearTimeout(timer);
+            request2.signal.removeEventListener("abort", finish);
+            resolve2();
+          };
+          const timer = setTimeout(finish, 150);
+          request2.signal.addEventListener("abort", finish, { once: true });
+          if (request2.signal.aborted) finish();
+        });
+      }
+      if (request2.signal.aborted) return [];
+      const rows = await original.call(source2, session, { ...request2, query: text2 });
+      return rows.filter((row) => row.icon !== "session").slice(0, category || request2.quoted ? 40 : 4);
+    };
+    if (header) source2.header = (session, request2) => {
+      const { category, text: text2 } = projected(request2);
+      return category && category !== "files" ? void 0 : header.call(source2, session, { ...request2, query: text2 });
+    };
+    restore.push(() => {
+      source2.candidates = original;
+      if (header) source2.header = header;
+    });
+  };
+  registry2.live.sources.forEach(wrap);
+  const register = registry2.registerSource;
+  registry2.registerSource = function(source2) {
+    wrap(source2);
+    return register.call(this, source2);
+  };
+  return () => {
+    registry2.registerSource = register;
+    restore.forEach((dispose) => dispose());
+  };
+}
+
+// src/bookmark-mention.ts
+var source = "sessivra-bookmark";
+async function readCandidates(saved, load) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const { sessionId, turn } of saved) {
+    const turns = groups.get(sessionId);
+    if (turns) turns.push(turn);
+    else groups.set(sessionId, [turn]);
+  }
+  const pending = [...groups];
+  const rows = /* @__PURE__ */ new Map();
+  const read2 = async () => {
+    for (let group = pending.shift(); group; group = pending.shift()) {
+      const [id2, turns] = group;
+      for (let start = 0; start < turns.length; start += 100) {
+        const session = await load(id2, turns.slice(start, start + 100)).catch(() => void 0);
+        if (!session) continue;
+        for (const item of session.items) {
+          if (!item.prompt && !item.response) continue;
+          const name = `${session.title} \xB7 \u7B2C ${item.turn} \u8F6E`;
+          rows.set(JSON.stringify([id2, item.turn]), {
+            name,
+            section: "\u6536\u85CF",
+            description: item.prompt || item.response,
+            value: JSON.stringify({ origin: item.anchor, turn: item.turn, name }),
+            searchText: `${name} ${item.prompt} ${item.response}`.normalize("NFKC").toLocaleLowerCase()
+          });
+        }
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, pending.length) }, read2));
+  return saved.flatMap(({ sessionId, turn }) => rows.get(JSON.stringify([sessionId, turn])) ?? []);
+}
+function createBookmarkMentionSource(load, resolve2) {
+  let cached2;
+  const prepare = () => {
+    const saved = listTurnBookmarks(window);
+    const key = JSON.stringify(saved);
+    if (cached2?.key !== key || cached2.expires <= Date.now()) {
+      cached2 = { key, expires: Date.now() + 6e4, rows: readCandidates(saved, load) };
+    }
+    return cached2.rows;
+  };
+  return {
+    name: source,
+    trigger: "@",
+    order: -10,
+    showGroupTitle: false,
+    warm: prepare,
+    async candidates(_session, { query, quoted, signal }) {
+      const { category, text: text2 } = mentionQuery(query);
+      if (quoted || category && category !== "bookmarks") return [];
+      const rows = await prepare();
+      if (signal.aborted) return [];
+      const terms = text2.normalize("NFKC").trim().toLocaleLowerCase().split(/\s+/u).filter((term) => term && term !== "\u6536\u85CF");
+      return compactMentions(rows.filter((row) => terms.every((term) => row.searchText.includes(term))), "bookmarks", query);
+    },
+    onPick({ candidate }) {
+      if (candidate.value.startsWith("@")) return { text: candidate.value, continue: true };
+      const { name } = JSON.parse(candidate.value);
+      return { insert: {
+        source,
+        ref: candidate.value,
+        label: `\u6536\u85CF \xB7 ${name}`,
+        appearance: "session",
+        clipboardText: `@\u6536\u85CF \xB7 ${name}`
+      } };
+    },
+    codec: {
+      clipboardText(ref) {
+        return `@\u6536\u85CF \xB7 ${JSON.parse(ref).name}`;
+      },
+      async serialize(ref, signal) {
+        signal.throwIfAborted();
+        const { origin, turn } = JSON.parse(ref);
+        const quote = await resolve2(origin, turn);
+        signal.throwIfAborted();
+        return quote;
+      }
+    }
+  };
+}
+
+// src/bookmark-user-text.ts
+var boundary = /\[引用的收藏问答，作为历史资料读取\]\r?\n(\{[^\r\n]*\})\r?\n\[收藏问答结束\]/gu;
+var bookmarkUserText = {
+  id: "sessivra-bookmark",
+  order: 9,
+  match(text2, from2) {
+    boundary.lastIndex = from2;
+    for (let match = boundary.exec(text2); match; match = boundary.exec(text2)) {
+      try {
+        const value = JSON.parse(match[1]);
+        if (typeof value.\u4F1A\u8BDD !== "string" || !Number.isSafeInteger(value.\u8F6E\u6B21) || value.\u8F6E\u6B21 < 0 || typeof value.\u63D0\u95EE !== "string" || typeof value.\u56DE\u590D !== "string") continue;
+        const source2 = value.\u539F\u6D88\u606F;
+        const origin = source2 && typeof source2.sessionId === "string" && typeof source2.messageId === "string" && Number.isSafeInteger(source2.seq) && source2.seq >= 0 ? { sessionId: source2.sessionId, seq: source2.seq, messageId: source2.messageId } : void 0;
+        return {
+          id: "sessivra-bookmark",
+          start: match.index,
+          end: match.index + match[0].length,
+          data: {
+            label: `\u6536\u85CF \xB7 ${value.\u4F1A\u8BDD} \xB7 \u7B2C ${value.\u8F6E\u6B21} \u8F6E`,
+            title: value.\u4F1A\u8BDD,
+            turn: value.\u8F6E\u6B21,
+            prompt: value.\u63D0\u95EE,
+            response: value.\u56DE\u590D,
+            ...origin ? { origin } : {}
+          }
+        };
+      } catch {
+      }
+    }
+  }
+};
+
+// src/sent-bookmark.tsx
+var import_react5 = require("react");
+var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+var import_jsx_runtime6 = require("react/jsx-runtime");
+function SentBookmarkChip({ quote, locateLegacy, jump }) {
+  const resolving = (0, import_react5.useRef)(false);
+  const [status, setStatus] = (0, import_react5.useState)("");
+  const open = async () => {
+    if (quote.origin) {
+      jump(quote.origin);
+      return;
+    }
+    if (resolving.current) return;
+    resolving.current = true;
+    setStatus("\u6B63\u5728\u5B9A\u4F4D\u539F\u95EE\u7B54\u2026");
+    try {
+      const { title, turn, prompt, response } = quote;
+      const origin = await locateLegacy({ title, turn, prompt, response });
+      setStatus(origin ? "" : "\u65E0\u6CD5\u552F\u4E00\u5B9A\u4F4D\u539F\u95EE\u7B54");
+      if (origin) jump(origin);
+    } catch {
+      setStatus("\u6682\u65F6\u65E0\u6CD5\u5B9A\u4F4D\u539F\u95EE\u7B54\uFF0C\u8BF7\u91CD\u8BD5");
+    } finally {
+      resolving.current = false;
+    }
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+    import_dsh_client_ui_primitives.HoverCard,
+    {
+      inline: true,
+      openDelayMs: 230,
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(import_dsh_client_ui_primitives.ReferenceChip, { appearance: "session", label: quote.label, title: "", onActivate: () => void open() }),
+      content: /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { minWidth: 0, width: "min(272px, 65vw)", maxWidth: "100%", textAlign: "start", fontSize: 13, lineHeight: "1.45" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 8, fontWeight: 500, overflowWrap: "anywhere" }, children: [
+          quote.title,
+          " \xB7 \u7B2C ",
+          quote.turn,
+          " \u8F6E"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u63D0\u95EE", text: quote.prompt }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u56DE\u590D", text: quote.response }),
+        status && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { role: "status", style: { marginTop: 6 }, children: status })
+      ] })
+    }
+  );
+}
+function PreviewText({ title, text: text2 }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 6 }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { fontSize: 12, opacity: 0.72 }, children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 5, overflow: "hidden", whiteSpace: "pre-line", overflowWrap: "anywhere" }, children: text2 || "\u2014" })
+  ] });
+}
+
+// node_modules/@deepseek-ai/cosmokit/lib/index.js
+function isNullable(value) {
+  return value === null || value === void 0;
+}
+function isPlainObject2(data) {
+  return data && typeof data === "object" && !Array.isArray(data);
+}
+function filterKeys(object2, filter) {
+  return Object.fromEntries(Object.entries(object2).filter(([key, value]) => filter(key, value)));
+}
+function mapValues(object2, transform2) {
+  return Object.fromEntries(Object.entries(object2).map(([key, value]) => [key, transform2(value, key)]));
+}
+function pick2(source2, keys, forced) {
+  if (!keys) return { ...source2 };
+  const result2 = {};
+  for (const key of keys) if (forced || source2[key] !== void 0) result2[key] = source2[key];
+  return result2;
+}
+var write = /* @__PURE__ */ Symbol.for("cosmokit.volatile.write");
+function snapshot(value, ancestors = /* @__PURE__ */ new Set()) {
+  if (typeof value === "function") throw new TypeError("volatile config cannot contain functions");
+  if (value === null || typeof value !== "object") return value;
+  if (ancestors.has(value)) throw new TypeError("volatile config cannot contain cycles");
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) return Object.freeze(value.map((item) => snapshot(item, ancestors)));
+    if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) throw new TypeError("volatile config objects must be plain objects or arrays");
+    return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, item]) => [key, snapshot(item, ancestors)])));
+  } finally {
+    ancestors.delete(value);
+  }
+}
+function createVolatile(value) {
+  let current = snapshot(value);
+  return Object.freeze({
+    get: () => current,
+    [write]: (value2) => {
+      current = value2;
+    }
+  });
+}
+function isVolatile(value) {
+  return typeof value === "object" && value !== null && write in value;
+}
+function is(type, value) {
+  if (arguments.length === 1) return (value2) => is(type, value2);
+  return type in globalThis && value instanceof globalThis[type] || Object.prototype.toString.call(value).slice(8, -1) === type;
+}
+function isArrayBufferLike(value) {
+  return is("ArrayBuffer", value) || is("SharedArrayBuffer", value);
+}
+function isArrayBufferSource(value) {
+  return isArrayBufferLike(value) || ArrayBuffer.isView(value);
+}
+var Binary;
+(function(Binary2) {
+  Binary2.is = isArrayBufferLike;
+  Binary2.isSource = isArrayBufferSource;
+  function fromSource(source2) {
+    if (ArrayBuffer.isView(source2)) return source2.buffer.slice(source2.byteOffset, source2.byteOffset + source2.byteLength);
+    else return source2;
+  }
+  Binary2.fromSource = fromSource;
+  function toBase64(source2) {
+    source2 = fromSource(source2);
+    if (typeof Buffer !== "undefined") return Buffer.from(source2).toString("base64");
+    let binary = "";
+    const bytes = new Uint8Array(source2);
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
+  Binary2.toBase64 = toBase64;
+  function fromBase64(source2) {
+    if (typeof Buffer !== "undefined") return fromSource(Buffer.from(source2, "base64"));
+    return Uint8Array.from(atob(source2), (c) => c.charCodeAt(0));
+  }
+  Binary2.fromBase64 = fromBase64;
+  function toHex(source2) {
+    source2 = fromSource(source2);
+    if (typeof Buffer !== "undefined") return Buffer.from(source2).toString("hex");
+    return Array.from(new Uint8Array(source2), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+  Binary2.toHex = toHex;
+  function fromHex(source2) {
+    if (typeof Buffer !== "undefined") return fromSource(Buffer.from(source2, "hex"));
+    const hex3 = source2.length % 2 === 0 ? source2 : source2.slice(0, source2.length - 1);
+    const buffer = [];
+    for (let i = 0; i < hex3.length; i += 2) buffer.push(parseInt(`${hex3[i]}${hex3[i + 1]}`, 16));
+    return Uint8Array.from(buffer).buffer;
+  }
+  Binary2.fromHex = fromHex;
+})(Binary || (Binary = {}));
+var base64ToArrayBuffer = Binary.fromBase64;
+var arrayBufferToBase64 = Binary.toBase64;
+var hexToArrayBuffer = Binary.fromHex;
+var arrayBufferToHex = Binary.toHex;
+function clone2(source2, refs = /* @__PURE__ */ new Map()) {
+  if (!source2 || typeof source2 !== "object") return source2;
+  if (is("Date", source2)) return new Date(source2.valueOf());
+  if (is("RegExp", source2)) return new RegExp(source2.source, source2.flags);
+  if (isArrayBufferLike(source2)) return source2.slice(0);
+  if (ArrayBuffer.isView(source2)) return source2.buffer.slice(source2.byteOffset, source2.byteOffset + source2.byteLength);
+  const cached2 = refs.get(source2);
+  if (cached2) return cached2;
+  if (Array.isArray(source2)) {
+    const result3 = [];
+    refs.set(source2, result3);
+    source2.forEach((value, index) => {
+      result3[index] = Reflect.apply(clone2, null, [value, refs]);
+    });
+    return result3;
+  }
+  const result2 = Object.create(Object.getPrototypeOf(source2));
+  refs.set(source2, result2);
+  for (const key of Reflect.ownKeys(source2)) {
+    const descriptor = { ...Reflect.getOwnPropertyDescriptor(source2, key) };
+    if ("value" in descriptor) descriptor.value = Reflect.apply(clone2, null, [descriptor.value, refs]);
+    Reflect.defineProperty(result2, key, descriptor);
+  }
+  return result2;
+}
+function deepEqual(a, b, strict) {
+  const ancestors = /* @__PURE__ */ new Set();
+  function compare(a2, b2) {
+    if (a2 === b2) return true;
+    if (isVolatile(a2) || isVolatile(b2)) return isVolatile(a2) && isVolatile(b2);
+    if (!strict && isNullable(a2) && isNullable(b2)) return true;
+    if (typeof a2 !== typeof b2 || typeof a2 !== "object" || !a2 || !b2) return false;
+    if (ancestors.has(a2)) return false;
+    function check2(test, then) {
+      return test(a2) ? test(b2) ? then(a2, b2) : false : test(b2) ? false : void 0;
+    }
+    ancestors.add(a2);
+    try {
+      return check2(Array.isArray, (a3, b3) => {
+        if (a3.length !== b3.length) return false;
+        for (let index = 0; index < a3.length; index++) if (!compare(a3[index], b3[index])) return false;
+        return true;
+      }) ?? check2(is("Date"), (a3, b3) => a3.valueOf() === b3.valueOf()) ?? check2(is("URL"), (a3, b3) => a3.href === b3.href) ?? check2(is("RegExp"), (a3, b3) => a3.source === b3.source && a3.flags === b3.flags) ?? check2(isArrayBufferLike, (a3, b3) => {
+        if (a3.byteLength !== b3.byteLength) return false;
+        const viewA = new Uint8Array(a3);
+        const viewB = new Uint8Array(b3);
+        for (let i = 0; i < viewA.length; i++) if (viewA[i] !== viewB[i]) return false;
+        return true;
+      }) ?? ((!strict || [a2, b2].every((value) => Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null)) && Object.keys({
+        ...a2,
+        ...b2
+      }).every((key) => compare(a2[key], b2[key])));
+    } finally {
+      ancestors.delete(a2);
+    }
+  }
+  return compare(a, b);
+}
+var Time;
+(function(Time2) {
+  Time2.millisecond = 1;
+  Time2.second = 1e3;
+  Time2.minute = Time2.second * 60;
+  Time2.hour = Time2.minute * 60;
+  Time2.day = Time2.hour * 24;
+  Time2.week = Time2.day * 7;
+  let timezoneOffset = (/* @__PURE__ */ new Date()).getTimezoneOffset();
+  function setTimezoneOffset(offset) {
+    timezoneOffset = offset;
+  }
+  Time2.setTimezoneOffset = setTimezoneOffset;
+  function getTimezoneOffset() {
+    return timezoneOffset;
+  }
+  Time2.getTimezoneOffset = getTimezoneOffset;
+  function getDateNumber(date6 = /* @__PURE__ */ new Date(), offset) {
+    if (typeof date6 === "number") date6 = new Date(date6);
+    if (offset === void 0) offset = timezoneOffset;
+    return Math.floor((date6.valueOf() / Time2.minute - offset) / 1440);
+  }
+  Time2.getDateNumber = getDateNumber;
+  function fromDateNumber(value, offset) {
+    const date6 = new Date(value * Time2.day);
+    if (offset === void 0) offset = timezoneOffset;
+    return new Date(+date6 + offset * Time2.minute);
+  }
+  Time2.fromDateNumber = fromDateNumber;
+  const numeric = /\d+(?:\.\d+)?/.source;
+  const timeRegExp = new RegExp(`^${[
+    "w(?:eek(?:s)?)?",
+    "d(?:ay(?:s)?)?",
+    "h(?:our(?:s)?)?",
+    "m(?:in(?:ute)?(?:s)?)?",
+    "s(?:ec(?:ond)?(?:s)?)?"
+  ].map((unit) => `(${numeric}${unit})?`).join("")}$`);
+  function parseTime(source2) {
+    const capture = timeRegExp.exec(source2);
+    if (!capture) return 0;
+    return (parseFloat(capture[1]) * Time2.week || 0) + (parseFloat(capture[2]) * Time2.day || 0) + (parseFloat(capture[3]) * Time2.hour || 0) + (parseFloat(capture[4]) * Time2.minute || 0) + (parseFloat(capture[5]) * Time2.second || 0);
+  }
+  Time2.parseTime = parseTime;
+  function parseDate(date6) {
+    const parsed = parseTime(date6);
+    if (parsed) date6 = Date.now() + parsed;
+    else if (/^\d{1,2}(:\d{1,2}){1,2}$/.test(date6)) date6 = `${(/* @__PURE__ */ new Date()).toLocaleDateString()}-${date6}`;
+    else if (/^\d{1,2}-\d{1,2}-\d{1,2}(:\d{1,2}){1,2}$/.test(date6)) date6 = `${(/* @__PURE__ */ new Date()).getFullYear()}-${date6}`;
+    return date6 ? new Date(date6) : /* @__PURE__ */ new Date();
+  }
+  Time2.parseDate = parseDate;
+  function format(ms) {
+    const abs = Math.abs(ms);
+    if (abs >= Time2.day - Time2.hour / 2) return Math.round(ms / Time2.day) + "d";
+    else if (abs >= Time2.hour - Time2.minute / 2) return Math.round(ms / Time2.hour) + "h";
+    else if (abs >= Time2.minute - Time2.second / 2) return Math.round(ms / Time2.minute) + "m";
+    else if (abs >= Time2.second) return Math.round(ms / Time2.second) + "s";
+    return ms + "ms";
+  }
+  Time2.format = format;
+  function toDigits(source2, length = 2) {
+    return source2.toString().padStart(length, "0");
+  }
+  Time2.toDigits = toDigits;
+  function template(template2, time3 = /* @__PURE__ */ new Date()) {
+    return template2.replace("yyyy", time3.getFullYear().toString()).replace("yy", time3.getFullYear().toString().slice(2)).replace("MM", toDigits(time3.getMonth() + 1)).replace("dd", toDigits(time3.getDate())).replace("hh", toDigits(time3.getHours())).replace("mm", toDigits(time3.getMinutes())).replace("ss", toDigits(time3.getSeconds())).replace("SSS", toDigits(time3.getMilliseconds(), 3));
+  }
+  Time2.template = template;
+})(Time || (Time = {}));
+
+// node_modules/@deepseek-ai/schemastery/lib/index.mjs
+var kSchema = /* @__PURE__ */ Symbol.for("schemastery");
+var kValidationError = /* @__PURE__ */ Symbol.for("ValidationError");
+globalThis.__schemastery_index__ ??= 0;
+globalThis.__schemastery_refs__ = void 0;
+var ValidationError = class extends TypeError {
+  options;
+  name = "ValidationError";
+  constructor(message, options) {
+    let prefix = "$";
+    for (const segment of options.path || []) if (typeof segment === "string") prefix += "." + segment;
+    else if (typeof segment === "number") prefix += "[" + segment + "]";
+    else if (typeof segment === "symbol") prefix += `[Symbol(${segment.toString()})]`;
+    if (prefix.startsWith(".")) prefix = prefix.slice(1);
+    super((prefix === "$" ? "" : `${prefix} `) + message);
+    this.options = options;
+  }
+  static is(error51) {
+    return !!error51?.[kValidationError];
+  }
+};
+Object.defineProperty(ValidationError.prototype, kValidationError, { value: true });
+var Schema = function(options) {
+  const schema = function(data, options2 = {}) {
+    return Schema.resolve(data, schema, options2)[0];
+  };
+  if (options.refs) {
+    const refs = mapValues(options.refs, (options2) => new Schema(options2));
+    const getRef = (uid) => refs[uid];
+    for (const key in refs) {
+      const options2 = refs[key];
+      options2.sKey = getRef(options2.sKey);
+      options2.inner = getRef(options2.inner);
+      options2.list = options2.list && options2.list.map(getRef);
+      options2.dict = options2.dict && mapValues(options2.dict, getRef);
+    }
+    return refs[options.uid];
+  }
+  Object.assign(schema, options);
+  if (typeof schema.callback === "string") try {
+    schema.callback = new Function("return " + schema.callback)();
+  } catch {
+  }
+  Object.defineProperty(schema, "uid", { value: globalThis.__schemastery_index__++ });
+  Object.setPrototypeOf(schema, Schema.prototype);
+  schema.meta ||= {};
+  schema.toString = schema.toString.bind(schema);
+  return schema;
+};
+Schema.prototype = Object.create(Function.prototype);
+Schema.prototype[kSchema] = true;
+Object.defineProperty(Schema.prototype, "~standard", { get() {
+  return {
+    version: 1,
+    vendor: "schemastery",
+    validate: (value) => {
+      try {
+        return { value: Schema.resolve(value, this, {})[0] };
+      } catch (error51) {
+        if (ValidationError.is(error51)) return { issues: [{
+          message: error51.message,
+          path: error51.options.path
+        }] };
+        throw error51;
+      }
+    }
+  };
+} });
+Schema.ValidationError = ValidationError;
+Schema.prototype.toJSON = function toJSON() {
+  if (globalThis.__schemastery_refs__) {
+    globalThis.__schemastery_refs__[this.uid] ??= JSON.parse(JSON.stringify({ ...this }));
+    return this.uid;
+  }
+  globalThis.__schemastery_refs__ = { [this.uid]: { ...this } };
+  globalThis.__schemastery_refs__[this.uid] = JSON.parse(JSON.stringify({ ...this }));
+  const result2 = {
+    uid: this.uid,
+    refs: globalThis.__schemastery_refs__
+  };
+  globalThis.__schemastery_refs__ = void 0;
+  return result2;
+};
+Schema.prototype.set = function set2(key, value) {
+  this.dict[key] = value;
+  return this;
+};
+Schema.prototype.push = function push(value) {
+  this.list.push(value);
+  return this;
+};
+function mergeDesc(original, messages) {
+  const result2 = typeof original === "string" ? { "": original } : { ...original };
+  for (const locale in messages) {
+    const value = messages[locale];
+    if (value?.$description || value?.$desc) result2[locale] = value.$description || value.$desc;
+    else if (typeof value === "string") result2[locale] = value;
+  }
+  return result2;
+}
+function getInner(value) {
+  return value?.$value ?? value?.$inner;
+}
+function extractKeys(data) {
+  return filterKeys(data ?? {}, (key) => !key.startsWith("$"));
+}
+Schema.prototype.i18n = function i18n(messages) {
+  const schema = Schema(this);
+  const desc = mergeDesc(schema.meta.description, messages);
+  if (Object.keys(desc).length) schema.meta.description = desc;
+  if (schema.dict) schema.dict = mapValues(schema.dict, (inner, key) => {
+    return inner.i18n(mapValues(messages, (data) => getInner(data)?.[key] ?? data?.[key]));
+  });
+  if (schema.list) schema.list = schema.list.map((inner, index) => {
+    return inner.i18n(mapValues(messages, (data = {}) => {
+      if (Array.isArray(getInner(data))) return getInner(data)[index];
+      if (Array.isArray(data)) return data[index];
+      return extractKeys(data);
+    }));
+  });
+  if (schema.inner) schema.inner = schema.inner.i18n(mapValues(messages, (data) => {
+    if (getInner(data)) return getInner(data);
+    return extractKeys(data);
+  }));
+  if (schema.sKey) schema.sKey = schema.sKey.i18n(mapValues(messages, (data) => data?.$key));
+  return schema;
+};
+Schema.prototype.extra = function extra(key, value) {
+  const schema = Schema(this);
+  schema.meta = {
+    ...schema.meta,
+    [key]: value
+  };
+  return schema;
+};
+for (const key of [
+  "required",
+  "disabled",
+  "collapse",
+  "hidden",
+  "loose"
+]) Object.assign(Schema.prototype, { [key](value = true) {
+  const schema = Schema(this);
+  schema.meta = {
+    ...schema.meta,
+    [key]: value
+  };
+  return schema;
+} });
+Schema.prototype.deprecated = function deprecated() {
+  const schema = Schema(this);
+  schema.meta.badges ||= [];
+  schema.meta.badges.push({
+    text: "deprecated",
+    type: "danger"
+  });
+  return schema;
+};
+Schema.prototype.experimental = function experimental() {
+  const schema = Schema(this);
+  schema.meta.badges ||= [];
+  schema.meta.badges.push({
+    text: "experimental",
+    type: "warning"
+  });
+  return schema;
+};
+Schema.prototype.pattern = function pattern(regexp) {
+  const schema = Schema(this);
+  const pattern2 = pick2(regexp, ["source", "flags"]);
+  schema.meta = {
+    ...schema.meta,
+    pattern: pattern2
+  };
+  return schema;
+};
+Schema.prototype.simplify = function simplify(value) {
+  if (isVolatile(value)) value = value.get();
+  if (deepEqual(value, this.meta.default, this.type === "dict")) return null;
+  if (isNullable(value)) return value;
+  if (this.type === "object" || this.type === "dict") {
+    const result2 = {};
+    for (const key in value) {
+      const item = (this.type === "object" ? this.dict[key] : this.inner)?.simplify(value[key]);
+      if (this.type === "dict" || !isNullable(item)) result2[key] = item;
+    }
+    if (deepEqual(result2, this.meta.default, this.type === "dict")) return null;
+    return result2;
+  } else if (this.type === "array" || this.type === "tuple") {
+    const result2 = [];
+    value.forEach((value2, index) => {
+      const schema = this.type === "array" ? this.inner : this.list[index];
+      const item = schema ? schema.simplify(value2) : value2;
+      result2.push(item);
+    });
+    return result2;
+  } else if (this.type === "intersect") {
+    const result2 = {};
+    for (const item of this.list) Object.assign(result2, item.simplify(value));
+    return result2;
+  } else if (this.type === "union") for (const schema of this.list) try {
+    Schema.resolve(value, schema, {});
+    return schema.simplify(value);
+  } catch {
+  }
+  return value;
+};
+Schema.prototype.toString = function toString(inline) {
+  return formatters[this.type]?.(this, inline) ?? `Schema<${this.type}>`;
+};
+Schema.prototype.role = function role(role, extra2) {
+  const schema = Schema(this);
+  schema.meta = {
+    ...schema.meta,
+    role,
+    extra: extra2
+  };
+  return schema;
+};
+for (const key of [
+  "default",
+  "link",
+  "comment",
+  "description",
+  "max",
+  "min",
+  "step"
+]) Object.assign(Schema.prototype, { [key](value) {
+  const schema = Schema(this);
+  schema.meta = {
+    ...schema.meta,
+    [key]: value
+  };
+  return schema;
+} });
+Schema.prototype.volatile = function volatile() {
+  if (this.meta.volatile) throw new TypeError("volatile schema is already wrapped");
+  return this.extra("volatile", true);
+};
+var resolvers = {};
+var checkedVolatile = /* @__PURE__ */ Symbol("checked-volatile-schema");
+function validateVolatileSchema(schema, path2 = [], blocked = false, seen = /* @__PURE__ */ new Map()) {
+  const states = seen.get(schema) ?? /* @__PURE__ */ new Set();
+  if (states.has(blocked)) return;
+  states.add(blocked);
+  seen.set(schema, states);
+  if (schema.meta?.volatile && blocked) throw new ValidationError("volatile fields require a fixed object path without an enclosing volatile field", { path: path2 });
+  const nested = blocked || !!schema.meta?.volatile;
+  if (schema.dict) for (const [key, child] of Object.entries(schema.dict)) validateVolatileSchema(child, [...path2, key], nested, seen);
+  if (schema.sKey) validateVolatileSchema(schema.sKey, [...path2, "<key>"], true, seen);
+  if (schema.inner && (schema.type !== "lazy" || schema.inner[kSchema])) validateVolatileSchema(schema.inner, [...path2, "*"], true, seen);
+  if (schema.list) for (let index = 0; index < schema.list.length; index++) validateVolatileSchema(schema.list[index], [...path2, String(index)], true, seen);
+}
+Schema.extend = function extend2(type, resolve2) {
+  resolvers[type] = resolve2;
+};
+Schema.resolve = function resolve(data, schema, options = {}, strict = false) {
+  if (!schema) return [data];
+  if (!options[checkedVolatile]) {
+    validateVolatileSchema(schema, options.path);
+    options = {
+      ...options,
+      [checkedVolatile]: true
+    };
+  }
+  if (schema.meta?.volatile) {
+    const inner = Schema(schema);
+    inner.meta = {
+      ...schema.meta,
+      volatile: false
+    };
+    const [value, adapted] = Schema.resolve(data, inner, options, strict);
+    try {
+      return [createVolatile(value), adapted];
+    } catch (error51) {
+      throw new ValidationError(error51 instanceof Error ? error51.message : String(error51), options);
+    }
+  }
+  if (options.ignore?.(data, schema)) return [data];
+  if (isNullable(data) && schema.type !== "lazy") {
+    if (schema.meta.required) throw new ValidationError(`missing required value`, options);
+    let current = schema;
+    let fallback = schema.meta.default;
+    while (current?.type === "intersect" && isNullable(fallback)) {
+      current = current.list[0];
+      fallback = current?.meta.default;
+    }
+    if (isNullable(fallback)) return [data];
+    data = clone2(fallback);
+  }
+  const callback = resolvers[schema.type];
+  if (!callback) throw new ValidationError(`unsupported type "${schema.type}"`, options);
+  try {
+    return callback(data, schema, options, strict);
+  } catch (error51) {
+    if (!schema.meta.loose) throw error51;
+    return [schema.meta.default];
+  }
+};
+Schema.from = function from(source2) {
+  if (isNullable(source2)) return Schema.any();
+  else if ([
+    "string",
+    "number",
+    "boolean"
+  ].includes(typeof source2)) return Schema.const(source2).required();
+  else if (source2[kSchema]) return source2;
+  else if (typeof source2 === "function") switch (source2) {
+    case String:
+      return Schema.string().required();
+    case Number:
+      return Schema.number().required();
+    case Boolean:
+      return Schema.boolean().required();
+    case Function:
+      return Schema.function().required();
+    default:
+      return Schema.is(source2).required();
+  }
+  else throw new TypeError(`cannot infer schema from ${source2}`);
+};
+Schema.lazy = function lazy2(builder) {
+  const toJSON2 = () => {
+    if (!schema.inner[kSchema]) {
+      schema.inner = schema.builder();
+      schema.inner.meta = {
+        ...schema.meta,
+        ...schema.inner.meta
+      };
+    }
+    return schema.inner.toJSON();
+  };
+  const schema = new Schema({
+    type: "lazy",
+    builder,
+    inner: { toJSON: toJSON2 }
+  });
+  return schema;
+};
+Schema.natural = function natural() {
+  return Schema.number().step(1).min(0);
+};
+Schema.percent = function percent() {
+  return Schema.number().step(0.01).min(0).max(1).role("slider");
+};
+Schema.date = function date5() {
+  return Schema.union([Schema.is(Date), Schema.transform(Schema.string().role("datetime"), (value, options) => {
+    const date6 = new Date(value);
+    if (isNaN(+date6)) throw new ValidationError(`invalid date "${value}"`, options);
+    return date6;
+  }, true)]);
+};
+Schema.regExp = function regExp(flag = "") {
+  return Schema.union([Schema.is(RegExp), Schema.transform(Schema.string().role("regexp", { flag }), (value, options) => {
+    try {
+      return new RegExp(value, flag);
+    } catch (e) {
+      throw new ValidationError(e.message, options);
+    }
+  }, true)]);
+};
+Schema.arrayBuffer = function arrayBuffer(encoding) {
+  return Schema.union([
+    Schema.is(ArrayBuffer),
+    Schema.is(SharedArrayBuffer),
+    Schema.transform(Schema.any(), (value, options) => {
+      if (Binary.isSource(value)) return Binary.fromSource(value);
+      throw new ValidationError(`expected ArrayBufferSource but got ${value}`, options);
+    }, true),
+    ...encoding ? [Schema.transform(Schema.string(), (value, options) => {
+      try {
+        return encoding === "base64" ? Binary.fromBase64(value) : Binary.fromHex(value);
+      } catch (e) {
+        throw new ValidationError(e.message, options);
+      }
+    }, true)] : []
+  ]);
+};
+Schema.extend("lazy", (data, schema, options, strict) => {
+  if (!schema.inner[kSchema]) {
+    schema.inner = schema.builder();
+    schema.inner.meta = {
+      ...schema.meta,
+      ...schema.inner.meta
+    };
+    validateVolatileSchema(schema.inner, options.path, true);
+  }
+  return Schema.resolve(data, schema.inner, options, strict);
+});
+Schema.extend("any", (data) => {
+  return [data];
+});
+Schema.extend("never", (data, _, options) => {
+  throw new ValidationError(`expected nullable but got ${data}`, options);
+});
+Schema.extend("const", (data, { value }, options) => {
+  if (deepEqual(data, value)) return [value];
+  throw new ValidationError(`expected ${value} but got ${data}`, options);
+});
+function checkWithinRange(data, meta3, description, options, skipMin = false) {
+  const { max = Infinity, min = -Infinity } = meta3;
+  if (data > max) throw new ValidationError(`expected ${description} <= ${max} but got ${data}`, options);
+  if (data < min && !skipMin) throw new ValidationError(`expected ${description} >= ${min} but got ${data}`, options);
+}
+Schema.extend("string", (data, { meta: meta3 }, options) => {
+  if (typeof data !== "string") throw new ValidationError(`expected string but got ${data}`, options);
+  if (meta3.pattern) {
+    const regexp = new RegExp(meta3.pattern.source, meta3.pattern.flags);
+    if (!regexp.test(data)) throw new ValidationError(`expect string to match regexp ${regexp}`, options);
+  }
+  checkWithinRange(data.length, meta3, "string length", options);
+  return [data];
+});
+function decimalShift(data, digits) {
+  const str2 = data.toString();
+  if (str2.includes("e")) return data * Math.pow(10, digits);
+  const index = str2.indexOf(".");
+  if (index === -1) return data * Math.pow(10, digits);
+  const frac = str2.slice(index + 1);
+  const integer2 = str2.slice(0, index);
+  if (frac.length <= digits) return +(integer2 + frac.padEnd(digits, "0"));
+  return +(integer2 + frac.slice(0, digits) + "." + frac.slice(digits));
+}
+function isMultipleOf(data, min, step) {
+  step = Math.abs(step);
+  if (!/^\d+\.\d+$/.test(step.toString())) return (data - min) % step === 0;
+  const index = step.toString().indexOf(".");
+  const digits = step.toString().slice(index + 1).length;
+  return Math.abs(decimalShift(data, digits) - decimalShift(min, digits)) % decimalShift(step, digits) === 0;
+}
+Schema.extend("number", (data, { meta: meta3 }, options) => {
+  if (typeof data !== "number") throw new ValidationError(`expected number but got ${data}`, options);
+  checkWithinRange(data, meta3, "number", options);
+  const { step } = meta3;
+  if (step && !isMultipleOf(data, meta3.min ?? 0, step)) throw new ValidationError(`expected number multiple of ${step} but got ${data}`, options);
+  return [data];
+});
+Schema.extend("boolean", (data, _, options) => {
+  if (typeof data === "boolean") return [data];
+  throw new ValidationError(`expected boolean but got ${data}`, options);
+});
+Schema.extend("bitset", (data, { bits, meta: meta3 }, options) => {
+  let value = 0, keys = [];
+  if (typeof data === "number") {
+    value = data;
+    for (const key in bits) if (data & bits[key]) keys.push(key);
+  } else if (Array.isArray(data)) {
+    keys = data;
+    for (const key of keys) {
+      if (typeof key !== "string") throw new ValidationError(`expected string but got ${key}`, options);
+      if (key in bits) value |= bits[key];
+    }
+  } else throw new ValidationError(`expected number or array but got ${data}`, options);
+  if (value === meta3.default) return [value];
+  return [value, keys];
+});
+Schema.extend("function", (data, _, options) => {
+  if (typeof data === "function") return [data];
+  throw new ValidationError(`expected function but got ${data}`, options);
+});
+Schema.extend("is", (data, { constructor }, options) => {
+  if (typeof constructor === "function") {
+    if (data instanceof constructor) return [data];
+    throw new ValidationError(`expected ${constructor.name} but got ${data}`, options);
+  } else {
+    if (isNullable(data)) throw new ValidationError(`expected ${constructor} but got ${data}`, options);
+    let prototype = Object.getPrototypeOf(data);
+    while (prototype) {
+      if (prototype.constructor?.name === constructor) return [data];
+      prototype = Object.getPrototypeOf(prototype);
+    }
+    throw new ValidationError(`expected ${constructor} but got ${data}`, options);
+  }
+});
+function property(data, key, schema, options) {
+  try {
+    const [value, adapted] = Schema.resolve(data[key], schema, {
+      ...options,
+      path: [...options.path || [], key]
+    });
+    if (adapted !== void 0) data[key] = adapted;
+    return value;
+  } catch (e) {
+    if (!options?.autofix) throw e;
+    delete data[key];
+    return schema.meta.volatile ? createVolatile(schema.meta.default) : schema.meta.default;
+  }
+}
+Schema.extend("array", (data, { inner, meta: meta3 }, options) => {
+  if (!Array.isArray(data)) throw new ValidationError(`expected array but got ${data}`, options);
+  checkWithinRange(data.length, meta3, "array length", options, !isNullable(inner.meta.default));
+  return [data.map((_, index) => property(data, index, inner, options))];
+});
+Schema.extend("dict", (data, { inner, sKey }, options, strict) => {
+  if (!isPlainObject2(data)) throw new ValidationError(`expected object but got ${data}`, options);
+  const result2 = {};
+  for (const key in data) {
+    let rKey;
+    try {
+      rKey = Schema.resolve(key, sKey, options)[0];
+    } catch (error51) {
+      if (strict) continue;
+      throw error51;
+    }
+    result2[rKey] = property(data, key, inner, options);
+    data[rKey] = data[key];
+    if (key !== rKey) delete data[key];
+  }
+  return [result2];
+});
+Schema.extend("tuple", (data, { list }, options, strict) => {
+  if (!Array.isArray(data)) throw new ValidationError(`expected array but got ${data}`, options);
+  const result2 = list.map((inner, index) => property(data, index, inner, options));
+  if (strict) return [result2];
+  result2.push(...data.slice(list.length));
+  return [result2];
+});
+function merge2(result2, data) {
+  for (const key in data) {
+    if (key in result2) continue;
+    result2[key] = data[key];
+  }
+}
+Schema.extend("object", (data, { dict }, options, strict) => {
+  if (!isPlainObject2(data)) throw new ValidationError(`expected object but got ${data}`, options);
+  const result2 = {};
+  for (const key in dict) {
+    const value = property(data, key, dict[key], options);
+    if (!isNullable(value) || key in data) result2[key] = value;
+  }
+  if (!strict) merge2(result2, data);
+  return [result2];
+});
+Schema.extend("union", (data, { list, toString: toString2 }, options, strict) => {
+  const messages = [];
+  for (const inner of list) try {
+    return Schema.resolve(data, inner, options, strict);
+  } catch (error51) {
+    messages.push(error51);
+  }
+  throw new ValidationError(`expected ${toString2()} but got ${JSON.stringify(data)}`, options);
+});
+Schema.extend("intersect", (data, { list, toString: toString2 }, options, strict) => {
+  if (!list.length) return [data];
+  let result2;
+  for (const inner of list) {
+    const value = Schema.resolve(data, inner, options, true)[0];
+    if (isNullable(value)) continue;
+    if (isNullable(result2)) result2 = value;
+    else if (typeof result2 !== typeof value) throw new ValidationError(`expected ${toString2()} but got ${JSON.stringify(data)}`, options);
+    else if (typeof value === "object") merge2(result2 ??= {}, value);
+    else if (result2 !== value) throw new ValidationError(`expected ${toString2()} but got ${JSON.stringify(data)}`, options);
+  }
+  if (!strict && isPlainObject2(data)) merge2(result2, data);
+  return [result2];
+});
+Schema.extend("transform", (data, { inner, callback, preserve }, options) => {
+  const [result2, adapted = data] = Schema.resolve(data, inner, options, true);
+  if (preserve) return [callback(result2)];
+  else return [callback(result2), callback(adapted)];
+});
+var formatters = {};
+function defineMethod(name, keys, format) {
+  formatters[name] = format;
+  Object.assign(Schema, { [name](...args) {
+    const schema = new Schema({ type: name });
+    keys.forEach((key, index) => {
+      switch (key) {
+        case "sKey":
+          schema.sKey = args[index] ?? Schema.string();
+          break;
+        case "inner":
+          schema.inner = Schema.from(args[index]);
+          break;
+        case "list":
+          schema.list = args[index].map(Schema.from);
+          break;
+        case "dict":
+          schema.dict = mapValues(args[index], Schema.from);
+          break;
+        case "bits":
+          schema.bits = {};
+          for (const key2 in args[index]) {
+            if (typeof args[index][key2] !== "number") continue;
+            schema.bits[key2] = args[index][key2];
+          }
+          break;
+        case "callback": {
+          const callback = schema.callback = args[index];
+          callback["toJSON"] ||= () => callback.toString();
+          break;
+        }
+        case "constructor": {
+          const constructor = schema.constructor = args[index];
+          if (typeof constructor === "function") constructor["toJSON"] ||= () => constructor["name"];
+          break;
+        }
+        default:
+          schema[key] = args[index];
+      }
+    });
+    if (name === "object" || name === "dict") schema.meta.default = {};
+    else if (name === "array" || name === "tuple") schema.meta.default = [];
+    else if (name === "bitset") schema.meta.default = 0;
+    return schema;
+  } });
+}
+defineMethod("is", ["constructor"], ({ constructor }) => {
+  if (typeof constructor === "function") return constructor.name;
+  else return constructor;
+});
+defineMethod("any", [], () => "any");
+defineMethod("never", [], () => "never");
+defineMethod("const", ["value"], ({ value }) => typeof value === "string" ? JSON.stringify(value) : value);
+defineMethod("string", [], () => "string");
+defineMethod("number", [], () => "number");
+defineMethod("boolean", [], () => "boolean");
+defineMethod("bitset", ["bits"], () => "bitset");
+defineMethod("function", [], () => "function");
+defineMethod("array", ["inner"], ({ inner }) => `${inner.toString(true)}[]`);
+defineMethod("dict", ["inner", "sKey"], ({ inner, sKey }) => `{ [key: ${sKey.toString()}]: ${inner.toString()} }`);
+defineMethod("tuple", ["list"], ({ list }) => `[${list.map((inner) => inner.toString()).join(", ")}]`);
+defineMethod("object", ["dict"], ({ dict }) => {
+  if (Object.keys(dict).length === 0) return "{}";
+  return `{ ${Object.entries(dict).map(([key, inner]) => {
+    return `${key}${inner.meta.required ? "" : "?"}: ${inner.toString()}`;
+  }).join(", ")} }`;
+});
+defineMethod("union", ["list"], ({ list }, inline) => {
+  const result2 = list.map(({ toString: format }) => format()).join(" | ");
+  return inline ? `(${result2})` : result2;
+});
+defineMethod("intersect", ["list"], ({ list }) => {
+  return `${list.map((inner) => inner.toString(true)).join(" & ")}`;
+});
+defineMethod("transform", [
+  "inner",
+  "callback",
+  "preserve"
+], ({ inner }, isInner) => inner.toString(isInner));
+
+// node_modules/@deepseek-ai/dsh-storage/lib/index.js
+var UNIT_NAME_RE = /^[a-z][a-z0-9_]*$/;
+
+// node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js
+function defineDomain(spec) {
+  if (!UNIT_NAME_RE.test(spec.name)) throw new Error(`domain name '${spec.name}' must match ${UNIT_NAME_RE}`);
+  if (!Number.isInteger(spec.version) || spec.version < 0) throw new Error(`domain '${spec.name}' version must be a non-negative integer, got ${spec.version}`);
+  for (const compat of spec.compatibleVersions ?? []) if (!Number.isInteger(compat) || compat < 0 || compat >= spec.version) throw new Error(`domain '${spec.name}' compatibleVersions entries must be non-negative integers below version ${spec.version}, got ${compat}`);
+  if (spec.layout !== void 0) {
+    const layout = spec.layout;
+    if (layout !== "single" && layout !== "per-record") throw new Error(`domain '${spec.name}' layout must be 'single' or 'per-record', got ${layout}`);
+  }
+  if (spec.invalidRecords !== void 0) {
+    const policy = spec.invalidRecords;
+    if (policy !== "backup-and-skip") throw new Error(`domain '${spec.name}' invalidRecords must be 'backup-and-skip' when present, got ${policy}`);
+  }
+  for (const table of Object.keys(spec.tables)) if (!UNIT_NAME_RE.test(table)) throw new Error(`domain '${spec.name}' table name '${table}' must match ${UNIT_NAME_RE}`);
+  if (spec.global !== void 0 && spec.global.schema.safeParse(null).success) throw new Error(`domain '${spec.name}' global schema must not accept null: null is the medium's "never written" sentinel, so a stored null could not round-trip`);
+  return spec;
+}
+var Config = Schema.object({
+  backend: Schema.string().required(),
+  routes: Schema.dict(Schema.string()).default({})
+});
+
+// src/message-history.ts
+var messageLocation = external_exports.object({
+  sessionId: external_exports.string().min(1).max(256),
+  seq: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+}).strict();
+var messageOrigin = messageLocation.extend({ messageId: external_exports.string().min(1).max(256) });
+var bookmarkedTurnNumbers = external_exports.array(external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)).min(1).max(100);
+var bookmarkedTurn = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+var legacyBookmarkQuote = external_exports.object({
+  title: external_exports.string().min(1).max(2e3),
+  turn: bookmarkedTurn,
+  prompt: external_exports.string().max(12016),
+  response: external_exports.string().max(12016)
+}).strict();
+var historyDocument = external_exports.object({
+  title: external_exports.string(),
+  titles: external_exports.array(external_exports.string()),
+  nextSeq: external_exports.number().int().nonnegative(),
+  messages: external_exports.array(external_exports.object({ seq: external_exports.number().int().nonnegative(), time: external_exports.number(), text: external_exports.string() }))
+});
+var historyIndex = defineDomain({
+  name: "dsh_sessivra_message_index",
+  version: 1,
+  layout: "per-record",
+  invalidRecords: "backup-and-skip",
+  tables: { sessions: { valueSchema: historyDocument.extend({ fingerprint: external_exports.string(), cwd: external_exports.string(), createdAt: external_exports.number() }) } }
+});
+
 // src/panel-contract.ts
 var id = external_exports.string().trim().min(1).max(160);
 var short = external_exports.string().trim().min(1).max(500);
@@ -16723,6 +17718,7 @@ var panelCommand = external_exports.discriminatedUnion("action", [
     resources: lines2.optional(),
     cwd: short.optional(),
     reasoningEffort: short.max(40).optional(),
+    origin: messageOrigin.optional(),
     requiredQuestions: external_exports.array(external_exports.object({ topic: short, context: short, question: text, options: lines2.min(2).max(8) }).strict()).max(8).optional()
   }).strict(),
   external_exports.object({
@@ -16767,21 +17763,6 @@ var panelQuery = external_exports.object({
 // src/validation.ts
 var policyInput = external_exports.object({ mode: external_exports.enum(["accept", "hold", "refuse"]), senders: external_exports.array(external_exports.string()).max(64), operatorSources: external_exports.array(external_exports.string()).max(64).optional(), crossWorkspace: external_exports.boolean(), alias: external_exports.string().max(80) }).strict();
 
-// src/message-history.ts
-var messageLocation = external_exports.object({
-  sessionId: external_exports.string().min(1).max(256),
-  seq: external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
-}).strict();
-var messageOrigin = messageLocation.extend({ messageId: external_exports.string().min(1).max(256) });
-var bookmarkedTurnNumbers = external_exports.array(external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)).min(1).max(100);
-var bookmarkedTurn = external_exports.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
-var legacyBookmarkQuote = external_exports.object({
-  title: external_exports.string().min(1).max(2e3),
-  turn: bookmarkedTurn,
-  prompt: external_exports.string().max(12016),
-  response: external_exports.string().max(12016)
-}).strict();
-
 // src/contract.ts
 var codec2 = (name, schema) => ({ mode: "strict", typeSymbol: `dsh-session-messenger#${name}`, create: () => schema });
 var parameter = (name, schema) => ({ name, wire: name, source: "json", codec: codec2(name, schema) });
@@ -16802,12 +17783,24 @@ var endpoints = [
 ];
 var descriptors = [
   ...[
+    { method: "preview", parameters: [parameter("query", importQuery)] },
+    { method: "browse", parameters: [parameter("browse", importBrowse)] },
+    { method: "pickFile", parameters: [parameter("query", importFileChoice)] },
+    { method: "commit", parameters: [parameter("token", importToken), parameter("keys", importSelection)] },
+    { method: "commitCatalog", parameters: [parameter("token", importToken), parameter("keys", importSelection), parameter("includeGlobalMemory", external_exports.boolean())] },
+    { method: "startCatalogImport", parameters: [parameter("token", importToken), parameter("keys", importSelection), parameter("includeGlobalMemory", external_exports.boolean())] },
+    { method: "catalogImportStatus", parameters: [parameter("id", importToken)] },
+    { method: "archive", parameters: [parameter("id", importedId)] },
+    { method: "chunk", parameters: [parameter("id", importedId), parameter("offset", external_exports.number().int().min(0).max(5e3))] }
+  ].map((e) => ({ ...e, id: `dsh-plugin-sessivra#sessivraImport/${e.method}`, service: "sessivraImport", namespace: "sessivraImport", invocation: { kind: "direct" }, result: codec2("import-result", external_exports.json()) })),
+  ...[
     { method: "list", parameters: [parameter("query", panelQuery)] },
     { method: "participants", parameters: [] },
     { method: "operation", parameters: [parameter("id", external_exports.string().uuid())] },
     { method: "detail", parameters: [parameter("id", external_exports.string().max(160))] },
     { method: "preview", parameters: [parameter("id", external_exports.string().max(160)), parameter("index", external_exports.number().int().min(0).max(63))] },
     { method: "command", parameters: [parameter("command", panelCommand)] },
+    { method: "searchHistory", parameters: [parameter("query", external_exports.string().trim().min(1).max(250))] },
     { method: "locateMessage", parameters: [parameter("location", messageLocation), parameter("expectedId", external_exports.string().max(256))] },
     { method: "bookmarkedTurns", parameters: [parameter("sessionId", external_exports.string().min(1).max(256)), parameter("turns", bookmarkedTurnNumbers)] },
     { method: "bookmarkReference", parameters: [parameter("origin", messageOrigin), parameter("turn", bookmarkedTurn)] },
@@ -16835,17 +17828,544 @@ function createLegacyRecipientSource() {
 }
 
 // src/client.tsx
+var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
+
+// src/import-panel.tsx
+var import_react6 = __toESM(require("react"), 1);
 var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
 
+// src/import-panel-styles.ts
+var importPanelStyles = `
+.sessivra-import {
+  display:flex; flex-direction:column; height:100%; min-height:0; min-width:0;
+  color:var(--dsw-alias-label-primary,CanvasText);
+  font:var(--dsw-font-s-14, 400 14px/20px system-ui);
+}
+.sessivra-import .muted {color:var(--dsw-alias-label-secondary,GrayText)}
+.sessivra-import .import-frame {
+  box-sizing:border-box; width:100%; max-width:1160px; margin-inline:auto;
+  padding-inline:clamp(20px,4vw,48px);
+}
+.sessivra-import > .import-frame {flex:none; padding-top:28px}
+.sessivra-import .import-header,.sessivra-import .import-controls,.sessivra-import .import-actions {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+}
+.sessivra-import .import-header {align-items:flex-start}
+.sessivra-import .import-header h1 {margin:0; font:var(--dsw-font-l-20, 500 20px/28px system-ui)}
+.sessivra-import .import-header p {margin:3px 0 0; font:var(--dsw-font-xs-13, 400 13px/18px system-ui)}
+.sessivra-import .import-actions {justify-content:flex-start; gap:8px}
+.sessivra-import .import-toolbar {display:grid; gap:12px; margin-top:16px}
+.sessivra-import .import-memory {display:flex; align-items:center; gap:8px}
+.sessivra-import .import-folder {display:flex; align-items:center; gap:8px; min-width:0}
+.sessivra-import .import-folder span {overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sessivra-import .import-toolbar > :last-child {width:100%; min-width:0; box-sizing:border-box}
+.sessivra-import .import-scroll {flex:1; min-height:0; overflow:auto}
+.sessivra-import .import-content {display:grid; gap:16px; padding-block:20px 28px; overflow-wrap:anywhere}
+.sessivra-import .import-content h2 {margin:0 0 6px; font:var(--dsw-font-s-14, 400 14px/20px system-ui)}
+.sessivra-import .import-content p {margin:0; padding-block:4px}
+.sessivra-import .import-content ul {list-style:none; padding:0; margin:0}
+.sessivra-import summary {cursor:pointer}
+.sessivra-import .import-project summary {
+  display:flex; align-items:center; min-height:36px; box-sizing:border-box; gap:8px;
+  padding:6px 8px; border-radius:var(--dsw-radius-sm,8px); list-style:none;
+}
+.sessivra-import .import-project summary::-webkit-details-marker {display:none}
+.sessivra-import .import-project summary svg {flex:none; color:var(--dsw-alias-label-secondary)}
+.sessivra-import .import-project[open] .import-chevron {transform:rotate(90deg)}
+.sessivra-import .import-project summary small {margin-inline-start:auto; flex:none}
+.sessivra-import .import-project > ul {padding-inline-start:24px}
+.sessivra-import .import-session,.sessivra-import .import-result-row,.sessivra-import .import-files li {
+  display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0;
+}
+.sessivra-import .import-session {
+  min-height:36px; padding-inline:8px; border-radius:var(--dsw-radius-sm,8px);
+}
+.sessivra-import .import-session label {min-width:0}
+.sessivra-import .import-session-label {display:flex; align-items:center; gap:4px; min-width:0}
+.sessivra-import .import-branch-toggle {padding-inline:4px; min-width:24px}
+.sessivra-import .import-branch-toggle[aria-expanded=true] svg {transform:rotate(90deg)}
+.sessivra-import .import-content .import-branches {
+  margin-inline-start:15px; padding-inline-start:12px; border-inline-start:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2));
+}
+.sessivra-import .import-session small {flex:none}
+.sessivra-import .import-session:hover,.sessivra-import .import-project summary:hover {
+  background:var(--dsw-alias-interactive-bg-hover);
+}
+.sessivra-import .import-session[data-selected=true] {background:var(--dsw-alias-interactive-bg-hover)}
+.sessivra-import .import-unavailable {color:var(--dsw-alias-label-secondary)}
+.sessivra-import .import-results li {padding:8px; border-top:1px solid var(--dsw-alias-border-l2)}
+.sessivra-import .import-results li.import-result-child {margin-inline-start:16px; border-inline-start:1px solid var(--dsw-alias-border-l2)}
+.sessivra-import .import-results details,.sessivra-import small {font:var(--dsw-font-xs-13, 400 13px/18px system-ui)}
+.sessivra-import .import-files li {justify-content:flex-start; flex-wrap:wrap}
+.sessivra-import .import-files button {white-space:normal; height:auto; min-height:28px; text-align:start}
+.sessivra-import .import-more {display:flex; justify-content:center}
+`;
+
+// src/import-panel.tsx
+var import_jsx_runtime7 = require("react/jsx-runtime");
+var maxSelection = 20;
+var globalMemoryLabel = "\u540C\u65F6\u5BFC\u5165\u5168\u5C40\u8BB0\u5FC6";
+var sourceTabs = [
+  { value: "codex", label: "Codex", id: "sessivra-import-codex", panelId: "sessivra-import-codex-panel" },
+  { value: "claude", label: "Claude Code", id: "sessivra-import-claude", panelId: "sessivra-import-claude-panel" }
+];
+function createImportCatalogState() {
+  return {
+    source: "codex",
+    folders: {},
+    pages: /* @__PURE__ */ new Map(),
+    jobs: /* @__PURE__ */ new Map()
+  };
+}
+function groupSessions(rows, unavailable, search) {
+  const projects = /* @__PURE__ */ new Map();
+  const standalone = [];
+  const nodes = /* @__PURE__ */ new Map();
+  for (const row of [...unavailable, ...rows]) nodes.set(row.sourceId, { row, children: [] });
+  for (const node of nodes.values()) {
+    const { parent, project } = node.row;
+    if (parent && !nodes.has(parent.sourceId)) nodes.set(parent.sourceId, {
+      row: { ...parent, updated: 0, ...project ? { project } : {} },
+      children: [],
+      placeholder: true
+    });
+  }
+  const filter = search.trim().toLocaleLowerCase();
+  const roots = [];
+  for (const node of nodes.values()) {
+    const parent = node.row.parent && nodes.get(node.row.parent.sourceId);
+    const visited = /* @__PURE__ */ new Set([node.row.sourceId]);
+    let cursor = parent;
+    while (cursor && !visited.has(cursor.row.sourceId)) {
+      visited.add(cursor.row.sourceId);
+      cursor = cursor.row.parent && nodes.get(cursor.row.parent.sourceId);
+    }
+    if (parent && !cursor) parent.children.push(node);
+    else roots.push(node);
+  }
+  const matches = (node, inherited = false) => {
+    const { row } = node;
+    const title = "displayTitle" in row ? row.displayTitle ?? row.title : row.title;
+    const own = inherited || !filter || `${row.project?.name ?? ""} ${title} ${row.title}`.toLocaleLowerCase().includes(filter);
+    const children = node.children.map((child) => matches(child, own)).filter((child) => child !== void 0);
+    return own || children.length ? { ...node, children } : void 0;
+  };
+  for (const root of roots) {
+    const node = matches(root);
+    if (!node) continue;
+    const { row } = node;
+    if (!row.project) {
+      standalone.push(node);
+      continue;
+    }
+    const { key, name } = row.project;
+    let group = projects.get(key);
+    if (!group) projects.set(key, group = { name, rows: [] });
+    group.rows.push(node);
+  }
+  return { projects, standalone };
+}
+function result(response) {
+  if (!response.ok) throw new Error(response.error.message);
+  return response.value;
+}
+async function download(api, id2, file2) {
+  const chunks = [];
+  for (let index = 0; index < file2.chunks; index++) {
+    const base643 = result(await api.chunk(id2, file2.offset + index));
+    chunks.push(Uint8Array.from(atob(base643), (char) => char.charCodeAt(0)));
+  }
+  const blob = new Blob(chunks, { type: "application/octet-stream" });
+  if (blob.size !== file2.size) throw new Error("\u5F52\u6863\u6587\u4EF6\u957F\u5EA6\u4E0D\u7B26\uFF0C\u4E0B\u8F7D\u5DF2\u53D6\u6D88\u3002");
+  const url2 = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url2;
+  anchor.download = file2.name;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url2), 3e4);
+}
+function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
+  const [source2, setSource] = import_react6.default.useState(catalog.source);
+  const [folder, setFolder] = import_react6.default.useState(catalog.folders[source2]);
+  const cacheKey = JSON.stringify([source2, folder]);
+  const [search, setSearch] = import_react6.default.useState("");
+  const [preview, setPreview] = import_react6.default.useState(() => archiveId ? void 0 : catalog.pages.get(cacheKey)?.page);
+  const [selected, setSelected] = import_react6.default.useState([]);
+  const [expanded, setExpanded] = import_react6.default.useState({});
+  const [globalMemory, setGlobalMemory] = import_react6.default.useState(false);
+  const [report, setReport] = import_react6.default.useState();
+  const [job, setJob] = import_react6.default.useState();
+  const [loadNotice, setLoadNotice] = import_react6.default.useState("");
+  const [archive, setArchive] = import_react6.default.useState();
+  const [loading, setLoading] = import_react6.default.useState(!preview);
+  const [busy, setBusy] = import_react6.default.useState("");
+  const [error51, setError] = import_react6.default.useState("");
+  const [revision, refresh] = import_react6.default.useReducer((value) => value + 1, 0);
+  const scroll = import_react6.default.useRef(null);
+  const mounted = import_react6.default.useRef(false);
+  import_react6.default.useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  import_react6.default.useEffect(() => {
+    let current = true;
+    setError("");
+    const load = async () => {
+      try {
+        if (archiveId) {
+          setLoading(true);
+          const files = result(await api.archive(archiveId));
+          if (current) setArchive(files);
+        } else {
+          let cached2 = catalog.pages.get(cacheKey);
+          if (!cached2) {
+            if (catalog.pages.size >= 4) catalog.pages.delete(catalog.pages.keys().next().value);
+            cached2 = { updated: 0 };
+            catalog.pages.set(cacheKey, cached2);
+          }
+          if (cached2.page && Date.now() - cached2.updated < 10 * 6e4) {
+            setPreview(cached2.page);
+            return;
+          }
+          setLoading(true);
+          const entry = cached2;
+          entry.pending ??= api.preview({ source: source2, scope: "catalog", catalogOffset: 0, ...folder ? { home: folder } : {} }).then((response) => {
+            entry.page = result(response);
+            entry.updated = Date.now();
+            return entry.page;
+          }).finally(() => {
+            entry.pending = void 0;
+          });
+          const page = await entry.pending;
+          if (current) setPreview(page);
+        }
+      } catch (failure) {
+        if (current) setError(failure instanceof Error ? failure.message : String(failure));
+      } finally {
+        if (current) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      current = false;
+    };
+  }, [api, archiveId, cacheKey, catalog, folder, source2, revision]);
+  const perform = async (label, action) => {
+    setBusy(label);
+    setError("");
+    try {
+      await action();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : String(failure));
+    } finally {
+      setBusy("");
+    }
+  };
+  const resetList = (page) => {
+    setPreview(page);
+    setSelected([]);
+    setExpanded({});
+    setReport(void 0);
+    setLoadNotice("");
+    setLoading(!page);
+    setError("");
+  };
+  const changeFolder = (path2) => {
+    if (path2 === folder) return;
+    catalog.folders[source2] = path2;
+    setFolder(path2);
+    setSearch("");
+    resetList(catalog.pages.get(JSON.stringify([source2, path2]))?.page);
+  };
+  const loadMore = () => {
+    if (preview?.nextOffset === void 0) return;
+    const { token, nextOffset } = preview;
+    setLoadNotice("");
+    void perform("\u6B63\u5728\u52A0\u8F7D\u66F4\u591A\u4F1A\u8BDD\u2026", async () => {
+      const next = result(await api.preview({ source: source2, scope: "catalog", catalogToken: token, catalogOffset: nextOffset }));
+      const page = { ...next, rows: [...preview.rows, ...next.rows], warnings: [.../* @__PURE__ */ new Set([...preview.warnings, ...next.warnings])] };
+      catalog.pages.set(cacheKey, { page, updated: Date.now() });
+      setPreview(page);
+      setLoadNotice(`\u672C\u6B21\u65B0\u589E ${next.rows.length} \u6761\uFF0C\u5DF2\u52A0\u8F7D ${page.rows.length} \u6761${next.nextOffset === void 0 ? "\uFF0C\u5217\u8868\u5DF2\u5168\u90E8\u52A0\u8F7D\u3002" : "\uFF0C\u53EF\u7EE7\u7EED\u52A0\u8F7D\u3002"}`);
+    });
+  };
+  const fileList = (id2, files) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { className: "import-files", children: files.map((file2, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("li", { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+      import_dsh_client_ui_primitives2.Button,
+      {
+        size: "sm",
+        variant: "ghost",
+        disabled: !!busy,
+        onClick: () => void perform("\u6B63\u5728\u4E0B\u8F7D\u2026", () => download(api, id2, file2)),
+        children: file2.name
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", children: [
+      file2.size.toLocaleString(),
+      " \u5B57\u8282"
+    ] })
+  ] }, index)) });
+  const { projects, standalone } = groupSessions(preview?.rows ?? [], preview?.unavailable ?? [], search);
+  const sourceTab = sourceTabs.find((item) => item.value === source2);
+  const date6 = (updated) => updated > 0 ? new Date(updated).toLocaleDateString() : "";
+  const sessionRow = ({ row, children, placeholder }) => {
+    const available = "key" in row;
+    const child = !!row.parent;
+    const title = available ? row.displayTitle ?? row.title : row.title;
+    const open2 = expanded[row.sourceId] ?? !!search.trim();
+    const checked = available && selected.includes(row.key);
+    return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("li", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-session", "data-selected": checked, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-session-label", children: [
+          available && !child ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+            import_dsh_client_ui_primitives2.Checkbox,
+            {
+              label: title,
+              checked,
+              disabled: !!busy || !checked && selected.length >= maxSelection,
+              onChange: (value) => setSelected((current) => value ? [...current, row.key] : current.filter((key) => key !== row.key))
+            }
+          ) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: title }),
+          !!children.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+            import_dsh_client_ui_primitives2.Button,
+            {
+              size: "sm",
+              variant: "ghost",
+              className: "import-branch-toggle",
+              "aria-label": `${open2 ? "\u6536\u8D77" : "\u5C55\u5F00"} ${title} \u7684\u5B50\u4F1A\u8BDD`,
+              "aria-expanded": open2,
+              onClick: () => setExpanded((current) => ({ ...current, [row.sourceId]: !open2 })),
+              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconChevronRightOutlineRegular, { size: 14 })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { className: "muted", children: child ? "\u5B50\u4F1A\u8BDD" : placeholder ? "\u4E3B\u4F1A\u8BDD\u672A\u52A0\u8F7D" : available ? date6(row.updated) : "\u7F3A\u5C11\u672C\u673A\u539F\u6863" })
+      ] }),
+      open2 && !!children.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { className: "import-branches", children: children.map(sessionRow) })
+    ] }, row.sourceId);
+  };
+  const watchImport = async (id2, roots) => {
+    while (mounted.current) {
+      const status = result(await api.catalogImportStatus(id2));
+      if (!mounted.current) return;
+      setJob(status);
+      if (status.phase === "failed") {
+        catalog.jobs.delete(cacheKey);
+        throw new Error(status.error ?? "\u5BFC\u5165\u5931\u8D25\u3002");
+      }
+      if (status.phase !== "done") {
+        await new Promise((resolve2) => window.setTimeout(resolve2, 600));
+        continue;
+      }
+      const next = status.result;
+      catalog.jobs.delete(cacheKey);
+      setReport((current) => {
+        const retried = new Set(roots);
+        return {
+          sessions: [...current?.sessions.filter((row) => !retried.has(row.rootKey ?? row.key)) ?? [], ...next.sessions],
+          failures: [...current?.failures.filter((row) => !retried.has(row.key)) ?? [], ...next.failures]
+        };
+      });
+      setSelected([...new Set(next.failures.map((row) => row.key))]);
+      if (scroll.current) scroll.current.scrollTop = 0;
+      return;
+    }
+  };
+  import_react6.default.useEffect(() => {
+    const pending = !archiveId && catalog.jobs.get(cacheKey);
+    if (pending) void perform("\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026", () => watchImport(pending.id, pending.selected));
+  }, [archiveId, cacheKey, catalog]);
+  const submit = () => {
+    if (!preview) return;
+    void perform("\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026", async () => {
+      const pending = catalog.jobs.get(cacheKey);
+      if (pending) return watchImport(pending.id, pending.selected);
+      setJob({ phase: "discovering", completed: 0, total: 0 });
+      const id2 = result(await api.startCatalogImport(preview.token, selected, globalMemory));
+      catalog.jobs.set(cacheKey, { id: id2, selected });
+      await watchImport(id2, selected);
+    });
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("main", { className: "sessivra-import", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: importPanelStyles }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-frame", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("header", { className: "import-header", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h1", { children: archiveId ? "\u4F1A\u8BDD\u539F\u59CB\u5F52\u6863" : "\u5BFC\u5165\u4F1A\u8BDD" }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", children: archiveId ? "\u67E5\u770B\u5E76\u4E0B\u8F7D\u539F\u59CB\u4F1A\u8BDD\u4E0E\u8BB0\u5FC6\u3002" : "\u4ECE Codex \u6216 Claude Code \u5BFC\u5165\u4F1A\u8BDD\uFF0C\u5728 DSH \u7EE7\u7EED\u5BF9\u8BDD\u3002" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-actions", children: archiveId ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Button, { variant: "outline", onClick: back, children: "\u8FD4\u56DE\u5BFC\u5165\u4F1A\u8BDD" }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
+          pickDirectory && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+            import_dsh_client_ui_primitives2.Button,
+            {
+              variant: "outline",
+              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }),
+              disabled: !!busy,
+              onClick: () => void perform("\u6B63\u5728\u9009\u62E9\u6587\u4EF6\u5939\u2026", async () => {
+                const path2 = await pickDirectory();
+                if (path2) changeFolder(path2);
+              }),
+              children: "\u9009\u62E9\u6587\u4EF6\u5939"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+            import_dsh_client_ui_primitives2.Button,
+            {
+              variant: "outline",
+              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconRefreshOutlineRegular, { size: 16 }),
+              disabled: loading || !!busy,
+              onClick: () => {
+                catalog.pages.delete(cacheKey);
+                resetList(preview);
+                refresh();
+              },
+              children: "\u5237\u65B0"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+            import_dsh_client_ui_primitives2.Button,
+            {
+              variant: "primary",
+              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconDownloadOutlineRegular, { size: 16 }),
+              disabled: !preview || loading || !selected.length || !!busy,
+              onClick: submit,
+              children: "\u5BFC\u5165\u6240\u9009\u4F1A\u8BDD"
+            }
+          )
+        ] }) })
+      ] }),
+      !archiveId && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-toolbar", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-controls", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.SegmentedTabs, { items: sourceTabs, value: source2, label: "\u6765\u6E90", onChange: (value) => {
+            if (busy || value === source2) return;
+            catalog.source = value;
+            const nextFolder = catalog.folders[value];
+            resetList(catalog.pages.get(JSON.stringify([value, nextFolder]))?.page);
+            setSearch("");
+            setGlobalMemory(false);
+            setSource(value);
+            setFolder(nextFolder);
+          } }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-memory", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { "aria-hidden": "true", children: globalMemoryLabel }),
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Switch, { label: globalMemoryLabel, checked: globalMemory, onChange: setGlobalMemory, disabled: !!busy })
+          ] })
+        ] }),
+        folder && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-folder muted", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { title: folder, children: folder }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Button, { size: "sm", variant: "ghost", disabled: !!busy, onClick: () => changeFolder(void 0), children: "\u4F7F\u7528\u9ED8\u8BA4\u76EE\u5F55" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+          import_dsh_client_ui_primitives2.Input,
+          {
+            icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconSearchOutlineRegular, { size: 16 }),
+            "aria-label": "\u641C\u7D22\u9879\u76EE\u6216\u4F1A\u8BDD",
+            placeholder: "\u641C\u7D22\u9879\u76EE\u6216\u4F1A\u8BDD",
+            value: search,
+            onChange: (event) => {
+              setSearch(event.target.value);
+              setExpanded({});
+            }
+          }
+        )
+      ] })
+    ] }),
+    archiveId ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-scroll", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-frame import-content", children: [
+      loading && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5F52\u6863\u2026" }),
+      error51 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "alert", children: error51 }),
+      busy && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: busy }),
+      archive && fileList(archiveId, archive)
+    ] }) }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_jsx_runtime7.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-scroll", ref: scroll, id: sourceTab.panelId, role: "tabpanel", "aria-labelledby": sourceTab.id, "aria-busy": loading, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-frame import-content", children: [
+      !!selected.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", "aria-live": "polite", children: [
+        "\u5DF2\u9009 ",
+        selected.length,
+        " \u9879"
+      ] }),
+      loading && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("p", { className: "muted", role: "status", children: [
+        "\u6B63\u5728\u52A0\u8F7D ",
+        sourceTab.label,
+        " \u4F1A\u8BDD\u2026"
+      ] }),
+      busy && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: busy === "\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026" && job?.phase === "importing" ? `\u6B63\u5728\u5BFC\u5165 ${Math.min(job.completed + 1, job.total)} / ${job.total} \u6761\u4F1A\u8BDD${job.title ? ` \xB7 ${job.title}` : ""}` : busy === "\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026" ? "\u6B63\u5728\u67E5\u627E\u6240\u9009\u4E3B\u4F1A\u8BDD\u53CA\u5B50\u4F1A\u8BDD\u2026" : busy }),
+      loadNotice && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: loadNotice }),
+      error51 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "alert", children: error51 }),
+      report && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u5BFC\u5165\u7ED3\u679C", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("h2", { children: [
+          report.failures.length ? "\u5BFC\u5165\u5B8C\u6210\uFF0C\u90E8\u5206\u4F1A\u8BDD\u5931\u8D25" : "\u5BFC\u5165\u5B8C\u6210",
+          " \xB7 ",
+          report.sessions.length,
+          " \u6761\u53EF\u7EE7\u7EED"
+        ] }),
+        report.failures.map((row, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("p", { role: "alert", children: [
+          row.title ?? preview?.rows.find((candidate) => candidate.key === row.key)?.title,
+          "\uFF1A",
+          row.message
+        ] }, row.key + ":" + index)),
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { className: "import-results", children: report.sessions.map((row) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("li", { className: row.parentId ? "import-result-child" : void 0, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-result-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: row.title }),
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+              import_dsh_client_ui_primitives2.Button,
+              {
+                size: "sm",
+                variant: "outline",
+                disabled: !!busy,
+                onClick: () => void perform("\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026", () => open(row.id)),
+                children: "\u6253\u5F00\u5E76\u7EE7\u7EED"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", children: [
+            row.status === "existing" ? "\u5DF2\u5BFC\u5165 \xB7 " : "",
+            row.projectedMessages,
+            " \u6761\u6B63\u6587"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("details", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("summary", { children: "\u4E0B\u8F7D\u539F\u59CB\u4F1A\u8BDD\u4E0E\u8BB0\u5FC6" }),
+            fileList(row.id, row.files)
+          ] })
+        ] }, row.id)) })
+      ] }),
+      !!projects.size && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u9879\u76EE", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "\u9879\u76EE" }),
+        [...projects].map(([key, group]) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("details", { className: "import-project", open: !!search.trim(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("summary", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconChevronRightOutlineRegular, { className: "import-chevron", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }),
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: group.name }),
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", children: [
+              group.rows.length,
+              " \u4E2A\u4F1A\u8BDD"
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { children: group.rows.map(sessionRow) })
+        ] }, search.trim() + ":" + key))
+      ] }),
+      !!standalone.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u72EC\u7ACB\u4F1A\u8BDD", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "\u72EC\u7ACB\u4F1A\u8BDD" }),
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { children: standalone.map(sessionRow) })
+      ] }),
+      preview && !projects.size && !standalone.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", children: search.trim() ? preview.nextOffset === void 0 ? "\u6CA1\u6709\u5339\u914D\u7684\u9879\u76EE\u6216\u4F1A\u8BDD\u3002" : "\u5DF2\u52A0\u8F7D\u7684\u4F1A\u8BDD\u4E2D\u6CA1\u6709\u5339\u914D\u9879\u3002" : "\u6CA1\u6709\u627E\u5230\u672C\u673A\u53EF\u8BFB\u53D6\u7684\u4F1A\u8BDD\u3002" }),
+      preview?.nextOffset !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-more", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Button, { size: "sm", variant: "outline", disabled: loading || !!busy, onClick: loadMore, children: busy === "\u6B63\u5728\u52A0\u8F7D\u66F4\u591A\u4F1A\u8BDD\u2026" ? "\u52A0\u8F7D\u4E2D\u2026" : "\u52A0\u8F7D\u66F4\u591A\u4F1A\u8BDD" }) }),
+      !!preview?.warnings.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("details", { className: "muted", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("summary", { children: "\u90E8\u5206\u8BB0\u5F55\u672A\u80FD\u52A0\u8F7D" }),
+        preview.warnings.map((warning) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { children: warning }, warning))
+      ] })
+    ] }) }) })
+  ] });
+}
+
 // src/session-tree-host.tsx
-var import_react8 = require("react");
+var import_react9 = require("react");
 
 // src/session-actions.tsx
-var import_react7 = require("react");
+var import_react8 = require("react");
 
 // src/session-dialog.tsx
-var import_react6 = require("react");
-var import_jsx_runtime7 = require("react/jsx-runtime");
+var import_react7 = require("react");
+var import_jsx_runtime8 = require("react/jsx-runtime");
 function createSessionDialogStore() {
   let owner;
   let content = null;
@@ -16880,29 +18400,29 @@ function createSessionDialogStore() {
   };
 }
 function SessionDialogRequest({ dialogs, children }) {
-  const owner = (0, import_react6.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
-  (0, import_react6.useLayoutEffect)(() => {
+  const owner = (0, import_react7.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
+  (0, import_react7.useLayoutEffect)(() => {
     if (children) dialogs.show(owner, children);
     else dialogs.hide(owner);
   }, [dialogs, owner, children]);
-  (0, import_react6.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
+  (0, import_react7.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
   return null;
 }
 function SessionDialogOutlet({ dialogs }) {
-  const content = (0, import_react6.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_jsx_runtime7.Fragment, { children: content });
+  const content = (0, import_react7.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_jsx_runtime8.Fragment, { children: content });
 }
 
 // src/session-actions.tsx
-var import_jsx_runtime8 = require("react/jsx-runtime");
+var import_jsx_runtime9 = require("react/jsx-runtime");
 function SessionActionsMenu({ session, pinned, actions: actions2, controls, dialogs, onChanged, alias, setAlias }) {
-  const [open, setOpen] = (0, import_react7.useState)(false);
-  const [dialog, setDialog] = (0, import_react7.useState)();
-  const [title, setTitle] = (0, import_react7.useState)(session.label);
-  const [busy, setBusy] = (0, import_react7.useState)(false);
-  const [error51, setError] = (0, import_react7.useState)("");
-  const composing = (0, import_react7.useRef)(false);
-  const { Menu: Menu2, Modal: Modal2, Button: Button2 } = controls;
+  const [open, setOpen] = (0, import_react8.useState)(false);
+  const [dialog, setDialog] = (0, import_react8.useState)();
+  const [title, setTitle] = (0, import_react8.useState)(session.label);
+  const [busy, setBusy] = (0, import_react8.useState)(false);
+  const [error51, setError] = (0, import_react8.useState)("");
+  const composing = (0, import_react8.useRef)(false);
+  const { Menu: Menu2, Modal: Modal2, Button: Button3 } = controls;
   const member = session.subagent && session.subagentKind === "teammate";
   const close = () => {
     if (!busy) {
@@ -16932,9 +18452,9 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
     if (dialog === "rename") void run(() => member ? Promise.resolve(setAlias(title.trim())) : actions2.rename(session.id, title.trim()), member ? "\u663E\u793A\u540D\u79F0\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002" : void 0);
     else if (dialog === "archive") void run(() => actions2.archive(session.id), "\u5F52\u6863\u672A\u5B8C\u6210\u3002\u4F1A\u8BDD\u82E5\u6B63\u5728\u8FD0\u884C\uFF0C\u8BF7\u5148\u505C\u6B62\u540E\u518D\u91CD\u8BD5\u3002");
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
       Menu2,
       {
         open,
@@ -16942,7 +18462,7 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
         align: "end",
         autoFocus: true,
         onClose: () => setOpen(false),
-        anchor: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
+        anchor: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
         items: member ? [{ id: "rename", label: "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" }] : [{ id: "rename", label: "\u91CD\u547D\u540D" }, { id: "pin", label: pinned ? "\u53D6\u6D88\u7F6E\u9876" : "\u7F6E\u9876" }, { id: "archive", label: "\u5F52\u6863", disabled: session.running }],
         onSelect: (id2) => {
           setOpen(false);
@@ -16956,23 +18476,23 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
         }
       }
     ),
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
       Modal2,
       {
         open: true,
         title: dialog === "rename" ? member ? "\u8BBE\u7F6E\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u91CD\u547D\u540D\u4F1A\u8BDD" : dialog === "archive" ? "\u5F52\u6863\u4F1A\u8BDD" : "\u64CD\u4F5C\u672A\u5B8C\u6210",
         closeLabel: "\u5173\u95ED",
         onClose: close,
-        footer: /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Button2, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
-          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Button2, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
+        footer: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(Button3, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
+          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(Button3, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
         ] }),
-        children: /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
+        children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
           event.preventDefault();
           confirm();
         }, children: [
-          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
+          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
               setTitle(event.target.value);
               setError("");
             }, onCompositionStart: () => {
@@ -16985,17 +18505,17 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
                 if (!event.nativeEvent.isComposing) confirm();
               }
             } }),
-            member && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { className: "dshsm-session-hint", children: [
+            member && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "dshsm-session-hint", children: [
               "\u539F\u540D\uFF1A",
               session.label,
               "\u3002\u663E\u793A\u540D\u79F0\u4EC5\u4FDD\u5B58\u5728\u672C\u673A\uFF0C\u7559\u7A7A\u6062\u590D\u9ED8\u8BA4\u540D\u79F0\u3002"
             ] })
-          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { children: [
+          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { children: [
             "\u5F52\u6863\u201C",
             session.label,
             "\u201D\u540E\u53EF\u5728\u5BBF\u4E3B\u7684\u5F52\u6863\u5217\u8868\u4E2D\u6062\u590D\u3002"
           ] }) : null,
-          error51 && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { role: "alert", children: error51 })
+          error51 && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { role: "alert", children: error51 })
         ] })
       }
     ) })
@@ -17003,35 +18523,35 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
 }
 
 // src/session-tree-host.tsx
-var import_jsx_runtime9 = require("react/jsx-runtime");
+var import_jsx_runtime10 = require("react/jsx-runtime");
 function NativeSessionTreeHost(props) {
   const selected = props.useSessions((list) => Object.values(list.byId).find((session) => (session.retainedBy.mainView ?? 0) > 0)?.id);
   const panelActive = props.usePanelInfo((info) => info.activePanelId !== null);
   const statuses = props.useSessionStatus((state) => state);
   const pinnedIds = new Set(props.useWorkspaces((state) => state.pinnedSessionIds));
-  const snapshot = (0, import_react8.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+  const snapshot2 = (0, import_react9.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
     NativeSessionChildren,
     {
       ...props,
       currentId: panelActive ? void 0 : selected,
       statuses,
       pinnedIds,
-      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
-        session.task && props.openTask && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { type: "button", className: "dshsm-session-actions", title: "\u67E5\u770B\u4EFB\u52A1", onClick: (e) => {
+      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_jsx_runtime10.Fragment, { children: [
+        session.task && props.openTask && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { type: "button", className: "dshsm-session-actions", title: "\u67E5\u770B\u4EFB\u52A1", onClick: (e) => {
           e.stopPropagation();
           props.openTask?.(session.task.id);
         }, children: "\u4EFB\u52A1" }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot2.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
       ] })
     }
   );
 }
 
 // src/session-navigation.tsx
-var import_react9 = __toESM(require("react"), 1);
-var import_react_dom3 = require("react-dom");
-var import_jsx_runtime10 = require("react/jsx-runtime");
+var import_react10 = __toESM(require("react"), 1);
+var import_react_dom2 = require("react-dom");
+var import_jsx_runtime11 = require("react/jsx-runtime");
 function createWorkspaceArchiveSource(slots) {
   let entry;
   let source2;
@@ -17077,23 +18597,23 @@ function createWorkspaceArchiveSource(slots) {
   };
 }
 function searchTeamMembers(store, query, archivedIds = []) {
-  const snapshot = store.getSnapshot(), terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const snapshot2 = store.getSnapshot(), terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const archived = new Set(archivedIds);
   if (!terms.length) return [];
-  return [...snapshot.nodes.values()].flatMap((node) => {
+  return [...snapshot2.nodes.values()].flatMap((node) => {
     if (!node.subagent || node.subagentKind !== "teammate" || archived.has(node.id)) return [];
-    const display = treePresentation(node, void 0, snapshot.aliases.get(node.id));
+    const display = treePresentation(node, void 0, snapshot2.aliases.get(node.id));
     const parents = [], originalParents = [];
-    let parent = snapshot.nodes.get(node.parentId);
+    let parent = snapshot2.nodes.get(node.parentId);
     while (parent) {
       if (archived.has(parent.id)) return [];
-      parents.unshift(treePresentation(parent, void 0, snapshot.aliases.get(parent.id)).label);
+      parents.unshift(treePresentation(parent, void 0, snapshot2.aliases.get(parent.id)).label);
       originalParents.push(parent.label);
-      parent = parent.parentId ? snapshot.nodes.get(parent.parentId) : void 0;
+      parent = parent.parentId ? snapshot2.nodes.get(parent.parentId) : void 0;
     }
-    const path = parents.join(" / ");
-    const text2 = [display.label, treePresentation(node).label, node.teammateName, node.label, path, ...originalParents, node.workspace].join(" ").toLocaleLowerCase();
-    return terms.every((term) => text2.includes(term)) ? [{ node, display, path }] : [];
+    const path2 = parents.join(" / ");
+    const text2 = [display.label, treePresentation(node).label, node.teammateName, node.label, path2, ...originalParents, node.workspace].join(" ").toLocaleLowerCase();
+    return terms.every((term) => text2.includes(term)) ? [{ node, display, path: path2 }] : [];
   });
 }
 var searchLabels = ["\u641C\u7D22\u4F1A\u8BDD\u540D\u79F0", "Search session names"];
@@ -17106,15 +18626,15 @@ function findNativeSearch(doc) {
   return input && workspace && results ? { input, workspace, results } : void 0;
 }
 function revealNativeBranch(doc, store, id2, workspaces) {
-  const snapshot = store.getSnapshot();
-  let root = snapshot.nodes.get(id2);
-  while (root?.parentId && snapshot.nodes.has(root.parentId)) root = snapshot.nodes.get(root.parentId);
+  const snapshot2 = store.getSnapshot();
+  let root = snapshot2.nodes.get(id2);
+  while (root?.parentId && snapshot2.nodes.has(root.parentId)) root = snapshot2.nodes.get(root.parentId);
   if (!root) return () => {
   };
   const workspace = workspaces.find((item) => item.sessionIds.includes(root.id));
-  const normalize = (path2) => path2.replaceAll("\\", "/").replace(/\/$/, "").toLocaleLowerCase();
-  const path = workspace && normalize(workspace.path);
-  const groupIds = workspace ? workspaces.filter((item) => item.workspaceId === workspace.workspaceId || path.startsWith(`${normalize(item.path)}/`)).map((item) => item.workspaceId) : [""];
+  const normalize = (path3) => path3.replaceAll("\\", "/").replace(/\/$/, "").toLocaleLowerCase();
+  const path2 = workspace && normalize(workspace.path);
+  const groupIds = workspace ? workspaces.filter((item) => item.workspaceId === workspace.workspaceId || path2.startsWith(`${normalize(item.path)}/`)).map((item) => item.workspaceId) : [""];
   let stopped = false;
   const attempted = /* @__PURE__ */ new WeakSet();
   const reveal = () => {
@@ -17162,17 +18682,61 @@ function revealNativeBranch(doc, store, id2, workspaces) {
   reveal();
   return stop;
 }
-function SearchMatches({ store, openSession, target: target2, query, reveal, archivedIds }) {
-  const snapshot = (0, import_react9.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const matches = searchTeamMembers(store, query, archivedIds);
-  const hasSupplement = matches.length > 0 || !snapshot.loaded || Boolean(snapshot.problem);
-  const [container] = (0, import_react9.useState)(() => target2.results.ownerDocument.createElement("div"));
-  (0, import_react9.useEffect)(() => {
+function HistoryTaskAction({ action: { Button: Button3, open }, location, onOpen }) {
+  const request2 = import_react10.default.useRef();
+  const [busy, setBusy] = (0, import_react10.useState)(false);
+  const [error51, setError] = (0, import_react10.useState)("");
+  (0, import_react10.useEffect)(() => () => request2.current?.abort(), []);
+  const start = async () => {
+    const controller = new AbortController();
+    request2.current = controller;
+    setBusy(true);
+    setError("");
+    try {
+      await open(location, controller.signal);
+      if (!controller.signal.aborted) onOpen();
+    } catch {
+      if (!controller.signal.aborted) setError("\u65E0\u6CD5\u8BFB\u53D6\u539F\u6D88\u606F\uFF0C\u8BF7\u91CD\u8BD5\u3002");
+    } finally {
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "dshsm-search-task", title: "\u6574\u7406\u6210\u4EFB\u52A1", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Button3, { size: "sm", variant: "ghost", "aria-label": "\u6574\u7406\u6210\u4EFB\u52A1", disabled: busy, onClick: () => void start(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M4 6h14M4 12h9M4 18h9M18 13v8m-4-4h8" }) }) }) }),
+    error51 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { role: "alert", className: "dshsm-search-heading", style: { gridColumn: "1 / -1" }, children: error51 })
+  ] });
+}
+function SearchMatches({ store, openSession, target: target2, query, reveal, archivedIds, searchHistory, openMessage, taskAction, showTeam = true }) {
+  const snapshot2 = (0, import_react10.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const matches = showTeam ? searchTeamMembers(store, query, archivedIds) : [];
+  const [history, setHistory] = (0, import_react10.useState)();
+  (0, import_react10.useEffect)(() => {
+    if (!searchHistory) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      void searchHistory(query.slice(0, 250)).then(
+        (results) => {
+          if (active) setHistory({ query, results });
+        },
+        (error51) => {
+          if (active) setHistory({ query, error: error51 instanceof Error ? error51.message : "\u641C\u7D22\u5931\u8D25" });
+        }
+      );
+    }, 280);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [query, searchHistory]);
+  const currentHistory = history?.query === query ? history : void 0;
+  const hasSupplement = Boolean(searchHistory) || matches.length > 0 || showTeam && (!snapshot2.loaded || Boolean(snapshot2.problem));
+  const [container] = (0, import_react10.useState)(() => target2.results.ownerDocument.createElement("div"));
+  (0, import_react10.useEffect)(() => {
     container.dataset.dshsmSearch = "true";
     target2.results.after(container);
     return () => container.remove();
   }, [target2.results, container]);
-  (0, import_react9.useEffect)(() => {
+  (0, import_react10.useEffect)(() => {
     const marked = /* @__PURE__ */ new Set();
     const mark = () => {
       if (hasSupplement) for (const sibling of target2.results.parentElement?.children ?? []) {
@@ -17192,36 +18756,78 @@ function SearchMatches({ store, openSession, target: target2, query, reveal, arc
       });
     };
   }, [hasSupplement, target2.results]);
-  const open = (node) => {
+  const clearSearch = () => {
     const clear = [...target2.workspace.querySelectorAll("button[aria-label]")].find((button) => ["\u6E05\u9664\u641C\u7D22", "Clear search"].includes(button.getAttribute("aria-label") ?? ""));
     clear?.click();
+  };
+  const open = (node) => {
+    clearSearch();
     store.reveal(node.id, true);
     openSession(node);
     reveal(node.id);
   };
-  return (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_jsx_runtime10.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
-    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "dshsm-search-heading", children: [
+  return (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: `
+      .dshsm-search-hit{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding-inline-end:4px}
+      .dshsm-search-task button{color:var(--dsw-alias-label-secondary)}
+      @media (hover:hover){
+        .dshsm-search-task{opacity:0}
+        .dshsm-search-hit:hover .dshsm-search-task,.dshsm-search-hit:focus-within .dshsm-search-task{opacity:1}
+      }
+    ` }),
+    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dshsm-search-heading", children: [
         "\u961F\u5458 \xB7 ",
         matches.length
       ] }),
-      matches.slice(0, 50).map(({ node, display, path }) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
-${path}`, onClick: () => open(node), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: display.label }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("small", { children: [
+      matches.slice(0, 50).map(({ node, display, path: path2 }) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
+${path2}`, onClick: () => open(node), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: display.label }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("small", { children: [
           node.teammateName,
           display.state ? ` \xB7 ${display.state}` : ""
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: path })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("small", { children: path2 })
       ] }, node.id)),
-      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
+      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
     ] }),
-    !snapshot.loaded && !snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
-    snapshot.problem && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
+    showTeam && !snapshot2.loaded && !snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
+    showTeam && snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
       "\u961F\u5458\u641C\u7D22\u6682\u672A\u66F4\u65B0\uFF0C",
-      snapshot.problem,
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
+      snapshot2.problem,
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
+    ] }),
+    searchHistory && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("section", { "aria-label": "\u6D88\u606F\u6B63\u6587\u641C\u7D22\u7ED3\u679C", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dshsm-search-heading", title: currentHistory?.error, "aria-live": "polite", children: !currentHistory ? "\u6B63\u5728\u641C\u7D22\u6D88\u606F\u6B63\u6587\u2026" : currentHistory.error ? "\u6D88\u606F\u6B63\u6587\u6682\u65F6\u65E0\u6CD5\u641C\u7D22" : currentHistory.results?.items.length ? "\u6D88\u606F\u6B63\u6587" : "\u6CA1\u6709\u5339\u914D\u7684\u6D88\u606F\u6B63\u6587" }),
+      currentHistory?.results?.items.map((hit) => {
+        const location = { sessionId: hit.sessionId, seq: hit.seq };
+        return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dshsm-search-hit", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+            "button",
+            {
+              type: "button",
+              className: "dshsm-search-result",
+              title: hit.snippet,
+              onClick: () => {
+                clearSearch();
+                openMessage?.(location);
+              },
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: hit.snippet }),
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("small", { children: [
+                  hit.child ? "\u5B50\u4F1A\u8BDD \xB7 " : "",
+                  snapshot2.aliases.get(hit.sessionId) ?? hit.title
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("small", { children: hit.cwd })
+              ]
+            }
+          ),
+          taskAction && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(HistoryTaskAction, { action: taskAction, location, onOpen: clearSearch })
+        ] }, `${query}:${hit.sessionId}:${hit.seq}`);
+      }),
+      currentHistory?.results?.more && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dshsm-search-heading", children: "\u8FD8\u6709\u66F4\u591A\u547D\u4E2D\uFF0C\u53EF\u7F29\u5C0F\u5173\u952E\u8BCD\u8303\u56F4\u3002" }),
+      currentHistory?.results?.partial && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dshsm-search-heading", children: "\u90E8\u5206\u5386\u53F2\u6682\u4E0D\u53EF\u8BFB\u3002" })
     ] })
   ] }), container);
 }
@@ -17229,10 +18835,10 @@ function NativeTeamSearch(props) {
   const workspaces = props.useWorkspaces((state) => state.items);
   const archivedIds = props.useWorkspaces((state) => state.archivedSessionIds);
   const archiveFilter = props.useArchiveFilter((filter) => filter);
-  const pendingReveal = import_react9.default.useRef();
-  (0, import_react9.useEffect)(() => () => pendingReveal.current?.(), []);
-  const [search, setSearch] = (0, import_react9.useState)();
-  (0, import_react9.useEffect)(() => {
+  const pendingReveal = import_react10.default.useRef();
+  (0, import_react10.useEffect)(() => () => pendingReveal.current?.(), []);
+  const [search, setSearch] = (0, import_react10.useState)();
+  (0, import_react10.useEffect)(() => {
     let queued = false, stopped = false;
     let workspace;
     const scan = () => {
@@ -17263,7 +18869,8 @@ function NativeTeamSearch(props) {
       document.removeEventListener("input", scan);
     };
   }, []);
-  return search && (archiveFilter === "default" || archiveFilter === "show") ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(SearchMatches, { ...props, ...search, archivedIds, reveal: (id2) => {
+  const showTeam = archiveFilter === "default" || archiveFilter === "show";
+  return search && (showTeam || props.searchHistory) ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(SearchMatches, { ...props, ...search, showTeam, archivedIds, reveal: (id2) => {
     pendingReveal.current?.();
     pendingReveal.current = revealNativeBranch(document, props.store, id2, workspaces);
   } }) : null;
@@ -17272,22 +18879,22 @@ function selectParentUnavailable(owner) {
   const child = owner.session?.subagent;
   return child?.address.mode === "continuable" && child.parentAvailable === false && owner.session?.running !== true ? { parentId: child.address.parentSessionId } : null;
 }
-function ParentUnavailableComposer({ store, openSession, matched, Button: Button2 }) {
-  const snapshot = (0, import_react9.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const parent = snapshot.nodes.get(matched.parentId);
-  return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Button2, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
+function ParentUnavailableComposer({ store, openSession, matched, Button: Button3 }) {
+  const snapshot2 = (0, import_react10.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const parent = snapshot2.nodes.get(matched.parentId);
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Button3, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
       if (parent) openSession(parent);
     }, children: "\u6253\u5F00\u7236\u4F1A\u8BDD" })
   ] });
 }
 
 // src/session-views.tsx
-var import_react11 = require("react");
-var import_react_dom5 = require("react-dom");
+var import_react12 = require("react");
+var import_react_dom4 = require("react-dom");
 
 // src/split-layout.ts
 var MAIN_PANE = "$main";
@@ -17355,9 +18962,9 @@ function edgePreview(rect, edge) {
 }
 
 // src/compact-headers.tsx
-var import_react10 = __toESM(require("react"), 1);
-var import_react_dom4 = require("react-dom");
-var import_jsx_runtime11 = require("react/jsx-runtime");
+var import_react11 = __toESM(require("react"), 1);
+var import_react_dom3 = require("react-dom");
+var import_jsx_runtime12 = require("react/jsx-runtime");
 var css2 = `
 [data-sessivra-compact]{height:40px!important;min-height:40px!important;padding:4px 12px!important;overflow:hidden}
 [data-sessivra-compact] [data-sessivra-tab-row]{display:none!important}
@@ -17367,12 +18974,12 @@ var css2 = `
 .sessivra-header-menu button.sessivra-pane-close{width:24px;height:28px}
 `;
 function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
-  const [open, setOpen] = (0, import_react10.useState)(false);
-  const registry2 = (0, import_react10.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
+  const [open, setOpen] = (0, import_react11.useState)(false);
+  const registry2 = (0, import_react11.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
   const native = sessionId ? registry2.get(sessionId) : void 0;
   const views = native?.views ?? seat.tabs.map((tab, index) => ({ id: String(index), label: tab.textContent?.trim() ?? "" }));
   if (!views.length) return null;
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
     Menu2,
     {
       open,
@@ -17380,8 +18987,8 @@ function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
       autoFocus: true,
       align: "start",
       onClose: () => setOpen(false),
-      anchor: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
-      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", {}) })),
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
+      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", {}) })),
       onSelect: (id2) => {
         setOpen(false);
         if (native) native.selectView(id2);
@@ -17391,8 +18998,8 @@ function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
   ) });
 }
 function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, current }) {
-  const [seats, setSeats] = (0, import_react10.useState)([]);
-  (0, import_react10.useLayoutEffect)(() => {
+  const [seats, setSeats] = (0, import_react11.useState)([]);
+  (0, import_react11.useLayoutEffect)(() => {
     const markedHeaders = /* @__PURE__ */ new Set(), markedTabs = /* @__PURE__ */ new Set();
     const scan = () => {
       const headers = [...host.querySelectorAll("[data-sessivra-main-header],.sessivra-pane-native-header header")];
@@ -17423,23 +19030,23 @@ function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, curre
       for (const row of markedTabs) delete row.dataset.sessivraTabRow;
     };
   }, [host]);
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: css2 }),
-    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_react10.default.Fragment, { children: [
-      seat.menu && (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime11.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
-      (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("style", { children: css2 }),
+    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_react11.default.Fragment, { children: [
+      seat.menu && (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime12.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
+      (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
         event.preventDefault();
         event.stopPropagation();
       }, onClick: (event) => {
         event.stopPropagation();
         close(seat.id);
-      }, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
+      }, children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
     ] }, seat.id))
   ] });
 }
 
 // src/session-views.tsx
-var import_jsx_runtime12 = require("react/jsx-runtime");
+var import_jsx_runtime13 = require("react/jsx-runtime");
 function SessionViewContent(props) {
   const session = props.useSession((value) => value);
   const conversation = props.useConversation((value) => value);
@@ -17448,22 +19055,22 @@ function SessionViewContent(props) {
   const pending = session.subagent?.address.mode === "continuable" && session.subagent.parentAvailable === void 0;
   const settling = !active && session.openState === "loading" && blank !== true || pending;
   const hero = !active && (session.openState === "open" || blank === true);
-  return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(import_jsx_runtime12.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
+  return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(import_jsx_runtime13.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
 }
 function createSessionViews(sessions) {
-  let snapshot = [];
+  let snapshot2 = [];
   const listeners = /* @__PURE__ */ new Set();
   const emit = () => {
     for (const listener of listeners) listener();
   };
   const close = (id2) => {
-    const removed = snapshot.find((pane) => pane.id === id2);
-    snapshot = snapshot.filter((pane) => pane.id !== id2);
+    const removed = snapshot2.find((pane) => pane.id === id2);
+    snapshot2 = snapshot2.filter((pane) => pane.id !== id2);
     removed?.reference.release();
     emit();
   };
   return {
-    getSnapshot: () => snapshot,
+    getSnapshot: () => snapshot2,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {
@@ -17472,23 +19079,23 @@ function createSessionViews(sessions) {
     },
     open(target2, label) {
       const id2 = typeof target2 === "string" ? target2 : target2.childSessionId;
-      if (snapshot.some((pane) => pane.id === id2)) return id2;
+      if (snapshot2.some((pane) => pane.id === id2)) return id2;
       const reference = sessions.retain(target2, { source: "sessivraView" });
-      snapshot = [...snapshot, { id: id2, label, reference, ready: false }];
+      snapshot2 = [...snapshot2, { id: id2, label, reference, ready: false }];
       emit();
       void reference.ready.then(() => {
-        snapshot = snapshot.map((pane) => pane.reference === reference ? { ...pane, ready: true } : pane);
+        snapshot2 = snapshot2.map((pane) => pane.reference === reference ? { ...pane, ready: true } : pane);
         emit();
       }, () => {
-        snapshot = snapshot.map((pane) => pane.reference === reference ? { ...pane, error: "\u4F1A\u8BDD\u6253\u5F00\u5931\u8D25\uFF0C\u8BF7\u5173\u95ED\u540E\u91CD\u65B0\u6253\u5F00" } : pane);
+        snapshot2 = snapshot2.map((pane) => pane.reference === reference ? { ...pane, error: "\u4F1A\u8BDD\u6253\u5F00\u5931\u8D25\uFF0C\u8BF7\u5173\u95ED\u540E\u91CD\u65B0\u6253\u5F00" } : pane);
         emit();
       });
       return id2;
     },
     close,
     dispose() {
-      const old = snapshot;
-      snapshot = [];
+      const old = snapshot2;
+      snapshot2 = [];
       old.forEach((pane) => pane.reference.release());
       emit();
       listeners.clear();
@@ -17525,27 +19132,27 @@ var styles4 = `
 `;
 var position = (rect) => ({ left: rect.x, top: rect.y, width: rect.width, height: rect.height });
 function SessionViews(props) {
-  const panes = (0, import_react11.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
-  (0, import_react11.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  const panes = (0, import_react12.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
+  (0, import_react12.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
   const listedCurrent = props.useSessions((list) => Object.values(list.byId).find((row) => (row.retainedBy.mainView ?? 0) > 0)?.id);
-  const [nativeCurrent, setNativeCurrent] = (0, import_react11.useState)();
+  const [nativeCurrent, setNativeCurrent] = (0, import_react12.useState)();
   const current = listedCurrent ?? nativeCurrent;
   const panel = props.usePanelInfo((info) => info.activePanelId);
-  const [host, setHost] = (0, import_react11.useState)();
+  const [host, setHost] = (0, import_react12.useState)();
   const { fish } = props;
-  (0, import_react11.useEffect)(() => host && fish && panel === null ? mountTurnBookmarks(host, fish) : void 0, [host, fish, panel]);
-  const [canvas, setCanvas] = (0, import_react11.useState)(null);
-  const [size, setSize] = (0, import_react11.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
-  const [layout, setLayout] = (0, import_react11.useState)(mainLayout);
-  const [notice, setNotice] = (0, import_react11.useState)("");
-  const [preview, setPreview] = (0, import_react11.useState)();
-  const drag = (0, import_react11.useRef)({ consumed: false });
-  const resize = (0, import_react11.useRef)();
-  const pointerDock = (0, import_react11.useRef)();
-  const suppressClick = (0, import_react11.useRef)(0);
-  const splitSerial = (0, import_react11.useRef)(0);
-  const promotion = (0, import_react11.useRef)();
-  const [promoting, setPromoting] = (0, import_react11.useState)();
+  (0, import_react12.useEffect)(() => host && fish && panel === null ? mountTurnBookmarks(host, fish) : void 0, [host, fish, panel]);
+  const [canvas, setCanvas] = (0, import_react12.useState)(null);
+  const [size, setSize] = (0, import_react12.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
+  const [layout, setLayout] = (0, import_react12.useState)(mainLayout);
+  const [notice, setNotice] = (0, import_react12.useState)("");
+  const [preview, setPreview] = (0, import_react12.useState)();
+  const drag = (0, import_react12.useRef)({ consumed: false });
+  const resize = (0, import_react12.useRef)();
+  const pointerDock = (0, import_react12.useRef)();
+  const suppressClick = (0, import_react12.useRef)(0);
+  const splitSerial = (0, import_react12.useRef)(0);
+  const promotion = (0, import_react12.useRef)();
+  const [promoting, setPromoting] = (0, import_react12.useState)();
   const labelFor = (id2) => props.store.getSnapshot().nodes.get(id2 === MAIN_PANE ? current ?? "" : id2)?.label ?? panes.find((pane) => pane.id === id2)?.label ?? "\u4F1A\u8BDD";
   const close = (id2) => {
     if (id2 !== MAIN_PANE) {
@@ -17560,7 +19167,7 @@ function SessionViews(props) {
     promotion.current = { closed: current ?? "", replacement: replacement.id };
     setPromoting(replacement.id);
   };
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     if (!promoting || promotion.current?.replacement !== promoting) return;
     const node = props.store.getSnapshot().nodes.get(promoting);
     props.selectSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: node.id, mode: node.subagentMode } : promoting);
@@ -17572,7 +19179,7 @@ function SessionViews(props) {
     }, 1e4);
     return () => window.clearTimeout(timer);
   }, [promoting, props.selectSession, props.store]);
-  const geometry = (0, import_react11.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
+  const geometry = (0, import_react12.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
   const focus = (id2) => queueMicrotask(() => [...document.querySelectorAll("[data-sessivra-pane]")].find((element) => element.dataset.sessivraPane === id2)?.focus());
   const dock = (id2, destination, edge) => {
     const source2 = id2 === current ? MAIN_PANE : id2;
@@ -17594,7 +19201,7 @@ function SessionViews(props) {
     setNotice("");
     focus(source2);
   };
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     let mounted;
     const scan = () => {
       const content = [...document.querySelectorAll("[data-conversation-content]")].find((element) => !element.closest("[data-sessivra-pane]") && element.parentElement?.hasAttribute("data-phase"));
@@ -17608,7 +19215,7 @@ function SessionViews(props) {
     scan();
     return () => observer.disconnect();
   }, []);
-  (0, import_react11.useLayoutEffect)(() => {
+  (0, import_react12.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     host.dataset.sessivraViews = "true";
     return () => {
@@ -17616,7 +19223,7 @@ function SessionViews(props) {
       for (const name of ["left", "top", "width", "height"]) host.style.removeProperty(`--sessivra-main-${name}`);
     };
   }, [host, panel]);
-  (0, import_react11.useLayoutEffect)(() => {
+  (0, import_react12.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const header = host.querySelector(':scope > [data-slot="conversation.header"] header') ?? host.querySelector(":scope > header");
     host.dataset.sessivraSplit = String(panes.length > 0);
@@ -17634,7 +19241,7 @@ function SessionViews(props) {
       }
     };
   }, [host, panel, panes.length, current]);
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     const visible = new Set(panel === null ? [current, ...panes.map((pane) => pane.id)] : []);
     const marked = /* @__PURE__ */ new Set();
     const sync = () => {
@@ -17654,7 +19261,7 @@ function SessionViews(props) {
       for (const row of marked) delete row.dataset.sessivraVisible;
     };
   }, [current, panes, panel]);
-  (0, import_react11.useLayoutEffect)(() => {
+  (0, import_react12.useLayoutEffect)(() => {
     if (!canvas || !host) return;
     const measure = () => {
       const rect = canvas.getBoundingClientRect(), outer = host.getBoundingClientRect();
@@ -17673,7 +19280,7 @@ function SessionViews(props) {
       window.removeEventListener("resize", measure);
     };
   }, [canvas, host, panes.length, current]);
-  (0, import_react11.useLayoutEffect)(() => {
+  (0, import_react12.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const rect = geometry.panes.get(MAIN_PANE);
     if (!rect) return;
@@ -17684,11 +19291,11 @@ function SessionViews(props) {
       host.style.removeProperty("--sessivra-header-top");
     };
   }, [host, panel, geometry, size.x, size.y, size.header, panes.length]);
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     const retained = new Set(panes.map((pane) => pane.id));
     setLayout((previous) => paneIds(previous).filter((id2) => id2 !== MAIN_PANE && !retained.has(id2)).reduce((next, id2) => removePane(next, id2) ?? mainLayout(), previous));
   }, [panes]);
-  (0, import_react11.useLayoutEffect)(() => {
+  (0, import_react12.useLayoutEffect)(() => {
     if (current && promotion.current?.replacement === current) {
       setLayout((previous) => promotePane(previous, current));
       promotion.current = void 0;
@@ -17699,7 +19306,7 @@ function SessionViews(props) {
     }
     if (current) props.views.close(current);
   }, [current, props.views]);
-  (0, import_react11.useEffect)(() => {
+  (0, import_react12.useEffect)(() => {
     if (!host || !canvas || panel !== null) return;
     const hit = (event) => {
       const bounds = canvas.getBoundingClientRect(), x = event.clientX - bounds.left, y = event.clientY - bounds.top;
@@ -17854,26 +19461,26 @@ function SessionViews(props) {
   };
   const previewSource = drag.current.source ?? pointerDock.current?.source;
   if (!host || panel !== null) return null;
-  return (0, import_react_dom5.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("style", { children: styles4 }),
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
-      notice && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
+  return (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_jsx_runtime13.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("style", { children: styles4 }),
+    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
+    /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
+      notice && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
       panes.map((pane) => {
         const rect = geometry.panes.get(pane.id);
         if (!rect) return null;
-        return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
             event.dataTransfer.setData("text/plain", pane.id);
             event.dataTransfer.effectAllowed = "move";
           }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
-            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
+            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
         ] }, pane.id);
       }),
-      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
         "div",
         {
           role: "separator",
@@ -17923,13 +19530,13 @@ function SessionViews(props) {
         },
         node.id
       )),
-      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
+      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
     ] })
   ] }), host);
 }
 
 // src/native-pane-header.tsx
-var import_jsx_runtime13 = require("react/jsx-runtime");
+var import_jsx_runtime14 = require("react/jsx-runtime");
 function mirrorNativePaneHeader(slots) {
   let disposed = false, queued = false;
   let cleanup = [];
@@ -17965,7 +19572,7 @@ function mirrorNativePaneHeader(slots) {
             if (!alias) throw new Error(`Undeclared native header child: ${name}`);
             return props[method](alias, ...args);
           };
-          return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
+          return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
         };
         cleanup.push(slots.register({
           name: target2,
@@ -17990,15 +19597,15 @@ function mirrorNativePaneHeader(slots) {
 }
 
 // src/header-views.tsx
-var import_react12 = require("react");
+var import_react13 = require("react");
 function createHeaderViews() {
-  let snapshot = /* @__PURE__ */ new Map();
+  let snapshot2 = /* @__PURE__ */ new Map();
   const listeners = /* @__PURE__ */ new Set();
   const emit = () => {
     for (const listener of listeners) listener();
   };
   return {
-    getSnapshot: () => snapshot,
+    getSnapshot: () => snapshot2,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {
@@ -18006,12 +19613,12 @@ function createHeaderViews() {
       };
     },
     register(id2, state) {
-      snapshot = new Map(snapshot).set(id2, state);
+      snapshot2 = new Map(snapshot2).set(id2, state);
       emit();
       return () => {
-        if (snapshot.get(id2) === state) {
-          snapshot = new Map(snapshot);
-          snapshot.delete(id2);
+        if (snapshot2.get(id2) === state) {
+          snapshot2 = new Map(snapshot2);
+          snapshot2.delete(id2);
           emit();
         }
       };
@@ -18020,7 +19627,7 @@ function createHeaderViews() {
 }
 function HeaderViewsBridge(props) {
   const views = props.useConversationViews((views2) => views2), current = props.useStore((state) => state.view);
-  (0, import_react12.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
+  (0, import_react13.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
   return null;
 }
 function wireHeaderViews(slots, headerViews) {
@@ -18047,7 +19654,7 @@ function wireHeaderViews(slots, headerViews) {
 }
 
 // src/session-reference-drop.tsx
-var import_react13 = require("react");
+var import_react14 = require("react");
 function createSessionReferenceDrop() {
   const inputs = /* @__PURE__ */ new Map();
   return {
@@ -18074,15 +19681,15 @@ function createSessionReferenceDrop() {
   };
 }
 function SessionReferenceDropInput(props) {
-  (0, import_react13.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
+  (0, import_react14.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
   return null;
 }
 
 // src/client.tsx
-var import_jsx_runtime14 = require("react/jsx-runtime");
+var import_jsx_runtime15 = require("react/jsx-runtime");
 var reportLabels = { code: { copyLabel: "\u590D\u5236\u4EE3\u7801", copiedLabel: "\u5DF2\u590D\u5236" }, footnotes: "\u811A\u6CE8" };
-var renderReport = (text2) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(import_dsh_client_ui_primitives2.MarkdownText, { text: text2, labels: reportLabels });
-var bookmarkFish = { path: import_dsh_client_ui_primitives2.FISH_LOGO_PATH, ...import_dsh_client_ui_primitives2.FISH_LOGO_VIEWBOX };
+var renderReport = (text2) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_dsh_client_ui_primitives3.MarkdownText, { text: text2, labels: reportLabels });
+var bookmarkFish = { path: import_dsh_client_ui_primitives3.FISH_LOGO_PATH, ...import_dsh_client_ui_primitives3.FISH_LOGO_VIEWBOX };
 var inject = ["slots", "remote"];
 async function apply(ctx) {
   await ctx.remote.$mount(remoteContribution);
@@ -18096,7 +19703,6 @@ async function apply(ctx) {
       treeCtx.inject(["inputTriggers", "workspaces"], (mentionCtx) => {
         const host = mentionCtx;
         const registry2 = host.inputTriggers;
-        if (!Array.isArray(registry2.live?.sources)) return;
         const source2 = createSidebarMentionSource(sessions, store, () => host.workspaces.list.getSnapshot(), archiveView.getSnapshot);
         mentionCtx.effect(() => compactNativeReferences(registry2), "sessivra: compact native file candidates");
         mentionCtx.effect(() => registry2.registerSource(source2), "sessivra: sidebar mention candidates");
@@ -18104,38 +19710,113 @@ async function apply(ctx) {
       const views = createSessionViews(sessions);
       const referenceDrop = createSessionReferenceDrop();
       const headerViews = createHeaderViews();
-      let requestedTask;
+      let requested = { key: 0 };
       let showTask;
+      let searchHistory;
+      let openMessage;
+      let taskAction;
+      treeCtx.inject(["remote.sessivraImport", "layout"], (importCtx) => {
+        const panelId = "sessivra-import";
+        const catalog = createImportCatalogState();
+        const api = importCtx.remote.sessivraImport;
+        const listeners = /* @__PURE__ */ new Set();
+        let selection = { key: 0 };
+        const show = (id2) => {
+          selection = { key: selection.key + 1, id: id2 };
+          importCtx.layout.selectPanel(panelId);
+          for (const notify of listeners) notify();
+        };
+        treeSlots.inject("sidebar.panellist", () => treeSlots.register({
+          name: "sidebar.panellist",
+          id: panelId,
+          order: 22,
+          label: () => "\u5BFC\u5165\u4F1A\u8BDD"
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("path", { d: "M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4" }) })));
+        treeSlots.inject("main", () => treeSlots.register({ name: "main", key: panelId }, function MountedImport() {
+          const current = import_react15.default.useSyncExternalStore((listener) => {
+            listeners.add(listener);
+            return () => {
+              listeners.delete(listener);
+            };
+          }, () => selection);
+          return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(
+            ImportPanel,
+            {
+              api,
+              archiveId: current.id,
+              catalog,
+              pickDirectory: () => treeCtx.uiWorkspace.pickDirectory(),
+              back: () => show(),
+              open: async (id2) => {
+                await sessions.refresh();
+                treeCtx.uiWorkspace.openSession(id2);
+              }
+            },
+            current.key
+          );
+        }));
+        treeSlots.inject("sidebar.workspaces.session.menu.item", () => treeSlots.register({
+          name: "sidebar.workspaces.session.menu.item",
+          id: "sessivra-import-archive",
+          order: 500
+        }, ({ sessionId, useMenuOpenState }) => {
+          const [, setOpen] = useMenuOpenState();
+          if (!/^sessivra-import-[a-f0-9]{32}$/.test(sessionId)) return null;
+          return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_dsh_client_ui_primitives3.MenuItemButton, { onSelect: () => {
+            setOpen(false);
+            show(sessionId);
+          }, children: "\u67E5\u770B\u5BFC\u5165\u539F\u6863" });
+        }));
+      });
       treeCtx.inject(["remote.sessivraTaskPanel", "layout"], (panelCtx) => {
         const panelId = "sessivra-tasks";
         const listeners = /* @__PURE__ */ new Set();
         const api = panelCtx.remote.sessivraTaskPanel;
-        showTask = (id2) => {
-          requestedTask = id2;
+        const show = (selection) => {
+          requested = { key: requested.key + 1, ...selection };
           panelCtx.layout.selectPanel(panelId);
           for (const notify of listeners) notify();
         };
-        const navigator2 = createMessageNavigator(sessions, (target2) => panelCtx.uiWorkspace.openSession(target2), async (location, expected) => {
-          const result = await api.locateMessage(location, expected);
-          if (!result.ok) throw new Error(result.error.message);
-          return result.value;
-        });
+        showTask = (id2) => show({ task: id2 });
+        const locateMessage = async (location, expected = "") => {
+          const result2 = await api.locateMessage(location, expected);
+          if (!result2.ok) throw new Error(result2.error.message);
+          return result2.value;
+        };
+        const navigator2 = createMessageNavigator(sessions, (target2) => panelCtx.uiWorkspace.openSession(target2), locateMessage);
+        searchHistory = async (query) => {
+          const result2 = await api.searchHistory(query);
+          if (!result2.ok) throw new Error(result2.error.message);
+          return result2.value;
+        };
+        openMessage = (location) => {
+          void navigator2.jump(location);
+        };
+        taskAction = { Button: import_dsh_client_ui_primitives3.Button, async open(location, signal) {
+          const source2 = await locateMessage(location);
+          signal.throwIfAborted();
+          navigator2.dismiss();
+          show({ source: source2 });
+        } };
         panelCtx.effect(() => () => {
           showTask = void 0;
+          searchHistory = void 0;
+          openMessage = void 0;
+          taskAction = void 0;
           navigator2.dismiss();
         });
         const panelSlots = panelCtx.slots;
         const bookmarkPanelId = "sessivra-bookmarks";
         const loadBookmarks2 = async (sessionId, turns) => {
-          const result = await api.bookmarkedTurns(sessionId, turns);
-          if (!result.ok) throw new Error(result.error.message);
-          return result.value;
+          const result2 = await api.bookmarkedTurns(sessionId, turns);
+          if (!result2.ok) throw new Error(result2.error.message);
+          return result2.value;
         };
         panelCtx.inject(["inputTriggers"], (mentionCtx) => {
           const source2 = createBookmarkMentionSource(loadBookmarks2, async (origin, turn) => {
-            const result = await api.bookmarkReference(origin, turn);
-            if (!result.ok) throw new Error(result.error.message);
-            return result.value;
+            const result2 = await api.bookmarkReference(origin, turn);
+            if (!result2.ok) throw new Error(result2.error.message);
+            return result2.value;
           });
           const { inputTriggers } = mentionCtx;
           mentionCtx.effect(() => {
@@ -18164,10 +19845,10 @@ async function apply(ctx) {
             name: "conversation.user.text.node",
             key: bookmarkUserText.id,
             priority: 100
-          }, ({ node }) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(SentBookmarkChip, { quote: node.data, jump: jumpBookmark, locateLegacy: async (quote) => {
-            const result = await api.locateLegacyBookmark(quote);
-            if (!result.ok) throw new Error(result.error.message);
-            return result.value;
+          }, ({ node }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(SentBookmarkChip, { quote: node.data, jump: jumpBookmark, locateLegacy: async (quote) => {
+            const result2 = await api.locateLegacyBookmark(quote);
+            if (!result2.ok) throw new Error(result2.error.message);
+            return result2.value;
           } })));
         });
         panelSlots.inject("sidebar.panellist", () => panelSlots.register({
@@ -18175,32 +19856,50 @@ async function apply(ctx) {
           id: bookmarkPanelId,
           order: 21,
           label: () => "\u6536\u85CF"
-        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("svg", { width: size, height: size, viewBox: `-1 -1 ${bookmarkFish.width + 2} ${bookmarkFish.height + 2}`, fill: "none", stroke: "currentColor", strokeWidth: "1.4", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("path", { d: bookmarkFish.path }) })));
-        panelSlots.inject("main", () => panelSlots.register({ name: "main", key: bookmarkPanelId }, () => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(BookmarkLibrary, { load: loadBookmarks2, jump: jumpBookmark, Menu: import_dsh_client_ui_primitives2.Menu })));
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("svg", { width: size, height: size, viewBox: `-1 -1 ${bookmarkFish.width + 2} ${bookmarkFish.height + 2}`, fill: "none", stroke: "currentColor", strokeWidth: "1.4", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("path", { d: bookmarkFish.path }) })));
+        panelSlots.inject("main", () => panelSlots.register({ name: "main", key: bookmarkPanelId }, () => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(BookmarkLibrary, { load: loadBookmarks2, jump: jumpBookmark, Menu: import_dsh_client_ui_primitives3.Menu })));
         panelSlots.inject("shell.overlay", () => panelSlots.register({
           name: "shell.overlay",
           id: "sessivra-message-origin",
-          inject: () => ({ navigator: navigator2 })
+          inject: () => ({ navigator: navigator2, Button: import_dsh_client_ui_primitives3.Button })
         }, MessageJumpNotice));
         panelSlots.inject("sidebar.panellist", () => panelSlots.register({
           name: "sidebar.panellist",
           id: panelId,
           order: 20,
           label: () => taskPanelTitle
-        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("path", { d: "m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9" }) })));
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("path", { d: "m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9" }) })));
         panelSlots.inject("main", () => panelSlots.register({ name: "main", key: panelId }, function Mounted(props) {
           const current = props.useSessions((s) => Object.values(s.byId).find((row) => row.retainedBy.mainView)?.id);
-          const task = import_react14.default.useSyncExternalStore((listener) => {
+          const selection = import_react15.default.useSyncExternalStore((listener) => {
             listeners.add(listener);
             return () => {
               listeners.delete(listener);
             };
-          }, () => requestedTask);
-          return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(TaskPanel, { initialSession: current, initialTask: task, api: panelCtx.remote.sessivraTaskPanel, renderMarkdown: renderReport, open: (id2) => {
-            const node = store.getSnapshot().nodes.get(id2);
-            if (node?.subagent && !node.openable) throw new Error("\u4F1A\u8BDD\u5F53\u524D\u4E0D\u53EF\u6253\u5F00");
-            panelCtx.uiWorkspace.openSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: id2, mode: node.subagentMode } : id2);
-          } }, task);
+          }, () => requested);
+          import_react15.default.useEffect(() => () => {
+            if (requested === selection && selection.source) requested = { key: selection.key + 1 };
+          }, [selection]);
+          const initialSession = selection.source ? selection.source.child?.parentSessionId ?? selection.source.origin.sessionId : current;
+          return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(
+            TaskPanel,
+            {
+              initialSession,
+              initialTask: selection.task,
+              source: selection.source,
+              openOrigin: (origin) => {
+                void navigator2.jump({ sessionId: origin.sessionId, seq: origin.seq }, origin.messageId);
+              },
+              api,
+              renderMarkdown: renderReport,
+              open: (id2) => {
+                const node = store.getSnapshot().nodes.get(id2);
+                if (node?.subagent && !node.openable) throw new Error("\u4F1A\u8BDD\u5F53\u524D\u4E0D\u53EF\u6253\u5F00");
+                panelCtx.uiWorkspace.openSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: id2, mode: node.subagentMode } : id2);
+              }
+            },
+            selection.key
+          );
         }));
       });
       treeSlots.inject("conversation.session.header.actions", () => wireHeaderViews(treeCtx.slots, headerViews));
@@ -18218,7 +19917,7 @@ async function apply(ctx) {
         name: "shell.overlay",
         id: "sessivra-session-views",
         children: { "sessivra.conversation.pane": { kind: "single", scope: "session" }, "sessivra.conversation.header": { kind: "single", scope: "session" } },
-        inject: () => ({ views, store, referenceDrop, headerViews, Menu: import_dsh_client_ui_primitives2.Menu, fish: bookmarkFish, selectSession: (target2) => treeCtx.uiWorkspace.openSession(target2), startSession: () => treeCtx.uiWorkspace.startSession() })
+        inject: () => ({ views, store, referenceDrop, headerViews, Menu: import_dsh_client_ui_primitives3.Menu, fish: bookmarkFish, selectSession: (target2) => treeCtx.uiWorkspace.openSession(target2), startSession: () => treeCtx.uiWorkspace.startSession() })
       }, SessionViews));
       treeSlots.inject("sessivra.conversation.pane", () => treeSlots.register({ name: "sessivra.conversation.pane" }, SessionViewContent));
       treeSlots.inject("sessivra.conversation.header", () => mirrorNativePaneHeader(treeCtx.slots));
@@ -18236,7 +19935,7 @@ async function apply(ctx) {
       treeSlots.inject("shell.overlay", () => treeSlots.register({
         name: "shell.overlay",
         id: "sessivra-team-search",
-        inject: () => ({ store, openSession, hooks: { archiveFilter: archiveView } })
+        inject: () => ({ store, openSession, searchHistory, openMessage, taskAction, hooks: { archiveFilter: archiveView } })
       }, NativeTeamSearch));
       treeSlots.inject("conversation.composer", () => treeSlots.register({
         // Chain seats use ascending priority; the native read-only entry is -10.
@@ -18244,7 +19943,7 @@ async function apply(ctx) {
         id: "sessivra-parent-unavailable",
         priority: -20,
         select: selectParentUnavailable,
-        inject: () => ({ store, openSession, Button: import_dsh_client_ui_primitives2.Button })
+        inject: () => ({ store, openSession, Button: import_dsh_client_ui_primitives3.Button })
       }, ParentUnavailableComposer));
       treeSlots.inject("sidebar.workspaces.session.row.action", () => treeSlots.register({
         name: "sidebar.workspaces.session.row.action",
@@ -18253,12 +19952,12 @@ async function apply(ctx) {
         inject: () => ({
           store,
           openTask: (id2) => showTask?.(id2),
-          controls: { Menu: import_dsh_client_ui_primitives2.Menu, Modal: import_dsh_client_ui_primitives2.Modal, Button: import_dsh_client_ui_primitives2.Button },
+          controls: { Menu: import_dsh_client_ui_primitives3.Menu, Modal: import_dsh_client_ui_primitives3.Modal, Button: import_dsh_client_ui_primitives3.Button },
           dialogs,
           sessionActions: {
             rename: async (id2, title) => {
-              const result = await sessions.using(id2, { source: "workspaceOperation" }, (reference) => reference.binding.session.rename(title));
-              if (!result.ok) throw new Error(result.error.message);
+              const result2 = await sessions.using(id2, { source: "workspaceOperation" }, (reference) => reference.binding.session.rename(title));
+              if (!result2.ok) throw new Error(result2.error.message);
             },
             pin: (id2, pinned) => pinned ? treeCtx.uiWorkspace.pinSession(id2) : treeCtx.uiWorkspace.unpinSession(id2),
             archive: (id2) => treeCtx.uiWorkspace.archiveSession(id2)

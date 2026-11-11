@@ -34,6 +34,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { createHash, randomUUID } from 'node:crypto';
+import { isImportedSession } from './import-contract.js';
 /** Display discovery is broader than navigation and messaging capabilities. */
 let Collaboration = (() => {
     let _classSuper = TypertRemoteService;
@@ -153,14 +154,17 @@ let Collaboration = (() => {
                 }
             }
             const parents = new Set(tree.map(row => row.parentId));
-            return tree.filter(row => row.subagent || !byId.get(row.id)?.blank || edges[row.id] || row.parentId || parents.has(row.id)).map(row => {
+            return tree.filter(row => row.subagent || !byId.get(row.id)?.blank || edges[row.id] || row.parentId ||
+                parents.has(row.id) || (isImportedSession(row.id) && row.label !== '未命名会话')).map(row => {
                 const task = this.taskSummary?.(row.id);
                 return task ? { ...row, task } : row;
             });
         }
         async treeProjections(item) {
             const hints = item.projections?.values ?? {};
-            if (hints.agentTeam !== undefined && hints.subagentCatalog !== undefined && (item.origin !== 'subagent' || hints.subagent !== undefined))
+            const imported = isImportedSession(item.sessionId);
+            if (hints.agentTeam !== undefined && hints.subagentCatalog !== undefined && (item.origin !== 'subagent' || hints.subagent !== undefined) &&
+                (!imported || hints.title))
                 return { values: hints, failed: false };
             const query = this.ctx.get('sessionQuery');
             if (!query)
@@ -170,7 +174,10 @@ let Collaboration = (() => {
             try {
                 const observation = await query.observeSession(item.sessionId);
                 try {
-                    return { values: { ...hints, ...observation.projections?.values }, failed: false };
+                    const values = { ...hints, ...observation.projections?.values };
+                    if (imported && !values.title)
+                        values.title = observation.events.findLast(event => event.type === 'session/title')?.data.title;
+                    return { values, failed: false };
                 }
                 finally {
                     observation[Symbol.dispose]();
@@ -293,6 +300,18 @@ let Collaboration = (() => {
                         error: error instanceof Error ? error.message.slice(0, 400) : 'CHILD_CREATION_OR_INITIAL_TASK_FAILED',
                         recovery: 'Keep this id. Retry the same requestId and arguments, or inspect the existing conversation. Do not mint a replacement automatically.' };
                 }
+            });
+            this.tail = work.catch(() => { });
+            return work;
+        }
+        linkImported(id, parentId, label) {
+            const work = this.tail.then(async () => {
+                const current = this.relations.read();
+                if (current[id]?.parentId === parentId)
+                    return;
+                if (current[id])
+                    throw new Error('此会话已经关联到另一个父会话。');
+                await this.relations.write({ ...current, [id]: { parentId, label, createdAt: Date.now() } });
             });
             this.tail = work.catch(() => { });
             return work;

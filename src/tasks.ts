@@ -16,7 +16,7 @@ export interface PanelAction {
   operationId: string; fingerprint: string; taskId: string; expected: string;
 }
 export interface RequiredQuestion { topic: string; context: string; question: string; options: string[] }
-export interface Assignment { requestId: string; target: string; title: string; goal: string; acceptance: string[]; scope?: string; resources?: string[]; requiredQuestions?: RequiredQuestion[] }
+export interface Assignment { requestId: string; target: string; title: string; goal: string; acceptance: string[]; scope?: string; resources?: string[]; requiredQuestions?: RequiredQuestion[]; origin?: Task['origin'] }
 export interface TaskReport { taskId: string; revision: number; decisionRevision: number; phase: 'running' | 'progress' | 'blocked' | 'result'; summary: string; done?: string[]; remaining?: string[]; artifacts?: string[]; evidence?: string[] }
 const terminal = (task: Task) => ['completed', 'cancelled', 'failed'].includes(task.status);
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -218,6 +218,7 @@ export class Tasks {
         revision: 1, appliedRevision: 0, decisionRevision: decisions, appliedDecisionRevision: 0, status: 'queued', createdAt: this.clock(), updatedAt: this.clock(),
         checkpoint: { summary: '尚未开始', done: [], remaining: [...input.acceptance], artifacts: [], at: this.clock() }, questionIds: [], history: [] };
       if (operator) { if (operator.scopeLabel) task.scopeLabel = operator.scopeLabel; task.panelReceipts = { [input.requestId]: operator.fingerprint }; }
+      if (input.origin) task.origin = input.origin;
       this.record(task, operator ? 'operator:owner' : agent.id, 'assigned', input.title); state.tasks[id] = task;
       for (const required of input.requiredQuestions ?? []) {
         const topic = canonical(required.topic), context = canonical(required.context);

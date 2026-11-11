@@ -6,6 +6,7 @@ import { resultOverview } from './task-result-overview.js';
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol';
 import type { SessivraPanel } from './task-panel-service.js';
 import type { PanelCommand, PanelQuery } from './panel-contract.js';
+import type { MessageOrigin, ResolvedMessage } from './message-history.js';
 
 type RemoteApi = {
   [K in 'participants' | 'detail' | 'list' | 'command' | 'operation' | 'preview']: (
@@ -14,7 +15,7 @@ type RemoteApi = {
 };
 export type TaskPanelApi = RemoteApi;
 export type TaskHistoryApi = {
-  [K in 'locateMessage' | 'bookmarkedTurns' | 'bookmarkReference' | 'locateLegacyBookmark']: (
+  [K in 'searchHistory' | 'locateMessage' | 'bookmarkedTurns' | 'bookmarkReference' | 'locateLegacyBookmark']: (
     ...args: Parameters<SessivraPanel[K]>
   ) => Promise<RemoteResult<Awaited<ReturnType<SessivraPanel[K]>>>>;
 };
@@ -157,19 +158,24 @@ export function TaskPanel({
   renderMarkdown,
   initialSession,
   initialTask,
+  source: initialSource,
+  openOrigin,
 }: {
   api: RemoteApi;
   open: (id: string) => void;
   renderMarkdown: (text: string) => React.ReactNode;
   initialSession?: string;
   initialTask?: string;
+  source?: ResolvedMessage;
+  openOrigin?: (origin: MessageOrigin) => void;
 }) {
   const [query, setQuery] = useState<PanelQuery>({ view: 'attention' }),
     [page, setPage] = useState<Page>(),
     [sessions, setSessions] = useState<Person[]>([]);
+  const [source, setSource] = useState(initialSource);
   const [id, select] = useState(initialTask ?? ''),
     [item, detail] = useState<Detail>(),
-    [mode, setMode] = useState(''),
+    [mode, setMode] = useState(source ? 'create' : ''),
     [question, setQuestion] = useState('');
   const [owner, setOwner] = useState(initialSession ?? ''),
     [executor, setExecutor] = useState(''),
@@ -198,6 +204,7 @@ export function TaskPanel({
     try {
       const receipt = await read(api.operation(pending));
       if (receipt) {
+        setSource(undefined);
         setMode('');
         select(receipt.id);
         reload((n) => n + 1);
@@ -225,7 +232,7 @@ export function TaskPanel({
         if (active) {
           setSessions(rows);
           setOwner((current) =>
-            rows.some((s) => s.id === current && !s.child) ? current : (rows.find((s) => !s.child)?.id ?? 'new'),
+            rows.some((s) => s.id === current && !s.child) ? current : (rows.find((s) => !s.child && (!source || s.workspace === source.cwd))?.id ?? 'new'),
           );
         }
       })
@@ -233,7 +240,7 @@ export function TaskPanel({
     return () => {
       active = false;
     };
-  }, [api, initialSession]);
+  }, [api, initialSession, source]);
   useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -305,6 +312,7 @@ export function TaskPanel({
         scopeLabel: group ? page?.groups.find((g) => g.id === group)?.label : str(f, 'groupLabel') || undefined,
         cwd: !executor ? str(f, 'cwd') || undefined : undefined,
         reasoningEffort: !executor ? str(f, 'effort') || undefined : undefined,
+        ...(source ? { origin: source.origin } : {}),
         requiredQuestions: prerequisite
           ? [
               {
@@ -387,6 +395,7 @@ export function TaskPanel({
       }
       const result = await read(api.command({ ...JSON.parse(key), operationId: operation.current.id }));
       rememberPending('');
+      setSource(undefined);
       setMode('');
       select(result.id);
       if (mode === 'create') setSessions(await read(api.participants()));
@@ -400,7 +409,11 @@ export function TaskPanel({
       setBusy(false);
     }
   }
-  const queuedFor = executor && sessions.find((s) => s.id === executor);
+  const coordinator = sessions.find((s) => s.id === owner && !s.child);
+  const assignee = sessions.find((s) => s.id === executor);
+  const assigneeHasTasks = assignee && page?.items.some(
+    (t) => t.assignee === assignee.id && !['completed', 'cancelled', 'failed'].includes(t.status),
+  );
   const files = selected ? taskFiles(selected) : [];
   const qs = selected?.questions.filter(q => !q.mergedInto) ?? [];
   const chips = (['workspace','status','coordinator','assignee','scope'] as const).filter(k=>query[k]);
@@ -409,6 +422,7 @@ export function TaskPanel({
   const actionForm = (
     <form onSubmit={submit} key={mode + question} aria-label={actions[mode] ?? '新建任务'}>
       <h3>{actions[mode] ?? '新建任务'}</h3>
+      {mode === 'create' && source && <p className="st-question">来源 · {source.title}</p>}
       {(mode === 'create' || mode === 'update') && (
         <>
           <label>
@@ -417,10 +431,10 @@ export function TaskPanel({
               required
               name="title"
               maxLength={160}
-              defaultValue={mode === 'update' ? base.current?.title : ''}
+              defaultValue={mode === 'update' ? base.current?.title : source?.excerpt.trim().split(/\r?\n/, 1)[0]?.slice(0, 120)}
             />
           </label>
-          <Notes label="目标" name="goal" required value={mode === 'update' ? base.current?.goal : ''} />
+          <Notes label="目标" name="goal" required value={mode === 'update' ? base.current?.goal : source?.excerpt} />
           <Notes
             label="验收条件（每行一项）"
             name="acceptance"
@@ -455,7 +469,7 @@ export function TaskPanel({
           {owner === 'new' && (
             <label>
               协调会话工作目录
-              <input name="coordinatorDirectory" required defaultValue={query.workspace ?? sessions.find(s=>s.id===initialSession)?.workspace ?? ''} />
+              <input name="coordinatorDirectory" required defaultValue={source?.cwd ?? query.workspace ?? sessions.find(s=>s.id===initialSession)?.workspace ?? ''} />
             </label>
           )}
           <label>
@@ -572,24 +586,23 @@ export function TaskPanel({
           我已核对下方最新要求与结果，使用当前版本
         </label>
       )}
-      {mode === 'create' && owner && (
+      {mode === 'create' && (
         <p>
-          {owner === 'new' ? '新建会话' : name(owner)} 协调，将交给
-          {queuedFor ? queuedFor.label : '新建的普通子会话'}执行。
-          {executor && sessions.find((s) => s.id === executor)?.workspace}{' '}
-          {queuedFor &&
-          page?.items.some(
-            (t) => t.assignee === executor && !['completed', 'cancelled', 'failed'].includes(t.status),
-          )
-            ? '执行会话已有任务，将排队。'
-            : '提交后按前置问题、会话和资源可用情况安排。'}
+          {coordinator || owner === 'new' ? (
+            <>
+              {coordinator ? <>「{coordinator.label}」负责协调。</> : '将新建会话负责协调。'}
+              {assignee ? <>「{assignee.label}」负责执行。</> : '将新建子会话执行任务。'}
+              {assigneeHasTasks && '执行会话有其他待处理任务，本任务可能需要排队。'}
+              如有前置问题，请先答复。执行会话和所需资源可用后，系统会安排任务。
+            </>
+          ) : '请选择负责协调的会话。'}
         </p>
       )}
       <div className="st-actions">
         <button type="submit" disabled={busy || (stale && !checkedVersion)}>
           {busy ? '提交中…' : mode === 'create' ? '创建并安排' : '确认' + actions[mode]}
         </button>
-        <button type="button" disabled={busy} onClick={() => setMode('')}>
+        <button type="button" disabled={busy} onClick={() => { setSource(undefined); setMode(''); }}>
           返回
         </button>
       </div>
@@ -726,6 +739,7 @@ export function TaskPanel({
             </div>;
           })}
         </section>}
+        {selected.origin && openOrigin && <section><button type="button" onClick={() => openOrigin(selected.origin!)}>查看原消息</button></section>}
         {!selected.review && !selected.result && <section><div className="st-blocktitle"><h4>任务目标</h4></div><p>{selected.goal}</p>{selected.checkpoint.remaining.length>0 && <RecordList title="剩余工作" items={selected.checkpoint.remaining}/>}</section>}
         {qs.some(q=>q.decision) && <section><div className="st-blocktitle"><Icon name="chat"/><h4>已答问题</h4></div>{qs.filter(q=>q.decision).map(q=><div className="st-question" key={q.id}><strong>{q.question}</strong><p><span className="st-answer">{q.decision!.answer}</span>{q.decision!.authority==='user'?'用户回答':'协调会话回答'}</p>{!mode && selected.actions.includes('answer') && <button onClick={()=>edit('answer',q.id)}>更新决定</button>}</div>)}</section>}
         <div className="st-folds">

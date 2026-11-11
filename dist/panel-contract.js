@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { messageOrigin } from './message-history.js';
 const id = z.string().trim().min(1).max(160);
 const short = z.string().trim().min(1).max(500);
 const text = z.string().trim().min(1).max(8000);
@@ -21,6 +22,7 @@ export const panelCommand = z.discriminatedUnion('action', [
         resources: lines.optional(),
         cwd: short.optional(),
         reasoningEffort: short.max(40).optional(),
+        origin: messageOrigin.optional(),
         requiredQuestions: z
             .array(z.object({ topic: short, context: short, question: text, options: lines.min(2).max(8) }).strict())
             .max(8)

@@ -32,6 +32,7 @@ export interface Assignment {
     scope?: string;
     resources?: string[];
     requiredQuestions?: RequiredQuestion[];
+    origin?: Task['origin'];
 }
 export interface TaskReport {
     taskId: string;
@@ -197,6 +198,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -339,6 +345,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -481,6 +492,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -544,6 +560,11 @@ export declare class Tasks {
             }[];
             panelReceipts?: Record<string, string> | undefined;
             scopeLabel?: string | undefined;
+            origin?: {
+                sessionId: string;
+                seq: number;
+                messageId: string;
+            } | undefined;
             result?: {
                 summary: string;
                 evidence: string[];
@@ -652,6 +673,11 @@ export declare class Tasks {
             }[];
             panelReceipts?: Record<string, string> | undefined;
             scopeLabel?: string | undefined;
+            origin?: {
+                sessionId: string;
+                seq: number;
+                messageId: string;
+            } | undefined;
             result?: {
                 summary: string;
                 evidence: string[];
@@ -762,6 +788,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -908,6 +939,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -1046,6 +1082,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -1214,6 +1255,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -1352,6 +1398,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -1530,6 +1581,11 @@ export declare class Tasks {
             }[];
             panelReceipts?: Record<string, string> | undefined;
             scopeLabel?: string | undefined;
+            origin?: {
+                sessionId: string;
+                seq: number;
+                messageId: string;
+            } | undefined;
             result?: {
                 summary: string;
                 evidence: string[];
@@ -1857,6 +1913,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -2000,6 +2061,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -2144,6 +2210,11 @@ export declare class Tasks {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];

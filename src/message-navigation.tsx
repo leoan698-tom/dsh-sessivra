@@ -1,10 +1,10 @@
-import React, { useSyncExternalStore } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import type { ISessions, SessionTarget } from '@deepseek-ai/dsh-api-session-controller/client';
 import type { SessionId, SessionSeq } from '@deepseek-ai/dsh-session';
+import type { Button as HostButton } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { MessageLocation, ResolvedMessage } from './message-history.js';
 
-interface JumpState { loading?: boolean; error?: string; row?: HTMLElement; message?: ResolvedMessage }
+interface JumpState { loading?: boolean; error?: string; row?: HTMLElement }
 
 function findRow(message: ResolvedMessage, mainOnly: boolean) {
   const chat = [...document.querySelectorAll<HTMLElement>('[data-conversation-session]')].find(
@@ -61,7 +61,7 @@ export function createMessageNavigator(
           const row = findRow(message, bookmark);
           if (row) {
             row.scrollIntoView({ block: 'center' });
-            publish(bookmark ? {} : { row, message });
+            publish({ row });
             return;
           }
           await new Promise(resolve => setTimeout(resolve, 70));
@@ -74,17 +74,37 @@ export function createMessageNavigator(
   };
 }
 
-export function MessageJumpNotice({ navigator, organize }: {
+export function MessageJumpNotice({ navigator, Button }: {
   navigator: ReturnType<typeof createMessageNavigator>;
-  organize?(message: ResolvedMessage): void;
+  Button: typeof HostButton;
 }) {
-  const { row, message, loading, error } = useSyncExternalStore(navigator.subscribe, navigator.snapshot);
-  if (row && message) return createPortal(<div className="sessivra-message-origin">
-    <style>{`.sessivra-message-origin{padding:6px 8px;margin:4px 0;border-inline-start:3px solid var(--dsw-alias-state-business-primary);background:var(--dsw-alias-bg-layer-1);display:flex;align-items:center;gap:10px}.sessivra-message-origin button{cursor:pointer;color:inherit;font:inherit}`}</style>
-    <span>已定位原消息</span>{organize && <button type="button" onClick={() => { navigator.dismiss(); organize(message); }}>整理成任务</button>}
-  </div>, row);
+  const state = useSyncExternalStore(navigator.subscribe, navigator.snapshot);
+  const { row, loading, error } = state;
+  useEffect(() => {
+    if (!row) return;
+    row.setAttribute('data-sessivra-message-highlight', '');
+    const timer = setTimeout(() => {
+      if (navigator.snapshot() === state) navigator.dismiss();
+    }, 2400);
+    return () => {
+      clearTimeout(timer);
+      row.removeAttribute('data-sessivra-message-highlight');
+    };
+  }, [navigator, row, state]);
+  if (row) return <style>{`
+    [data-sessivra-message-highlight]{
+      outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));
+      outline-offset:3px;border-radius:var(--dsw-radius-md);
+    }
+  `}</style>;
   if (!loading && !error) return null;
-  return <div role={error ? 'alert' : 'status'} style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 100, padding: 12, borderRadius: 8, background: 'var(--dsw-alias-bg-layer-1)', boxShadow: 'var(--dsw-elevation-soft)' }}>
-    {error ?? '正在定位原消息…'}{' '}<button type="button" onClick={() => navigator.dismiss()}>关闭</button>
+  return <div style={{
+    position: 'fixed', bottom: 24, right: 24, zIndex: 100, maxWidth: 'calc(100vw - 48px)',
+    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 6px 12px',
+    fontSize: 13, borderRadius: 'var(--dsw-radius-md)', color: 'var(--dsw-alias-label-primary)',
+    background: 'var(--dsw-alias-bg-layer-1)', boxShadow: 'var(--dsw-elevation-soft)',
+  }}>
+    <span role={error ? 'alert' : 'status'}>{error ?? '正在定位原消息…'}</span>
+    <Button size="sm" variant="ghost" onClick={() => navigator.dismiss()}>{error ? '关闭' : '取消'}</Button>
   </div>;
 }

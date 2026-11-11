@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol';
 import { type TaskHistoryApi, type TaskPanelApi } from './task-panel.js';
+import type { ImportApi } from './import-contract.js';
 import { type TreeApi } from './session-tree.js';
 interface Api {
     selectRecipient(sourceId: string, targetId: string, label: string): Promise<RemoteResult<unknown>>;
@@ -10,6 +11,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
         sessionMessenger: Api;
         sessivraTaskPanel: TaskPanelApi & TaskHistoryApi;
         sessionCollaboration: TreeApi;
+        sessivraImport: ImportApi;
     }
 }
 export declare const inject: string[];

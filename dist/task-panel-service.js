@@ -59,6 +59,7 @@ export const labels = {
 let SessivraPanel = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
+    let _searchHistory_decorators;
     let _locateMessage_decorators;
     let _bookmarkedTurns_decorators;
     let _bookmarkReference_decorators;
@@ -72,6 +73,7 @@ let SessivraPanel = (() => {
     return class SessivraPanel extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _searchHistory_decorators = [Remote];
             _locateMessage_decorators = [Remote];
             _bookmarkedTurns_decorators = [Remote];
             _bookmarkReference_decorators = [Remote];
@@ -82,6 +84,7 @@ let SessivraPanel = (() => {
             _preview_decorators = [Remote];
             _detail_decorators = [Remote];
             _command_decorators = [Remote];
+            __esDecorate(this, null, _searchHistory_decorators, { kind: "method", name: "searchHistory", static: false, private: false, access: { has: obj => "searchHistory" in obj, get: obj => obj.searchHistory }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _locateMessage_decorators, { kind: "method", name: "locateMessage", static: false, private: false, access: { has: obj => "locateMessage" in obj, get: obj => obj.locateMessage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _bookmarkedTurns_decorators, { kind: "method", name: "bookmarkedTurns", static: false, private: false, access: { has: obj => "bookmarkedTurns" in obj, get: obj => obj.bookmarkedTurns }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _bookmarkReference_decorators, { kind: "method", name: "bookmarkReference", static: false, private: false, access: { has: obj => "bookmarkReference" in obj, get: obj => obj.bookmarkReference }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -104,10 +107,15 @@ let SessivraPanel = (() => {
             this.collaboration = collaboration;
             this.messenger = messenger;
             this.history = new MessageHistory(ctx);
+            ctx.effect(() => () => this.history.close());
         }
         owner() {
             if (this.ctx.invocation?.peer.principal.kind !== 'owner')
                 throw new Error('PANEL_OWNER_REQUIRED');
+        }
+        async searchHistory(query) {
+            this.owner();
+            return this.history.search(query);
         }
         async locateMessage(location, expectedId) {
             this.owner();
@@ -337,6 +345,16 @@ let SessivraPanel = (() => {
                     throw new Error('请选择存在的绝对工作目录');
             }
             const coordinatorId = c.coordinator ?? 'sessivra-coordinator-' + c.operationId;
+            const requestId = 'panel-' + c.operationId;
+            const id = taskIdFor(coordinatorId, requestId);
+            const previous = this.tasks.panelLookup(id);
+            if (previous) {
+                if (previous.panelReceipts?.[requestId] !== fingerprint)
+                    throw new Error('TASK_REQUEST_ID_CONFLICT');
+                return { id };
+            }
+            if (c.origin)
+                await readMessageOrigin(this.ctx, c.origin, c.origin.messageId);
             if (c.coordinatorDirectory) {
                 const controller = this.ctx.get('sessionController');
                 if (!controller)
@@ -353,13 +371,6 @@ let SessivraPanel = (() => {
             }
             const owner = await this.coordinator(coordinatorId);
             this.tasks.transport.caller(owner);
-            const requestId = 'panel-' + c.operationId, id = taskIdFor(owner.id, requestId);
-            const previous = this.tasks.panelLookup(id);
-            if (previous) {
-                if (previous.panelReceipts?.[requestId] !== fingerprint)
-                    throw new Error('TASK_REQUEST_ID_CONFLICT');
-                return { id };
-            }
             const assign = (target) => this.tasks.assign(owner, {
                 requestId,
                 target,
@@ -369,6 +380,7 @@ let SessivraPanel = (() => {
                 scope: c.scope ?? requestId,
                 resources: c.resources,
                 requiredQuestions: c.requiredQuestions,
+                ...(c.origin ? { origin: c.origin } : {}),
             }, { scopeLabel: c.scopeLabel, fingerprint });
             if (c.assignee) {
                 await this.messenger.selectRecipient(owner, c.assignee, c.title, requestId, false);

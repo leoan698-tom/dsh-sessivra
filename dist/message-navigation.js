@@ -1,6 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useSyncExternalStore } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useSyncExternalStore } from 'react';
 function findRow(message, mainOnly) {
     const chat = [...document.querySelectorAll('[data-conversation-session]')].find(element => element.dataset.conversationSession === message.origin.sessionId &&
         (!mainOnly || !element.closest('[data-sessivra-pane]')) &&
@@ -50,7 +49,7 @@ export function createMessageNavigator(sessions, open, resolve) {
                     const row = findRow(message, bookmark);
                     if (row) {
                         row.scrollIntoView({ block: 'center' });
-                        publish(bookmark ? {} : { row, message });
+                        publish({ row });
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 70));
@@ -65,11 +64,35 @@ export function createMessageNavigator(sessions, open, resolve) {
         },
     };
 }
-export function MessageJumpNotice({ navigator, organize }) {
-    const { row, message, loading, error } = useSyncExternalStore(navigator.subscribe, navigator.snapshot);
-    if (row && message)
-        return createPortal(_jsxs("div", { className: "sessivra-message-origin", children: [_jsx("style", { children: `.sessivra-message-origin{padding:6px 8px;margin:4px 0;border-inline-start:3px solid var(--dsw-alias-state-business-primary);background:var(--dsw-alias-bg-layer-1);display:flex;align-items:center;gap:10px}.sessivra-message-origin button{cursor:pointer;color:inherit;font:inherit}` }), _jsx("span", { children: "\u5DF2\u5B9A\u4F4D\u539F\u6D88\u606F" }), organize && _jsx("button", { type: "button", onClick: () => { navigator.dismiss(); organize(message); }, children: "\u6574\u7406\u6210\u4EFB\u52A1" })] }), row);
+export function MessageJumpNotice({ navigator, Button }) {
+    const state = useSyncExternalStore(navigator.subscribe, navigator.snapshot);
+    const { row, loading, error } = state;
+    useEffect(() => {
+        if (!row)
+            return;
+        row.setAttribute('data-sessivra-message-highlight', '');
+        const timer = setTimeout(() => {
+            if (navigator.snapshot() === state)
+                navigator.dismiss();
+        }, 2400);
+        return () => {
+            clearTimeout(timer);
+            row.removeAttribute('data-sessivra-message-highlight');
+        };
+    }, [navigator, row, state]);
+    if (row)
+        return _jsx("style", { children: `
+    [data-sessivra-message-highlight]{
+      outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));
+      outline-offset:3px;border-radius:var(--dsw-radius-md);
+    }
+  ` });
     if (!loading && !error)
         return null;
-    return _jsxs("div", { role: error ? 'alert' : 'status', style: { position: 'fixed', bottom: 24, right: 24, zIndex: 100, padding: 12, borderRadius: 8, background: 'var(--dsw-alias-bg-layer-1)', boxShadow: 'var(--dsw-elevation-soft)' }, children: [error ?? '正在定位原消息…', ' ', _jsx("button", { type: "button", onClick: () => navigator.dismiss(), children: "\u5173\u95ED" })] });
+    return _jsxs("div", { style: {
+            position: 'fixed', bottom: 24, right: 24, zIndex: 100, maxWidth: 'calc(100vw - 48px)',
+            display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 6px 12px',
+            fontSize: 13, borderRadius: 'var(--dsw-radius-md)', color: 'var(--dsw-alias-label-primary)',
+            background: 'var(--dsw-alias-bg-layer-1)', boxShadow: 'var(--dsw-elevation-soft)',
+        }, children: [_jsx("span", { role: error ? 'alert' : 'status', children: error ?? '正在定位原消息…' }), _jsx(Button, { size: "sm", variant: "ghost", onClick: () => navigator.dismiss(), children: error ? '关闭' : '取消' })] });
 }

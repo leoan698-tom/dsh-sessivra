@@ -2,6 +2,16 @@ import React from 'react';
 import type { Button as HostButton } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { TreeSession } from './collaboration.js';
 import { treePresentation, type TreeStore } from './session-tree.js';
+import type { HistoryResults, MessageLocation } from './message-history.js';
+interface HistorySearchProps {
+    searchHistory?(query: string): Promise<HistoryResults>;
+    openMessage?(location: MessageLocation): void;
+    taskAction?: {
+        Button: typeof HostButton;
+        open(location: MessageLocation, signal: AbortSignal): Promise<void>;
+    };
+    showTeam?: boolean;
+}
 export interface WorkspaceItem {
     workspaceId: string;
     path: string;
@@ -38,7 +48,7 @@ export declare function findNativeSearch(doc: Document): {
     results: HTMLElement;
 } | undefined;
 export declare function revealNativeBranch(doc: Document, store: TreeStore, id: string, workspaces: readonly WorkspaceItem[]): () => void;
-export declare function NativeTeamSearch(props: NavigationProps & {
+export declare function NativeTeamSearch(props: NavigationProps & HistorySearchProps & {
     useWorkspaces: <T>(selector: (snapshot: {
         items: readonly WorkspaceItem[];
         archivedSessionIds: readonly string[];

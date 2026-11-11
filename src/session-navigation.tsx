@@ -3,6 +3,17 @@ import { createPortal } from 'react-dom';
 import type { Button as HostButton } from '@deepseek-ai/dsh-client-ui-primitives';
 import type { TreeSession } from './collaboration.js';
 import { treePresentation, type TreeStore } from './session-tree.js';
+import type { HistoryResults, MessageLocation } from './message-history.js';
+
+interface HistorySearchProps {
+  searchHistory?(query: string): Promise<HistoryResults>;
+  openMessage?(location: MessageLocation): void;
+  taskAction?: {
+    Button: typeof HostButton;
+    open(location: MessageLocation, signal: AbortSignal): Promise<void>;
+  };
+  showTeam?: boolean;
+}
 
 export interface WorkspaceItem { workspaceId: string; path: string; sessionIds: readonly string[] }
 interface NavigationProps { store: TreeStore; openSession(session: TreeSession): void }
@@ -114,10 +125,58 @@ export function revealNativeBranch(doc: Document, store: TreeStore, id: string, 
   return stop;
 }
 
-function SearchMatches({ store, openSession, target, query, reveal, archivedIds }: NavigationProps & { target: NonNullable<ReturnType<typeof findNativeSearch>>; query: string; archivedIds: readonly string[]; reveal(id: string): void }) {
+function HistoryTaskAction({ action: { Button, open }, location, onOpen }: {
+  action: NonNullable<HistorySearchProps['taskAction']>;
+  location: MessageLocation;
+  onOpen(): void;
+}) {
+  const request = React.useRef<AbortController>();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => () => request.current?.abort(), []);
+  const start = async () => {
+    const controller = new AbortController();
+    request.current = controller;
+    setBusy(true);
+    setError('');
+    try {
+      await open(location, controller.signal);
+      if (!controller.signal.aborted) onOpen();
+    } catch {
+      if (!controller.signal.aborted) setError('无法读取原消息，请重试。');
+    } finally {
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  };
+  return <>
+    <span className="dshsm-search-task" title="整理成任务">
+      <Button size="sm" variant="ghost" aria-label="整理成任务" disabled={busy} onClick={() => void start()}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+          <path d="M4 6h14M4 12h9M4 18h9M18 13v8m-4-4h8"/>
+        </svg>
+      </Button>
+    </span>
+    {error && <div role="alert" className="dshsm-search-heading" style={{ gridColumn: '1 / -1' }}>{error}</div>}
+  </>;
+}
+
+function SearchMatches({ store, openSession, target, query, reveal, archivedIds, searchHistory, openMessage, taskAction, showTeam = true }: NavigationProps & HistorySearchProps & { target: NonNullable<ReturnType<typeof findNativeSearch>>; query: string; archivedIds: readonly string[]; reveal(id: string): void }) {
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const matches = searchTeamMembers(store, query, archivedIds);
-  const hasSupplement = matches.length > 0 || !snapshot.loaded || Boolean(snapshot.problem);
+  const matches = showTeam ? searchTeamMembers(store, query, archivedIds) : [];
+  const [history, setHistory] = useState<{ query: string; results?: HistoryResults; error?: string }>();
+  useEffect(() => {
+    if (!searchHistory) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      void searchHistory(query.slice(0, 250)).then(
+        results => { if (active) setHistory({ query, results }); },
+        error => { if (active) setHistory({ query, error: error instanceof Error ? error.message : '搜索失败' }); },
+      );
+    }, 280);
+    return () => { active = false; clearTimeout(timer); };
+  }, [query, searchHistory]);
+  const currentHistory = history?.query === query ? history : undefined;
+  const hasSupplement = Boolean(searchHistory) || matches.length > 0 || (showTeam && (!snapshot.loaded || Boolean(snapshot.problem)));
   const [container] = useState(() => target.results.ownerDocument.createElement('div'));
   useEffect(() => {
     container.dataset.dshsmSearch = 'true';
@@ -138,10 +197,13 @@ function SearchMatches({ store, openSession, target, query, reveal, archivedIds 
     mark();
     return () => { observer.disconnect(); marked.forEach(element => { delete element.dataset.dshsmSearchEmpty; }); };
   }, [hasSupplement, target.results]);
-  const open = (node: TreeSession) => {
+  const clearSearch = () => {
     // The native clear button runs its own React handler and restores its list.
     const clear = [...target.workspace.querySelectorAll<HTMLButtonElement>('button[aria-label]')].find(button => ['清除搜索', 'Clear search'].includes(button.getAttribute('aria-label') ?? ''));
     clear?.click();
+  };
+  const open = (node: TreeSession) => {
+    clearSearch();
     store.reveal(node.id, true);
     openSession(node);
     // SearchMatches unmounts when clear is processed, so this one bounded reveal
@@ -150,13 +212,36 @@ function SearchMatches({ store, openSession, target, query, reveal, archivedIds 
   };
   return createPortal(<>
     <style>{`[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`}</style>
+    <style>{`
+      .dshsm-search-hit{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding-inline-end:4px}
+      .dshsm-search-task button{color:var(--dsw-alias-label-secondary)}
+      @media (hover:hover){
+        .dshsm-search-task{opacity:0}
+        .dshsm-search-hit:hover .dshsm-search-task,.dshsm-search-hit:focus-within .dshsm-search-task{opacity:1}
+      }
+    `}</style>
     {matches.length > 0 && <section aria-label="队员搜索结果"><div className="dshsm-search-heading">队员 · {matches.length}</div>{matches.slice(0, 50).map(({ node, display, path }) => <button key={node.id} type="button" className="dshsm-search-result" disabled={!node.openable} title={`${display.title}\n${path}`} onClick={() => open(node)}><span>{display.label}</span><small>{node.teammateName}{display.state ? ` · ${display.state}` : ''}</small><small>{path}</small></button>)}{matches.length > 50 && <p className="dshsm-search-heading">仅显示前 50 个队员，请缩小搜索范围。</p>}</section>}
-    {!snapshot.loaded && !snapshot.problem && <div role="status" className="dshsm-search-heading">正在搜索队员…</div>}
-    {snapshot.problem && <div role="alert" className="dshsm-search-heading">队员搜索暂未更新，{snapshot.problem}<button type="button" onClick={() => void store.refresh()}>重试</button></div>}
+    {showTeam && !snapshot.loaded && !snapshot.problem && <div role="status" className="dshsm-search-heading">正在搜索队员…</div>}
+    {showTeam && snapshot.problem && <div role="alert" className="dshsm-search-heading">队员搜索暂未更新，{snapshot.problem}<button type="button" onClick={() => void store.refresh()}>重试</button></div>}
+    {searchHistory && <section aria-label="消息正文搜索结果">
+      <div className="dshsm-search-heading" title={currentHistory?.error} aria-live="polite">{!currentHistory ? '正在搜索消息正文…' : currentHistory.error ? '消息正文暂时无法搜索' : currentHistory.results?.items.length ? '消息正文' : '没有匹配的消息正文'}</div>
+      {currentHistory?.results?.items.map(hit => {
+        const location = { sessionId: hit.sessionId, seq: hit.seq };
+        return <div key={`${query}:${hit.sessionId}:${hit.seq}`} className="dshsm-search-hit">
+          <button type="button" className="dshsm-search-result" title={hit.snippet}
+            onClick={() => { clearSearch(); openMessage?.(location); }}>
+            <span>{hit.snippet}</span><small>{hit.child ? '子会话 · ' : ''}{snapshot.aliases.get(hit.sessionId) ?? hit.title}</small><small>{hit.cwd}</small>
+          </button>
+          {taskAction && <HistoryTaskAction action={taskAction} location={location} onOpen={clearSearch}/>}
+        </div>;
+      })}
+      {currentHistory?.results?.more && <div className="dshsm-search-heading">还有更多命中，可缩小关键词范围。</div>}
+      {currentHistory?.results?.partial && <div className="dshsm-search-heading">部分历史暂不可读。</div>}
+    </section>}
   </>, container);
 }
 
-export function NativeTeamSearch(props: NavigationProps & {
+export function NativeTeamSearch(props: NavigationProps & HistorySearchProps & {
   useWorkspaces: <T>(selector: (snapshot: { items: readonly WorkspaceItem[]; archivedSessionIds: readonly string[] }) => T) => T;
   useArchiveFilter: <T>(selector: (filter: ArchiveFilter | undefined) => T) => T;
 }) {
@@ -191,7 +276,8 @@ export function NativeTeamSearch(props: NavigationProps & {
   }, []);
   // Tree discovery contains active sessions only. Archived-only (or an unknown
   // Host view) must leave native results and their empty/error state untouched.
-  return search && (archiveFilter === 'default' || archiveFilter === 'show') ? <SearchMatches {...props} {...search} archivedIds={archivedIds} reveal={id => { pendingReveal.current?.(); pendingReveal.current = revealNativeBranch(document, props.store, id, workspaces); }} /> : null;
+  const showTeam = archiveFilter === 'default' || archiveFilter === 'show';
+  return search && (showTeam || props.searchHistory) ? <SearchMatches {...props} {...search} showTeam={showTeam} archivedIds={archivedIds} reveal={id => { pendingReveal.current?.(); pendingReveal.current = revealNativeBranch(document, props.store, id, workspaces); }} /> : null;
 }
 
 interface ComposerOwner { session?: { running?: boolean; subagent?: { address: { mode: string; parentSessionId: string }; parentAvailable?: boolean } | null } | null }

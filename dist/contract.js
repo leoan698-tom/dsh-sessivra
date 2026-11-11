@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { panelCommand, panelQuery } from './panel-contract.js';
 import { policyInput } from './validation.js';
+import { importBrowse, importedId, importFileChoice, importQuery, importSelection, importToken } from './import-contract.js';
 import { bookmarkedTurn, bookmarkedTurnNumbers, legacyBookmarkQuote, messageLocation, messageOrigin } from './message-history.js';
 // Keep legacy wire IDs stable across the package rename. Host and browser share
 // the new package identity; existing messages, tool names and storage stay valid.
@@ -23,12 +24,24 @@ const endpoints = [
 ];
 export const descriptors = [
     ...[
+        { method: 'preview', parameters: [parameter('query', importQuery)] },
+        { method: 'browse', parameters: [parameter('browse', importBrowse)] },
+        { method: 'pickFile', parameters: [parameter('query', importFileChoice)] },
+        { method: 'commit', parameters: [parameter('token', importToken), parameter('keys', importSelection)] },
+        { method: 'commitCatalog', parameters: [parameter('token', importToken), parameter('keys', importSelection), parameter('includeGlobalMemory', z.boolean())] },
+        { method: 'startCatalogImport', parameters: [parameter('token', importToken), parameter('keys', importSelection), parameter('includeGlobalMemory', z.boolean())] },
+        { method: 'catalogImportStatus', parameters: [parameter('id', importToken)] },
+        { method: 'archive', parameters: [parameter('id', importedId)] },
+        { method: 'chunk', parameters: [parameter('id', importedId), parameter('offset', z.number().int().min(0).max(5000))] },
+    ].map(e => ({ ...e, id: `dsh-plugin-sessivra#sessivraImport/${e.method}`, service: 'sessivraImport', namespace: 'sessivraImport', invocation: { kind: 'direct' }, result: codec('import-result', z.json()) })),
+    ...[
         { method: 'list', parameters: [parameter('query', panelQuery)] },
         { method: 'participants', parameters: [] },
         { method: 'operation', parameters: [parameter('id', z.string().uuid())] },
         { method: 'detail', parameters: [parameter('id', z.string().max(160))] },
         { method: 'preview', parameters: [parameter('id', z.string().max(160)), parameter('index', z.number().int().min(0).max(63))] },
         { method: 'command', parameters: [parameter('command', panelCommand)] },
+        { method: 'searchHistory', parameters: [parameter('query', z.string().trim().min(1).max(250))] },
         { method: 'locateMessage', parameters: [parameter('location', messageLocation), parameter('expectedId', z.string().max(256))] },
         { method: 'bookmarkedTurns', parameters: [parameter('sessionId', z.string().min(1).max(256)), parameter('turns', bookmarkedTurnNumbers)] },
         { method: 'bookmarkReference', parameters: [parameter('origin', messageOrigin), parameter('turn', bookmarkedTurn)] },

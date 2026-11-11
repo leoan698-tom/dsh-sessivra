@@ -13,8 +13,9 @@ import { ProgressReader, progressInput } from './progress.js';
 import { childTransport } from './child-transport.js';
 import { ReferenceTargets } from './reference-target.js';
 import { installTasks } from './task-integration.js';
+import { SessionImport } from './import-service.js';
 export const name = 'dsh-plugin-sessivra';
-export const inject = ['agents', 'tools', 'storageDomain', 'llm'];
+export const inject = ['agents', 'sessions', 'tools', 'storageDomain', 'llm'];
 export async function apply(ctx, config = {}) {
     const domain = await ctx.storageDomain.open(domainSpec);
     const recipientDomain = await ctx.storageDomain.open(recipientDomainSpec).catch(async (error) => { await domain.close(); throw error; });
@@ -78,6 +79,7 @@ export async function apply(ctx, config = {}) {
     ctx.effect(() => async () => { await collaboration.close(); await conversationDomain.close(); });
     const referenceTargets = new ReferenceTargets(ctx, collaboration, messenger);
     const tasks = await installTasks(ctx, messenger, collaboration, referenceTargets);
+    new SessionImport(ctx, (id, parentId, title) => collaboration.linkImported(id, parentId, title));
     ctx.inject(['typert'], c => { c.typert.register(hostContribution); });
     const caller = (agent) => { if (!agent)
         throw new Error('CALLER_REQUIRED'); return agent; };

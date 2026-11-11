@@ -1,4 +1,5 @@
 import { treePresentation } from './session-tree.js';
+import { isImportedSession } from './import-contract.js';
 const categories = { sessions: '会话', bookmarks: '收藏', files: '文件' };
 const previewCount = 5;
 export function mentionQuery(query) {
@@ -34,7 +35,8 @@ export function createSidebarMentionSource(sessions, store, workspace, archive) 
                     return [];
                 if (tree.hiddenSessions.has(id) || (!summary && !node) || (summary?.origin === 'subagent' && !node))
                     return [];
-                if (summary?.blank && !summary.retainedBy.mainView)
+                const imported = isImportedSession(id) && node && !node.subagent && node.label !== '未命名会话';
+                if (summary?.blank && !summary.retainedBy.mainView && !imported)
                     return [];
                 let root = id;
                 while (tree.parents.has(root))
@@ -42,8 +44,10 @@ export function createSidebarMentionSource(sessions, store, workspace, archive) 
                 const isArchived = archived.has(id) || archived.has(root);
                 if (filter === 'only' ? !isArchived : filter !== 'show' && isArchived)
                     return [];
-                const name = node && (node.subagent || tree.parents.has(id)) ? treePresentation(node, undefined, tree.aliases.get(id)).label : summary?.displayTitle ?? node.label;
-                const haystack = [name, byId[root]?.displayTitle].join(' ').normalize('NFKC').toLocaleLowerCase();
+                const name = node && (node.subagent || tree.parents.has(id) || imported)
+                    ? treePresentation(node, undefined, tree.aliases.get(id)).label : summary?.displayTitle ?? node.label;
+                const haystack = [name, tree.nodes.get(root)?.label, byId[root]?.displayTitle]
+                    .join(' ').normalize('NFKC').toLocaleLowerCase();
                 if (!terms.every(term => haystack.includes(term)))
                     return [];
                 return [{ name, icon: 'session', section: '会话', description: node?.subagent ? '队员' : tree.parents.has(id) ? '子会话' : undefined,
@@ -59,7 +63,7 @@ export function createSidebarMentionSource(sessions, store, workspace, archive) 
                 return { text: candidate.value, continue: true };
             const bytes = new TextEncoder().encode(JSON.stringify(candidate.value));
             const encoded = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
-            const label = candidate.name.replace(/[\r\n\]]/gu, ' ').trim();
+            const label = candidate.name.replace(/[\r\n]/gu, ' ').trim().replace(/[\\\[\]]/gu, '\\$&');
             const ref = `@[${label}](dsh-session:${encoded})`;
             return { insert: { source: 'reference', appearance: 'session', ref, label: candidate.name, clipboardText: ref } };
         },

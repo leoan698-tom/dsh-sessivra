@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-sessivra",
-  "version": "0.3.0-dev.28",
+  "version": "0.3.0-dev.29",
   "description": "DSH Sessivra: session messaging, managed task coordination with shared decisions and acceptance, context references and conversation trees.",
   "type": "module",
   "license": "MIT",
@@ -74,14 +74,15 @@
     "README.en.md",
     "docs/validation/dev26-release.md",
     "docs/validation/dev26-evidence.json",
-    "docs/validation/dev27-release.md"
+    "docs/validation/dev27-release.md",
+    "docs/SESSION_IMPORT.md"
   ],
   "scripts": {
     "build": "tsc && node scripts/build-client.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests",
     "test": "npm run build && node --test tests/unit.test.mjs tests/recipient.test.mjs tests/client.test.mjs tests/client-interaction.test.mjs tests/session-views.test.mjs",
-    "test:integration": "npm run build && node --test --test-timeout=15000 tests/host.test.mjs tests/new-host.test.mjs tests/storage-contention.test.mjs tests/reply-guidance.test.mjs tests/collaboration.test.mjs tests/progress.test.mjs tests/workflow.test.mjs tests/child-messaging.test.mjs tests/tree-discovery.test.mjs tests/reference-messaging.test.mjs tests/tasks.test.mjs tests/host-compatibility.test.mjs",
+    "test:integration": "npm run build && node --test --test-timeout=15000 tests/host.test.mjs tests/new-host.test.mjs tests/storage-contention.test.mjs tests/reply-guidance.test.mjs tests/collaboration.test.mjs tests/progress.test.mjs tests/workflow.test.mjs tests/child-messaging.test.mjs tests/tree-discovery.test.mjs tests/reference-messaging.test.mjs tests/tasks.test.mjs tests/host-compatibility.test.mjs tests/session-import.test.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run test:integration",
     "test:tasks": "npm run build && node --test --test-timeout=15000 tests/tasks.test.mjs"
   },

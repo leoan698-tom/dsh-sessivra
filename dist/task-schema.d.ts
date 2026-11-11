@@ -69,6 +69,11 @@ export declare const taskSchema: z.ZodObject<{
     questionIds: z.ZodArray<z.ZodString>;
     panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
     scopeLabel: z.ZodOptional<z.ZodString>;
+    origin: z.ZodOptional<z.ZodObject<{
+        sessionId: z.ZodString;
+        seq: z.ZodNumber;
+        messageId: z.ZodString;
+    }, z.core.$strict>>;
     result: z.ZodOptional<z.ZodObject<{
         summary: z.ZodString;
         evidence: z.ZodArray<z.ZodString>;
@@ -226,6 +231,11 @@ export declare const taskStateSchema: z.ZodObject<{
         questionIds: z.ZodArray<z.ZodString>;
         panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
         scopeLabel: z.ZodOptional<z.ZodString>;
+        origin: z.ZodOptional<z.ZodObject<{
+            sessionId: z.ZodString;
+            seq: z.ZodNumber;
+            messageId: z.ZodString;
+        }, z.core.$strict>>;
         result: z.ZodOptional<z.ZodObject<{
             summary: z.ZodString;
             evidence: z.ZodArray<z.ZodString>;
@@ -373,6 +383,11 @@ export declare const archiveSchema: z.ZodObject<{
         questionIds: z.ZodArray<z.ZodString>;
         panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
         scopeLabel: z.ZodOptional<z.ZodString>;
+        origin: z.ZodOptional<z.ZodObject<{
+            sessionId: z.ZodString;
+            seq: z.ZodNumber;
+            messageId: z.ZodString;
+        }, z.core.$strict>>;
         result: z.ZodOptional<z.ZodObject<{
             summary: z.ZodString;
             evidence: z.ZodArray<z.ZodString>;
@@ -527,6 +542,11 @@ export declare const archiveDomainSpec: {
                     questionIds: z.ZodArray<z.ZodString>;
                     panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
                     scopeLabel: z.ZodOptional<z.ZodString>;
+                    origin: z.ZodOptional<z.ZodObject<{
+                        sessionId: z.ZodString;
+                        seq: z.ZodNumber;
+                        messageId: z.ZodString;
+                    }, z.core.$strict>>;
                     result: z.ZodOptional<z.ZodObject<{
                         summary: z.ZodString;
                         evidence: z.ZodArray<z.ZodString>;
@@ -687,6 +707,11 @@ export declare const taskDomainSpec: {
                 questionIds: z.ZodArray<z.ZodString>;
                 panelReceipts: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
                 scopeLabel: z.ZodOptional<z.ZodString>;
+                origin: z.ZodOptional<z.ZodObject<{
+                    sessionId: z.ZodString;
+                    seq: z.ZodNumber;
+                    messageId: z.ZodString;
+                }, z.core.$strict>>;
                 result: z.ZodOptional<z.ZodObject<{
                     summary: z.ZodString;
                     evidence: z.ZodArray<z.ZodString>;
@@ -828,6 +853,11 @@ export declare const taskDomainSpec: {
                 }[];
                 panelReceipts?: Record<string, string> | undefined;
                 scopeLabel?: string | undefined;
+                origin?: {
+                    sessionId: string;
+                    seq: number;
+                    messageId: string;
+                } | undefined;
                 result?: {
                     summary: string;
                     evidence: string[];

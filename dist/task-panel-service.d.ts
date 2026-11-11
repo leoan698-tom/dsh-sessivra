@@ -13,6 +13,19 @@ export declare class SessivraPanel extends TypertRemoteService {
     private history;
     constructor(ctx: Context, tasks: Tasks, collaboration: Collaboration, messenger: Messenger);
     private owner;
+    searchHistory(query: string): Promise<{
+        items: {
+            sessionId: string;
+            seq: number;
+            time: number;
+            snippet: string;
+            title: string;
+            cwd: string;
+            child: boolean;
+        }[];
+        more: boolean;
+        partial: boolean;
+    }>;
     locateMessage(location: MessageLocation, expectedId: string): Promise<{
         nodeKey: string;
         turn?: number | undefined;
@@ -211,6 +224,11 @@ export declare class SessivraPanel extends TypertRemoteService {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];
@@ -322,6 +340,11 @@ export declare class SessivraPanel extends TypertRemoteService {
         }[];
         panelReceipts?: Record<string, string> | undefined;
         scopeLabel?: string | undefined;
+        origin?: {
+            sessionId: string;
+            seq: number;
+            messageId: string;
+        } | undefined;
         result?: {
             summary: string;
             evidence: string[];

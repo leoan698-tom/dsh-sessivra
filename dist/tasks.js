@@ -259,6 +259,8 @@ export class Tasks {
                     task.scopeLabel = operator.scopeLabel;
                 task.panelReceipts = { [input.requestId]: operator.fingerprint };
             }
+            if (input.origin)
+                task.origin = input.origin;
             this.record(task, operator ? 'operator:owner' : agent.id, 'assigned', input.title);
             state.tasks[id] = task;
             for (const required of input.requiredQuestions ?? []) {

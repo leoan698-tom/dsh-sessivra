@@ -12,6 +12,11 @@ export declare const panelCommand: z.ZodDiscriminatedUnion<[z.ZodObject<{
     resources: z.ZodOptional<z.ZodArray<z.ZodString>>;
     cwd: z.ZodOptional<z.ZodString>;
     reasoningEffort: z.ZodOptional<z.ZodString>;
+    origin: z.ZodOptional<z.ZodObject<{
+        sessionId: z.ZodString;
+        seq: z.ZodNumber;
+        messageId: z.ZodString;
+    }, z.core.$strict>>;
     requiredQuestions: z.ZodOptional<z.ZodArray<z.ZodObject<{
         topic: z.ZodString;
         context: z.ZodString;

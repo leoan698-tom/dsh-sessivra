@@ -10,13 +10,15 @@ import { createBookmarkMentionSource } from './bookmark-mention.js';
 import { compactNativeReferences, createSidebarMentionSource, type MentionRegistry } from './mention-menu.js';
 import { bookmarkUserText, type SentBookmark } from './bookmark-user-text.js';
 import { SentBookmarkChip } from './sent-bookmark.js';
-import type { MessageOrigin } from './message-history.js';
+import type { HistoryResults, MessageLocation, MessageOrigin, ResolvedMessage } from './message-history.js';
 import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client';
 import { remoteContribution } from './contract.js';
 import { createLegacyRecipientSource } from './recipient-source.js';
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client';
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client';
-import { Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, MarkdownText, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
+import { Button, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, MarkdownText, Menu, MenuItemButton, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
+import { createImportCatalogState, ImportPanel } from './import-panel.js';
+import type { ImportApi } from './import-contract.js';
 import { createSessionTreeStore, type TreeApi } from './session-tree.js';
 import { NativeSessionTreeHost } from './session-tree-host.js';
 import type { SessionActions } from './session-actions.js';
@@ -35,7 +37,7 @@ const reportLabels = { code: { copyLabel: '复制代码', copiedLabel: '已复�
 const renderReport = (text: string) => <MarkdownText text={text} labels={reportLabels}/>;
 const bookmarkFish = { path: FISH_LOGO_PATH, ...FISH_LOGO_VIEWBOX };
 
-declare module '@deepseek-ai/dsh-typert-protocol' { interface TypertRemoteNamespaceMap { sessionMessenger: Api; sessivraTaskPanel: TaskPanelApi & TaskHistoryApi; sessionCollaboration: TreeApi } }
+declare module '@deepseek-ai/dsh-typert-protocol' { interface TypertRemoteNamespaceMap { sessionMessenger: Api; sessivraTaskPanel: TaskPanelApi & TaskHistoryApi; sessionCollaboration: TreeApi; sessivraImport: ImportApi } }
 export const inject = ['slots', 'remote'];
 export async function apply(ctx: Context) {
   await ctx.remote.$mount(remoteContribution);
@@ -51,7 +53,6 @@ export async function apply(ctx: Context) {
       treeCtx.inject(['inputTriggers', 'workspaces'], mentionCtx => {
         const host = mentionCtx as unknown as { inputTriggers: MentionRegistry; workspaces: { list: { getSnapshot(): ReturnType<Parameters<typeof createSidebarMentionSource>[2]> } } };
         const registry = host.inputTriggers;
-        if (!Array.isArray(registry.live?.sources)) return;
         const source = createSidebarMentionSource(sessions, store, () => host.workspaces.list.getSnapshot(), archiveView.getSnapshot);
         mentionCtx.effect(() => compactNativeReferences(registry), 'sessivra: compact native file candidates');
         mentionCtx.effect(() => registry.registerSource(source), 'sessivra: sidebar mention candidates');
@@ -59,19 +60,72 @@ export async function apply(ctx: Context) {
       const views = createSessionViews(sessions);
       const referenceDrop = createSessionReferenceDrop();
       const headerViews = createHeaderViews();
-      let requestedTask: string | undefined;
+      let requested: { key: number; task?: string; source?: ResolvedMessage } = { key: 0 };
       let showTask: ((id:string) => void) | undefined;
+      let searchHistory: ((query: string) => Promise<HistoryResults>) | undefined;
+      let openMessage: ((location: MessageLocation) => void) | undefined;
+      let taskAction: { Button: typeof Button; open(location: MessageLocation, signal: AbortSignal): Promise<void> } | undefined;
+      treeCtx.inject(['remote.sessivraImport', 'layout'], importCtx => {
+        const panelId = 'sessivra-import' as MainPanelId;
+        const catalog = createImportCatalogState();
+        const api = importCtx.remote.sessivraImport;
+        const listeners = new Set<() => void>();
+        let selection: { key: number; id?: string } = { key: 0 };
+        const show = (id?: string) => {
+          selection = { key: selection.key + 1, id };
+          importCtx.layout.selectPanel(panelId);
+          for (const notify of listeners) notify();
+        };
+        treeSlots.inject('sidebar.panellist', () => treeSlots.register({
+          name: 'sidebar.panellist', id: panelId, order: 22, label: () => '导入会话',
+        }, ({ size }: { size: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg>));
+        treeSlots.inject('main', () => treeSlots.register({ name: 'main', key: panelId }, function MountedImport() {
+          const current = React.useSyncExternalStore(listener => { listeners.add(listener); return () => { listeners.delete(listener); }; }, () => selection);
+          return <ImportPanel key={current.key} api={api} archiveId={current.id} catalog={catalog}
+            pickDirectory={() => treeCtx.uiWorkspace.pickDirectory()}
+            back={() => show()}
+            open={async id => {
+              await sessions.refresh();
+              treeCtx.uiWorkspace.openSession(id as Parameters<typeof treeCtx.uiWorkspace.openSession>[0]);
+            }}/>;
+        }));
+        treeSlots.inject('sidebar.workspaces.session.menu.item', () => treeSlots.register({
+          name: 'sidebar.workspaces.session.menu.item', id: 'sessivra-import-archive', order: 500,
+        }, ({ sessionId, useMenuOpenState }: { sessionId: string; useMenuOpenState: () => readonly [boolean, (open: boolean) => void] }) => {
+          const [, setOpen] = useMenuOpenState();
+          if (!/^sessivra-import-[a-f0-9]{32}$/.test(sessionId)) return null;
+          return <MenuItemButton onSelect={() => { setOpen(false); show(sessionId); }}>查看导入原档</MenuItemButton>;
+        }));
+      });
       treeCtx.inject(['remote.sessivraTaskPanel','layout'], panelCtx => {
         const panelId = 'sessivra-tasks' as MainPanelId;
         const listeners = new Set<()=>void>();
         const api = panelCtx.remote.sessivraTaskPanel;
-        showTask = id => { requestedTask=id; panelCtx.layout.selectPanel(panelId); for (const notify of listeners) notify(); };
-        const navigator = createMessageNavigator(sessions, target => panelCtx.uiWorkspace.openSession(target), async (location, expected) => {
+        const show = (selection: Omit<typeof requested, 'key'>) => {
+          requested = { key: requested.key + 1, ...selection };
+          panelCtx.layout.selectPanel(panelId);
+          for (const notify of listeners) notify();
+        };
+        showTask = id => show({ task: id });
+        const locateMessage = async (location: MessageLocation, expected = '') => {
           const result = await api.locateMessage(location, expected);
           if (!result.ok) throw new Error(result.error.message);
           return result.value;
-        });
-        panelCtx.effect(() => () => { showTask = undefined; navigator.dismiss(); });
+        };
+        const navigator = createMessageNavigator(sessions, target => panelCtx.uiWorkspace.openSession(target), locateMessage);
+        searchHistory = async query => {
+          const result = await api.searchHistory(query);
+          if (!result.ok) throw new Error(result.error.message);
+          return result.value;
+        };
+        openMessage = location => { void navigator.jump(location); };
+        taskAction = { Button, async open(location, signal) {
+          const source = await locateMessage(location);
+          signal.throwIfAborted();
+          navigator.dismiss();
+          show({ source });
+        } };
+        panelCtx.effect(() => () => { showTask=undefined; searchHistory=undefined; openMessage=undefined; taskAction=undefined; navigator.dismiss(); });
         const panelSlots = panelCtx.slots as unknown as typeof treeSlots;
         const bookmarkPanelId = 'sessivra-bookmarks' as MainPanelId;
         const loadBookmarks = async (sessionId: string, turns: number[]) => {
@@ -115,15 +169,21 @@ export async function apply(ctx: Context) {
           <BookmarkLibrary load={loadBookmarks} jump={jumpBookmark} Menu={Menu}/>));
         panelSlots.inject('shell.overlay', () => panelSlots.register({
           name: 'shell.overlay', id: 'sessivra-message-origin',
-          inject: () => ({ navigator }),
+          inject: () => ({ navigator, Button }),
         }, MessageJumpNotice));
         panelSlots.inject('sidebar.panellist', () => panelSlots.register({
           name:'sidebar.panellist', id:panelId, order:20, label:()=>taskPanelTitle,
         }, ({size}:{size:number}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9"/></svg>));
         panelSlots.inject('main', () => panelSlots.register({ name:'main', key:panelId }, function Mounted(props: {useSessions:<T>(get:(s:{byId:Record<string,{id:string; retainedBy:{mainView?:number}}>})=>T)=>T}) {
           const current = props.useSessions(s=>Object.values(s.byId).find(row=>row.retainedBy.mainView)?.id);
-          const task = React.useSyncExternalStore(listener=>{listeners.add(listener);return()=>{listeners.delete(listener);};},()=>requestedTask);
-          return <TaskPanel key={task} initialSession={current} initialTask={task} api={panelCtx.remote.sessivraTaskPanel} renderMarkdown={renderReport} open={id=>{
+          const selection = React.useSyncExternalStore(listener=>{listeners.add(listener);return()=>{listeners.delete(listener);};},()=>requested);
+          React.useEffect(() => () => {
+            if (requested === selection && selection.source) requested = { key: selection.key + 1 };
+          }, [selection]);
+          const initialSession = selection.source ? selection.source.child?.parentSessionId ?? selection.source.origin.sessionId : current;
+          return <TaskPanel key={selection.key} initialSession={initialSession} initialTask={selection.task} source={selection.source}
+            openOrigin={origin => { void navigator.jump({ sessionId: origin.sessionId, seq: origin.seq }, origin.messageId); }}
+            api={api} renderMarkdown={renderReport} open={id=>{
             const node=store.getSnapshot().nodes.get(id);
             if(node?.subagent && !node.openable) throw new Error('会话当前不可打开');
             panelCtx.uiWorkspace.openSession((node?.subagent ? {parentSessionId:node.parentId,childSessionId:id,mode:node.subagentMode} : id) as Parameters<typeof treeCtx.uiWorkspace.openSession>[0]);
@@ -159,7 +219,7 @@ export async function apply(ctx: Context) {
         name: 'shell.overlay', id: 'sessivra-session-dialogs', inject: () => ({ dialogs }),
       }, SessionDialogOutlet));
       treeSlots.inject('shell.overlay', () => treeSlots.register({
-        name: 'shell.overlay', id: 'sessivra-team-search', inject: () => ({ store, openSession, hooks: { archiveFilter: archiveView } }),
+        name: 'shell.overlay', id: 'sessivra-team-search', inject: () => ({ store, openSession, searchHistory, openMessage, taskAction, hooks: { archiveFilter: archiveView } }),
       }, NativeTeamSearch));
       treeSlots.inject('conversation.composer', () => treeSlots.register({
         // Chain seats use ascending priority; the native read-only entry is -10.

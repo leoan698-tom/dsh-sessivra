@@ -8,6 +8,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { SessionCandidate } from './recipient-source.js';
 import type { Messenger } from './core.js';
 import type { ConversationRelations } from './schemas.js';
+import { isImportedSession } from './import-contract.js';
 
 interface TreeSessionBase {
   id: string; parentId?: string; workspace: string | null; label: string;
@@ -126,20 +127,27 @@ export class Collaboration extends TypertRemoteService {
       }
     }
     const parents = new Set(tree.map(row => row.parentId));
-    return tree.filter(row => row.subagent || !byId.get(row.id)?.blank || edges[row.id] || row.parentId || parents.has(row.id)).map(row => {
+    return tree.filter(row => row.subagent || !byId.get(row.id)?.blank || edges[row.id] || row.parentId ||
+      parents.has(row.id) || (isImportedSession(row.id) && row.label !== '未命名会话')).map(row => {
       const task = this.taskSummary?.(row.id); return task ? { ...row, task } : row;
     });
   }
   private async treeProjections(item: TreeSessionSummary): Promise<{ values: TreeSessionProjections; failed: boolean }> {
     const hints = item.projections?.values ?? {};
-    if (hints.agentTeam !== undefined && hints.subagentCatalog !== undefined && (item.origin !== 'subagent' || hints.subagent !== undefined)) return { values: hints, failed: false };
+    const imported = isImportedSession(item.sessionId);
+    if (hints.agentTeam !== undefined && hints.subagentCatalog !== undefined && (item.origin !== 'subagent' || hints.subagent !== undefined) &&
+      (!imported || hints.title)) return { values: hints, failed: false };
     const query = this.ctx.get('sessionQuery');
     if (!query) return { values: hints, failed: false };
     // Missing cold list hints are prepared through Query, without resolving or
     // activating the parent/child Agent. No history is returned to the client.
     try {
       const observation = await query.observeSession(item.sessionId as Agent['id']);
-      try { return { values: { ...hints, ...observation.projections?.values as TreeSessionProjections | undefined }, failed: false }; }
+      try {
+        const values = { ...hints, ...observation.projections?.values as TreeSessionProjections | undefined };
+        if (imported && !values.title) values.title = observation.events.findLast(event => event.type === 'session/title')?.data.title;
+        return { values, failed: false };
+      }
       finally { observation[Symbol.dispose](); }
     } catch { return { values: hints, failed: true }; }
   }
@@ -244,5 +252,16 @@ export class Collaboration extends TypertRemoteService {
     this.tail = work.catch(() => {});
     return work;
   }
+  linkImported(id: string, parentId: string, label: string) {
+    const work = this.tail.then(async () => {
+      const current = this.relations.read();
+      if (current[id]?.parentId === parentId) return;
+      if (current[id]) throw new Error('此会话已经关联到另一个父会话。');
+      await this.relations.write({ ...current, [id]: { parentId, label, createdAt: Date.now() } });
+    });
+    this.tail = work.catch(() => {});
+    return work;
+  }
+
   async close() { await this.tail; }
 }

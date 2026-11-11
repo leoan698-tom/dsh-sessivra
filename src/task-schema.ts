@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { defineDomain } from '@deepseek-ai/dsh-storage-domain';
+import { messageOrigin } from './message-history.js';
 
 const text = z.string().trim().min(1).max(8000);
 const short = z.string().trim().min(1).max(500);
@@ -17,6 +18,7 @@ export const taskSchema = z.object({
   checkpoint: checkpointSchema, questionIds: z.array(z.string()).max(128),
   panelReceipts: z.record(z.string(), z.string()).optional(),
   scopeLabel: short.optional(),
+  origin: messageOrigin.optional(),
   result: z.object({ summary: text, evidence: strings, revision: z.number(), decisionRevision: z.number(), at: z.number() }).strict().optional(),
   review: z.object({ resultId:z.string().optional(), checked:z.array(z.boolean()).max(32).optional(), accepted: z.boolean(), explanation: text, evidence: strings, by: z.string(), at: z.number() }).strict().optional(),
   reason: z.string().max(600).optional(), pendingUserMessage: z.string().optional(),

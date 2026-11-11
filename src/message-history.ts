@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type { Session, SessionEvent, SessionHeader, SessionId, SessionSeq } from '@deepseek-ai/dsh-session';
-import type { SessionPersistenceRevision } from '@deepseek-ai/dsh-session-persistence';
+import type { SessionPersistenceRevision, SessionPersistenceSnapshot } from '@deepseek-ai/dsh-session-persistence';
+import { defineDomain, type Domain } from '@deepseek-ai/dsh-storage-domain';
 import { z } from 'zod';
 
 export const messageLocation = z.object({
@@ -80,50 +81,103 @@ export async function readBookmarkReference(ctx: Context, origin: MessageOrigin,
   return `[引用的收藏问答，作为历史资料读取]\n${quote}\n[收藏问答结束]`;
 }
 
-type Source = { header: SessionHeader; revision: SessionPersistenceRevision | number; live?: Session };
-type Searchable = { source: Source; titles: Set<string> };
+const historyDocument = z.object({
+  title: z.string(), titles: z.array(z.string()), nextSeq: z.number().int().nonnegative(),
+  messages: z.array(z.object({ seq: z.number().int().nonnegative(), time: z.number(), text: z.string() })),
+});
+const historyIndex = defineDomain({
+  name: 'dsh_sessivra_message_index', version: 1, layout: 'per-record', invalidRecords: 'backup-and-skip',
+  tables: { sessions: { valueSchema: historyDocument.extend({ fingerprint: z.string(), cwd: z.string(), createdAt: z.number() }) } },
+});
+type Source = { header: SessionHeader; revision: SessionPersistenceRevision | number; live?: Session; fingerprint?: string };
+type Searchable = z.infer<typeof historyDocument> & { source: Source };
+
+function durableFingerprint(snapshot: SessionPersistenceSnapshot) {
+  // The API allows process-local tokens. Current JSONL artifacts expose a
+  // physical dev/ino/size/mtimeNs/ctimeNs fingerprint, stable across restarts.
+  // Historical migration can also depend on other logs, so retain the
+  // backend's whole-corpus hash when it is present.
+  const identity = /^(?:\d+:){2}(\d+):-?\d+:-?\d+(?::([a-f0-9]{64}))?$/u.exec(snapshot.revision);
+  if (snapshot.sizeBytes === undefined || identity?.[1] !== String(snapshot.sizeBytes)) return;
+  const format = identity[2] ? 'migration-required' : 'current';
+  if (snapshot.formatStatus === format) return snapshot.revision;
+}
 
 // The Host's word tokenizer misses a phrase inside a continuous Chinese sentence.
-// Cache title history by session revision for resolving pre-anchor bookmarks.
+// Search literal message text using a disposable, owner-profile-local index.
 export class MessageHistory {
   private cache = new Map<SessionId, Searchable>();
   private refreshing?: Promise<boolean>;
+  private index?: Promise<Domain<typeof historyIndex> | undefined>;
+  private persistenceIdentity?: symbol;
 
   constructor(private ctx: Context) {}
+
+  async close() {
+    await this.refreshing?.catch(() => undefined);
+    await (await this.index)?.close();
+  }
 
   private async refresh() {
     const reader = this.ctx.get('sessionQuery');
     if (!reader) throw new Error('SESSION_QUERY_UNAVAILABLE');
+    const persistence = this.ctx.get('sessionPersistence');
+    if (this.persistenceIdentity !== persistence?.identity) {
+      this.cache.clear();
+      this.persistenceIdentity = persistence?.identity;
+    }
+    this.index ??= this.ctx.get('storageDomain')?.open(historyIndex).catch(() => undefined);
+    const index = (await this.index)?.table('sessions');
     const sources = new Map<SessionId, Source>();
-    for (const item of await this.ctx.get('sessionPersistence')?.list() ?? []) {
-      sources.set(item.header.id, item);
+    for (const item of await persistence?.list() ?? []) {
+      sources.set(item.header.id, { ...item, fingerprint: durableFingerprint(item) });
     }
     for (const live of this.ctx.get('sessions')?.list() ?? []) {
-      sources.set(live.id, { header: live.header, revision: live.seq, live });
+      sources.set(live.id, { ...sources.get(live.id), header: live.header, revision: live.seq, live });
     }
     const pending = [...sources.values()].filter(source => source.header.cwd);
     const next = new Map<SessionId, Searchable>();
+    const writes: Promise<unknown>[] = [];
     let partial = false;
     const load = async () => {
       for (let source = pending.pop(); source; source = pending.pop()) {
-        const { id } = source.header;
+        const { id, cwd, createdAt } = source.header;
         const previous = this.cache.get(id);
         if (previous && previous.source.revision === source.revision && previous.source.live === source.live &&
-          previous.source.header.createdAt === source.header.createdAt && previous.source.header.cwd === source.header.cwd) {
+          previous.source.header.createdAt === createdAt && previous.source.header.cwd === cwd) {
           next.set(id, previous);
+          continue;
+        }
+        const saved = index?.get(id);
+        if (saved && saved.fingerprint === source.fingerprint && saved.createdAt === createdAt && saved.cwd === cwd &&
+          (!source.live || saved.nextSeq === source.revision)) {
+          next.set(id, { ...saved, source });
           continue;
         }
         try {
           const observed = await reader.observeSession(id, { projectionMode: 'none' });
           try {
             const titles = observed.events.flatMap(event => event.type === 'session/title' && event.data.title ? [event.data.title] : []);
-            next.set(id, { source, titles: new Set(['未命名会话', ...titles]) });
+            const messages = observed.events.flatMap(event => {
+              const message = messageOf(event);
+              const text = message && messageText(message);
+              return text ? [{ seq: Number(event.seq), time: event.time, text }] : [];
+            });
+            const title = titles.at(-1) || '未命名会话';
+            const row = { title, titles: [...new Set(['未命名会话', ...titles])], messages, nextSeq: observed.cursor + 1 };
+            next.set(id, { ...row, source });
+            if (index && cwd && source.fingerprint && observed.revision === source.fingerprint)
+              writes.push(index.put(id, { ...row, fingerprint: source.fingerprint, cwd, createdAt }).catch(() => undefined));
           } finally { observed[Symbol.dispose](); }
         } catch { partial = true; }
       }
     };
     await Promise.all(Array.from({ length: 4 }, load));
     this.cache = next;
+    if (index && persistence) for (const id of index.keys()) {
+      if (!sources.has(id as SessionId)) writes.push(index.delete(id).catch(() => undefined));
+    }
+    await Promise.all(writes);
     return partial;
   }
 
@@ -133,7 +187,7 @@ export class MessageHistory {
     await this.refreshing;
     let match: MessageOrigin | undefined;
     for (const [id, session] of this.cache) {
-      if (!session.titles.has(title)) continue;
+      if (!session.titles.includes(title)) continue;
       const result = await readBookmarkedTurns(this.ctx, id, [turn], false).catch(() => undefined);
       const item = result?.items.find(item => item.prompt === prompt && item.response === response);
       if (!item) continue;
@@ -143,7 +197,28 @@ export class MessageHistory {
     return match ?? null;
   }
 
-
+  async search(query: string) {
+    const term = query.trim().toLocaleLowerCase();
+    if (!term) return { items: [], more: false, partial: false };
+    this.refreshing ??= this.refresh().finally(() => { this.refreshing = undefined; });
+    const partial = await this.refreshing;
+    let more = false;
+    const matches = [...this.cache.values()].flatMap(({ source: { header }, title, messages }) => {
+      const hits: { sessionId: string; seq: number; time: number; snippet: string; title: string; cwd: string; child: boolean }[] = [];
+      for (let index = messages.length - 1; index >= 0; index--) {
+        const { seq, time, text } = messages[index];
+        const match = text.toLocaleLowerCase().indexOf(term);
+        if (match < 0) continue;
+        if (hits.length === 4) { more = true; break; }
+        const start = Math.max(0, match - 48), end = match + term.length + 72;
+        const snippet = (start ? '…' : '') + text.slice(start, end).replace(/\s+/g, ' ') + (end < text.length ? '…' : '');
+        hits.push({ sessionId: header.id, seq, time, snippet, title, cwd: header.cwd!, child: header.origin === 'subagent' || !!header.parentSession });
+      }
+      return hits;
+    });
+    matches.sort((a, b) => b.time - a.time || b.seq - a.seq || a.sessionId.localeCompare(b.sessionId));
+    return { items: matches.slice(0, 48), more: more || matches.length > 48, partial };
+  }
 }
 
 export async function readMessageOrigin(ctx: Context, location: MessageLocation, expectedId?: string) {
@@ -180,3 +255,4 @@ export async function readMessageOrigin(ctx: Context, location: MessageLocation,
 }
 
 export type ResolvedMessage = Awaited<ReturnType<typeof readMessageOrigin>>;
+export type HistoryResults = Awaited<ReturnType<MessageHistory['search']>>;
