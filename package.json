@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-sessivra",
-  "version": "0.3.0-dev.29",
+  "version": "0.3.0-dev.30",
   "description": "DSH Sessivra: session messaging, managed task coordination with shared decisions and acceptance, context references and conversation trees.",
   "type": "module",
   "license": "MIT",

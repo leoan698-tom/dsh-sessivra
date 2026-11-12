@@ -1857,16 +1857,8 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
       children.remove();
     };
   }, [sessionId, store]);
-  let nested = false;
-  let parentId = snapshot2.parents.get(sessionId);
-  while (parentId) {
-    if ([...snapshot2.rows].some((item) => item.sessionId === parentId && item.row.isConnected)) {
-      nested = true;
-      break;
-    }
-    parentId = snapshot2.parents.get(parentId);
-  }
-  const noticeOwner = [...snapshot2.rows].find((item) => item.row.isConnected && !snapshot2.hiddenSessions.has(item.sessionId) && !snapshot2.parents.has(item.sessionId)) ?? [...snapshot2.rows].find((item) => item.row.isConnected && !snapshot2.hiddenSessions.has(item.sessionId));
+  const nested = snapshot2.parents.has(sessionId);
+  const noticeOwner = [...snapshot2.rows].find((item) => item.row.isConnected && !snapshot2.hiddenSessions.has(item.sessionId) && !snapshot2.parents.has(item.sessionId));
   const showNotice = !hidden && !nested && noticeOwner === target2 && Boolean(snapshot2.problem || !snapshot2.loaded);
   (0, import_react4.useEffect)(() => {
     if (!target2) return;

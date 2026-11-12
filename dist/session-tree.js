@@ -282,17 +282,10 @@ export function NativeSessionChildren({ sessionId, store, openSession, currentId
         const detach = store.attach(mounted);
         return () => { observer.disconnect(); detach(); delete row.dataset.dshsmNested; delete row.dataset.dshsmHidden; delete row.dataset.dshsmParent; children.remove(); };
     }, [sessionId, store]);
-    let nested = false;
-    let parentId = snapshot.parents.get(sessionId);
-    while (parentId) {
-        if ([...snapshot.rows].some(item => item.sessionId === parentId && item.row.isConnected)) {
-            nested = true;
-            break;
-        }
-        parentId = snapshot.parents.get(parentId);
-    }
+    // Collapsing a workspace unmounts its rows without changing session lineage.
+    const nested = snapshot.parents.has(sessionId);
     // One notice for the whole list, including initial failure and folded trees.
-    const noticeOwner = [...snapshot.rows].find(item => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId) && !snapshot.parents.has(item.sessionId)) ?? [...snapshot.rows].find(item => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId));
+    const noticeOwner = [...snapshot.rows].find(item => item.row.isConnected && !snapshot.hiddenSessions.has(item.sessionId) && !snapshot.parents.has(item.sessionId));
     const showNotice = !hidden && !nested && noticeOwner === target && Boolean(snapshot.problem || !snapshot.loaded);
     useEffect(() => {
         if (!target)

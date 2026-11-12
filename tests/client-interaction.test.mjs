@@ -207,7 +207,9 @@ test('native header handlers, hierarchy, collapse, sorting, workspace removal an
     assert.equal(lead.nextElementSibling,children,'children follow a native sort operation');
     assert.equal(document.querySelector('header'),header);assert.equal(header.outerHTML,headerHTML);
     await render(['ordinary','other']);
-    assert.equal(document.querySelector('[data-row-key="session:ordinary"]').dataset.dshsmNested,undefined,'visible child is restored if its parent workspace is not rendered');
+    const ordinaryRow = document.querySelector('[data-row-key="session:ordinary"]');
+    assert.equal(ordinaryRow.dataset.dshsmNested,'true','closing the parent workspace keeps the child nested');
+    assert.equal(dom.window.getComputedStyle(ordinaryRow).display,'none','the child does not reappear among top-level rows');
     assert.equal(children.isConnected,false);
     await render(['lead','ordinary']);
     assert.match(document.querySelector('[data-row-key="session:lead"]').nextElementSibling.textContent,/Review/);
@@ -301,8 +303,10 @@ test('hidden branches stay absent after refresh or parent removal; native rows, 
     rows=rows.map(row=>['member','outside'].includes(row.id)?{...row,subagentKind:'standalone'}:row);await refresh();
     assert.equal(document.querySelector('[aria-label="打开会话：Member"]'),null);assert.equal(native('member').dataset.dshsmHidden,'true');
     await render(ids.filter(id=>id!=='lead'));
-    assert.equal(native('ordinary').dataset.dshsmNested,undefined,'ordinary child remains navigable when its parent is not mounted');
+    assert.equal(native('ordinary').dataset.dshsmNested,'true','an unmounted parent does not change the child relationship');
     assert.equal(dom.window.getComputedStyle(native('outside')).display,'none','filtered subagent never becomes a top-level native row');
+    rows=rows.filter(row=>row.id!=='lead');await refresh();
+    assert.equal(native('ordinary').dataset.dshsmNested,undefined,'a missing parent in the refreshed tree allows the ordinary session to remain reachable');
     await act(async()=>root.unmount());
     for(const row of retained)for(const key of ['dshsmNested','dshsmHidden','dshsmParent'])assert.equal(row.dataset[key],undefined);
     assert.equal(document.querySelectorAll('.dshsm-native-children,.dshsm-native-toggle').length,0);

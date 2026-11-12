@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0-dev.30
+
+- Keep known child sessions nested when their workspace is collapsed. Reopening the workspace restores the branch under its original parent.
+
 ## 0.3.0-dev.29
 
 - Import Claude Code and Codex conversations and memory, including compressed Codex logs and Claude conversation trees. Continue imported chats in DSH and download their original records.
