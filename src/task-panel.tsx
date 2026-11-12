@@ -3,13 +3,14 @@ import { css } from './task-panel-styles.js';
 import { Icon, Pill, when } from './task-panel-visual.js';
 import { fileName, taskFiles } from './task-files.js';
 import { resultOverview } from './task-result-overview.js';
+import { LocalCliPage } from './local-cli-page.js';
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol';
 import type { SessivraPanel } from './task-panel-service.js';
 import type { PanelCommand, PanelQuery } from './panel-contract.js';
 import type { MessageOrigin, ResolvedMessage } from './message-history.js';
 
 type RemoteApi = {
-  [K in 'participants' | 'detail' | 'list' | 'command' | 'operation' | 'preview']: (
+  [K in 'participants' | 'detail' | 'list' | 'command' | 'operation' | 'preview' | 'cliStatus' | 'refreshCliStatus' | 'cliLogin' | 'cliChatProviders']: (
     ...args: Parameters<SessivraPanel[K]>
   ) => Promise<RemoteResult<Awaited<ReturnType<SessivraPanel[K]>>>>;
 };
@@ -181,6 +182,7 @@ export function TaskPanel({
     [executor, setExecutor] = useState(''),
     [tick, reload] = useState(0);
   const [filtersOpen, showFilters] = useState(false);
+  const [showCli, setShowCli] = useState(false);
   const panel = useRef<HTMLElement>(null);
   const autoPick = useRef(false);
   const pendingKey = 'sessivra-task-panel/pending-operation';
@@ -608,7 +610,7 @@ export function TaskPanel({
       </div>
     </form>
   );
-  const showDetail = !!selected && mode !== 'create';
+  const showDetail = !!selected && mode !== 'create' && !showCli;
   const feedback = <>
     {error && <p role="alert">{error}</p>}
     {pending && !busy && <button onClick={() => void checkPending()}>回查上次提交</button>}
@@ -619,12 +621,15 @@ export function TaskPanel({
       <div className="st-master"><div className="st-shell">
       <header className="st-head">
         <h2>{taskPanelTitle}</h2>
-        {mode !== 'create' && <button className="st-primary" onClick={() => edit('create')}><Icon name="plus" size={14}/>新建任务</button>}
+        {mode !== 'create' && !showCli && <button className="st-primary" onClick={() => edit('create')}><Icon name="plus" size={14}/>新建任务</button>}
       </header>
-      {!showDetail && feedback}
+      {!showDetail && !showCli && feedback}
       {mode === 'create' ? <div className="st-formpage">{actionForm}</div> : <>
       <nav aria-label="任务视图">{(['attention','all','history'] as const).map((v,i)=>
-        <button key={v} aria-pressed={query.view===v} onClick={()=>filter('view',v)}>{['待处理','全部任务','历史'][i]}</button>)}</nav>
+        <button key={v} aria-pressed={!showCli && query.view===v} onClick={()=>{setShowCli(false); filter('view',v);}}>{['待处理','全部任务','历史'][i]}</button>)}
+        <button aria-pressed={showCli} onClick={()=>setShowCli(true)}>本机 CLI</button>
+      </nav>
+      {showCli ? <LocalCliPage api={api}/> : <>
       <div className="st-bar"><label className="st-search"><Icon name="search"/><input type="search" aria-label="搜索任务" placeholder="搜索任务" value={query.search??''} onChange={e=>filter('search',e.target.value)}/></label><button aria-expanded={filtersOpen} onClick={()=>showFilters(!filtersOpen)}><Icon name="filter"/>筛选{chips.length>0 && <span className="st-count">{chips.length}</span>}</button></div>
       {filtersOpen && <div className="st-filters">
         <label>工作目录<select
@@ -696,7 +701,7 @@ export function TaskPanel({
         {(query.view==='attention'?!page.attention.length:!page.items.length) && <div className="st-empty"><span className="st-emptyicon"><Icon name={query.view==='attention'?'inbox':query.view==='history'?'archive':'list'} size={24}/></span><h4>{chips.length||query.search?'没有符合条件的任务。':query.view==='attention'?'当前没有需要处理的事项。':query.view==='history'?'还没有归档任务':'还没有任务'}</h4><p>{chips.length||query.search?'换个关键词，或清除筛选再查看。':query.view==='attention'?'共同问题、待验收结果和受阻任务会出现在这里。':query.view==='history'?'任务归档后，可以在这里回看决定和交付文件。':'创建任务后，可以在这里跟进执行和验收。'}</p>{chips.length||query.search?<button onClick={clearFilters}>清除筛选</button>:query.view==='attention'?<button onClick={()=>filter('view','all')}>查看全部任务</button>:query.view==='all'?<button onClick={()=>edit('create')}>创建第一项任务</button>:null}</div>}
         {(query.cursor||page.next)&&<div className="st-listfoot">{query.cursor && <button onClick={()=>setQuery(q=>({...q,cursor:undefined}))}>首页</button>}{page.next && <button onClick={()=>setQuery(q=>({...q,cursor:page.next!}))}>下一页</button>}</div>}
         </>}
-      </aside></>}
+      </aside></>}</>}
       </div></div>
 
       {showDetail && selected && <article className="st-detail" key={selected.id}>

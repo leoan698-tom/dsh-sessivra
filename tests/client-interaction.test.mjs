@@ -13,7 +13,41 @@ import {SessionActionsMenu} from '../dist/session-actions.js';
 import {createSessionDialogStore,SessionDialogOutlet} from '../dist/session-dialog.js';
 import {createWorkspaceArchiveSource,NativeTeamSearch,searchTeamMembers,selectParentUnavailable,ParentUnavailableComposer} from '../dist/session-navigation.js';
 import {TaskPanel} from '../dist/task-panel.js';
+import {installCliToolOutput} from '../dist/cli-tool-output.js';
 import {createMessageNavigator,MessageJumpNotice} from '../dist/message-navigation.js';
+
+test('CLI tool output stays collapsed until opened and retains its original text', async () => {
+  const dom = new JSDOM('<main></main>');
+  const {document} = dom.window;
+  const dispose = installCliToolOutput(document);
+  try {
+    document.querySelector('main').innerHTML = `
+      <p><strong>Grok · GitHub 查询</strong></p>
+      <div class="md-code-block"><div data-code-block-banner>JSON<span><button class="native-action" title="复制"></button></span></div><div data-code-block-content><pre>{"url":"https://example.com"}</pre></div></div>
+      <div class="md-code-block"><div data-code-block-banner>js</div><div data-code-block-content><pre>console.log(1)</pre></div></div>`;
+    await Promise.resolve();
+    const [tool, ordinary] = document.querySelectorAll('.md-code-block');
+    const button = tool.querySelector('button[aria-expanded]');
+    const raw = tool.querySelector('[data-code-block-content]');
+    assert.ok(button.classList.contains('native-action'));
+    assert.equal(button.nextElementSibling.title, '复制');
+    assert.equal(button.textContent, '');
+    assert.equal(button.getAttribute('aria-label'), '展开原始输出');
+    assert.equal(button.getAttribute('aria-expanded'), 'false');
+    assert.equal(dom.window.getComputedStyle(raw).display, 'none');
+    assert.equal(ordinary.querySelector('button'), null);
+    button.click();
+    assert.equal(button.getAttribute('aria-expanded'), 'true');
+    assert.equal(button.getAttribute('aria-label'), '收起原始输出');
+    assert.notEqual(dom.window.getComputedStyle(raw).display, 'none');
+    assert.equal(raw.textContent, '{"url":"https://example.com"}');
+    button.click();
+    assert.equal(dom.window.getComputedStyle(raw).display, 'none');
+  } finally {
+    dispose();
+    dom.window.close();
+  }
+});
 
 test('locating an original message highlights its row without inserting a banner', async () => {
   const dom = new JSDOM('<div id="app"></div><div data-conversation-session="session"><div data-chat-node-key="row">原消息</div></div>');
@@ -98,6 +132,52 @@ test('task creation preview waits for session names and explains when work can s
     assert.match(preview(), /将新建会话负责协调。将新建子会话执行任务。/);
     await choose(0, '');
     assert.equal(preview(), '请选择负责协调的会话。');
+  } finally {
+    await act(async () => root.unmount());
+    dom.window.close();
+    Object.assign(globalThis, previous);
+  }
+});
+
+test('the task center CLI page detects status and rechecks after official login', async () => {
+  const dom = new JSDOM('<div id="app"></div>', {virtualConsole: new VirtualConsole()});
+  const previous = {window: globalThis.window, document: globalThis.document, IS_REACT_ACT_ENVIRONMENT: globalThis.IS_REACT_ACT_ENVIRONMENT};
+  Object.assign(globalThis, {window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true});
+  const root = createRoot(document.getElementById('app'));
+  const calls = [];
+  const statusCalls = [];
+  let auth = 'signed-out';
+  const api = {
+    participants: async () => ({ok: true, value: []}),
+    list: async () => ({ok: true, value: {items: [], attention: [], groups: []}}),
+    cliStatus: async () => readStatus(false),
+    refreshCliStatus: async () => readStatus(true),
+    cliLogin: async provider => { calls.push(provider); auth = 'signed-in'; return {ok: true, value: 'started'}; },
+  };
+  const readStatus = force => {
+    statusCalls.push(force);
+    return {ok: true, value: [
+      {provider: 'claude', installed: true, version: '2.1.0', auth, dispatchConfigured: true, loginRunning: false},
+      {provider: 'grok', installed: true, auth: 'unknown'},
+    ]};
+  };
+  try {
+    await act(async () => root.render(React.createElement(TaskPanel, {api})));
+    await act(async () => [...document.querySelectorAll('nav button')].find(button => button.textContent === '本机 CLI').click());
+    const page = document.querySelector('.st-cli');
+    assert.match(page.textContent, /Claude Code.*未登录/);
+    assert.match(page.textContent, /Grok Build.*登录状态待确认/);
+    assert.deepEqual(statusCalls, [false]);
+    assert.equal(page.querySelector('button[aria-label="Grok Build 授权登录"]'), null);
+    await act(async () => dom.window.dispatchEvent(new dom.window.Event('focus')));
+    assert.deepEqual(statusCalls, [false]);
+    await act(async () => page.querySelector('.st-cli-head button').click());
+    assert.deepEqual(statusCalls, [false, true]);
+    await act(async () => page.querySelector('button[aria-label="Claude Code 授权登录"]').click());
+    assert.deepEqual(calls, ['claude']);
+    assert.deepEqual(statusCalls, [false, true, false]);
+    assert.match(page.textContent, /Claude Code.*已登录/);
+    assert.equal(page.querySelector('button[aria-label]'), null);
   } finally {
     await act(async () => root.unmount());
     dom.window.close();

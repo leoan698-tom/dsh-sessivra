@@ -66,6 +66,18 @@ export const css = `
   & nav { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 14px; }
   & nav button { min-height: 28px; padding: 0 10px; border: 0; border-radius: 14px; color: var(--muted); }
   & nav button[aria-pressed=true] { color: var(--text); background: var(--hover); }
+  & .st-cli { max-width: 760px; }
+  & .st-cli-head, & .st-cli-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; }
+  & .st-cli-head { margin: 18px 0 14px; }
+  & .st-cli-head h3 { margin: 0; }
+  & .st-cli button { min-height: 36px; }
+  & .st-cli-list { list-style: none; border: 1px solid var(--stroke); border-radius: 14px; margin: 0; padding: 0; }
+  & .st-cli-list li { padding: 16px; }
+  & .st-cli-list li + li { border-top: 1px solid var(--stroke); }
+  & .st-cli-row > div { flex: 1 0 125px; display: grid; gap: 4px; }
+  & .st-cli-state, & .st-cli-note, & .st-cli-row small { color: var(--secondary); }
+  & .st-cli-state[data-ready=true] { color: var(--text); }
+  & .st-cli-note { margin: 10px 0 0; }
 
   & .st-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   & .st-search {

@@ -5,9 +5,207 @@ import {defineTool} from '@deepseek-ai/dsh-tools';
 import {createUserMessage} from '@deepseek-ai/dsh-llm';
 import * as Plugin from '../dist/index.js';
 import {operatorAddress} from '../dist/core.js';
-import {readFile} from 'node:fs/promises';
+import {readFile, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {Buffer} from 'node:buffer';
+import {cliMarker} from '../dist/cli-mention.js';
+import {LocalCli} from '../dist/local-cli.js';
+
+test('CLI chat streams history, relays decisions and requires approval for automatic selection', async t => {
+  const h = await host(undefined, {
+    ...Plugin,
+    apply: ctx => Plugin.apply(ctx, { externalCli: {
+      codex: { executable: process.execPath, timeoutSeconds: 15 },
+      grok: { executable: process.execPath, timeoutSeconds: 15, dispatchApproval: 'direct' },
+    } }),
+  });
+  t.after(() => h.close());
+  const approvalRequests = [];
+  let allowAuto = false;
+  h.ctx.provide('approval');
+  h.ctx.set('approval', { request: async request => {
+    approvalRequests.push(request);
+    if (request.toolName.startsWith('自动选择')) return allowAuto ? 'allowed-once' : 'rejected';
+    return request.toolName.startsWith('Codex') ? 'allowed-once' : 'rejected';
+  } });
+  h.ctx.provide('userQuestions');
+  h.ctx.set('userQuestions', { ask: async request => ({
+    answers: request.questions.map(question => ({id: question.id, selected: ['方案 B']})),
+  }) });
+  const fixture = `
+const readline = require('node:readline');
+const send = value => process.stdout.write(JSON.stringify(value) + '\\n');
+const methods = readline.createInterface({input: process.stdin});
+const grok = process.argv[1].endsWith('agent');
+const threadId = 'fixture-thread';
+const notify = (method, params) => send({method, params});
+const ask = (id, method, params) => send({id, method, params});
+let turnRequest;
+methods.on('line', line => {
+  const message = JSON.parse(line);
+  const {method, id, params, result} = message;
+  const respond = result => send({id, result});
+  if (method === 'initialize') respond(grok ? {authMethods:[{id:'cached_token'}]} : {});
+  if (method === 'thread/start' || method === 'thread/resume') respond({thread:{id:threadId}});
+  if (method === 'authenticate' || method === 'session/load') respond({});
+  if (method === 'session/new') respond({sessionId:threadId});
+  if (method === 'turn/start') {
+    respond({});
+    ask('approve-codex', 'item/commandExecution/requestApproval', {threadId, command:'fixture-safe-command'});
+  }
+  if (id === 'approve-codex') {
+    if (result.decision !== 'accept') process.exit(1);
+    ask('decide-codex', 'item/tool/requestUserInput', {threadId, questions:[
+      {id:'pick', question:'采用哪个方案？', options:[{label:'方案 A'}, {label:'方案 B'}]},
+    ]});
+  }
+  if (id === 'decide-codex') {
+    if (result.answers.pick.answers[0] !== '方案 B') process.exit(1);
+    notify('item/agentMessage/delta', {threadId, itemId:'a', delta:'CODEX_DECISION_OK'});
+    notify('turn/completed', {threadId, turn:{status:'completed'}});
+  }
+  if (method === 'session/prompt') {
+    turnRequest = id;
+    ask('approve-grok', 'session/request_permission', {sessionId:threadId, toolCall:{title:'fixture Grok tool'}, options:[
+      {kind:'allow_once', optionId:'allow'}, {kind:'reject_once', optionId:'deny'},
+    ]});
+  }
+  if (id === 'approve-grok') {
+    if (result.outcome.optionId !== 'deny') process.exit(1);
+    notify('session/update', {sessionId:threadId, update:{sessionUpdate:'tool_call_update', title:'Fetch releases',
+      content:[{type:'content',content:{type:'text',text:'{"tarball_url":"https://api.github.com/repos/example/releases/1"}'}}]}});
+    notify('session/update', {sessionId:threadId, update:{sessionUpdate:'agent_message_chunk', content:{type:'text', text:'GROK_DENY_OK'}}});
+    send({id:turnRequest, result:{stopReason:'end_turn'}});
+  }
+});
+`;
+  for (const name of ['app-server','agent']) await writeFile(join(h.root,name),fixture);
+  const turn = async (agent, text) => {
+    agent.followup(createUserMessage({source:{kind:'user'},content:[{type:'text',text}]}));
+    await agent.whenIdle();
+    return agent.session.deriveMessages().filter(message=>message.role==='assistant').at(-1)
+      .content.filter(part=>part.type==='text').map(part=>part.text).join('');
+  };
+  const {agent} = await h.create('cli-interactive');
+  assert.match(await turn(agent,cliMarker('codex')+' Test the decision.'), /已允许一次[\s\S]*已回答：方案 B[\s\S]*CODEX_DECISION_OK/);
+  assert.match(await turn(agent,'Continue.'), /CODEX_DECISION_OK/);
+  const grok = await turn(agent,cliMarker('grok')+' Test rejection.');
+  assert.match(grok, /未授权[\s\S]*GROK_DENY_OK/);
+  assert.match(grok, /~{3,}json\n\{"tarball_url":"https:\/\/api.github.com\/repos\/example\/releases\/1"\}\n~{3,}\n[\s\S]*GROK_DENY_OK/);
+  assert.equal(await turn(agent,cliMarker('deepseek')+' Return.'), 'Synthetic acknowledgement.');
+  assert.equal(approvalRequests.length,3);
+  assert.match(approvalRequests[0].reason,/fixture-safe-command/);
+  h.adapter.script = async function* (options) {
+    const response = options.system?.startsWith('You route a user task')
+      ? '{"provider":"grok","reason":"适合横向比较"}' : 'Synthetic acknowledgement.';
+    yield {type:'block-start',index:0,blockType:'text'};
+    yield {type:'text-delta',index:0,text:response};
+    yield {type:'block-end',index:0,block:{type:'text',text:response}};
+    yield {type:'finish',reason:'stop'};
+  };
+  const task = '比较两种实现路线。';
+  assert.match(await turn(agent,cliMarker('auto')+' '+task), /建议使用.*Grok Build[\s\S]*本轮任务未发送/);
+  assert.equal(approvalRequests.length,4);
+  assert.match(approvalRequests[3].reason,/适合横向比较[\s\S]*比较两种实现路线/);
+  assert.equal(await turn(agent,'Remain in DSH.'), 'Synthetic acknowledgement.');
+  allowAuto = true;
+  assert.match(await turn(agent,cliMarker('auto')+' '+task), /已同意切换到.*Grok Build[\s\S]*GROK_DENY_OK/);
+  assert.match(await turn(agent,'Continue with Grok.'), /GROK_DENY_OK/);
+  assert.equal(approvalRequests.length,7);
+});
+
+test('local CLI status and login are restricted to the task panel owner', async t => {
+  const h = await host();
+  t.after(() => h.close());
+  const invoke = (method, args, peer = h.peer) => h.ctx.typertGateway.invoke({
+    namespace: 'sessivraTaskPanel', method, args, peer,
+  });
+  const outsider = { ...h.peer, principal: { kind: 'test-outsider' } };
+  await assert.rejects(invoke('cliStatus', {}, outsider));
+  await assert.rejects(invoke('refreshCliStatus', {}, outsider));
+  await assert.rejects(invoke('cliLogin', { provider: 'claude' }, outsider));
+  await assert.rejects(invoke('cliLogin', { provider: 'cmd.exe' }));
+  const rows = await invoke('cliStatus', {});
+  assert.deepEqual(rows.map(row => row.provider), ['claude', 'codex', 'grok']);
+  for (const row of rows) {
+    assert.deepEqual(Object.keys(row).sort(),
+      ['auth', 'dispatchConfigured', 'installed', 'launchFailed', 'loginRunning', 'provider', 'version']);
+    assert.ok(['signed-in', 'signed-out', 'unknown'].includes(row.auth));
+  }
+});
+
+test('local CLI reuses stored status and distinguishes a failed probe from logout', async () => {
+  let saved;
+  const cli = new LocalCli({}, [], async rows => { saved = structuredClone(rows); });
+  cli.detect = async provider => ({
+    provider, installed: true, auth: 'signed-in', version: '1.0.0', dispatchConfigured: true,
+  });
+  assert.equal((await cli.status()).length, 3);
+  await cli.close();
+  const reopened = new LocalCli({}, saved);
+  reopened.detect = async () => assert.fail('Opening with cached rows must not start a probe');
+  assert.equal((await reopened.status()).find(row => row.provider === 'grok').auth, 'signed-in');
+  let grokAuth = 'unknown';
+  reopened.detect = async provider => ({
+    ...saved.find(row => row.provider === provider),
+    auth: provider === 'grok' ? grokAuth : 'signed-in',
+  });
+  const unverified = (await reopened.status(true)).find(row => row.provider === 'grok');
+  assert.equal(unverified.auth, 'signed-in');
+  assert.equal(unverified.authUnverified, true);
+  grokAuth = 'signed-out';
+  const signedOut = (await reopened.status(true)).find(row => row.provider === 'grok');
+  assert.equal(signedOut.auth, 'signed-out');
+  assert.equal(signedOut.authUnverified, undefined);
+  await reopened.close();
+});
+
+test('external CLI dispatch is opt-in and requires host approval for the exact prompt', async t => {
+  const name = 'sessivra_external_cli';
+  const ordinary = await host();
+  t.after(() => ordinary.close());
+  assert.equal(ordinary.ctx.tools.get(name), undefined);
+
+  const configured = await host(undefined, {
+    ...Plugin,
+    apply: ctx => Plugin.apply(ctx, { externalCli: { codex: { executable: process.execPath } } }),
+  });
+  t.after(() => configured.close());
+  const { agent } = await configured.create('cli-task-owner');
+  const request = { provider: 'codex', prompt: 'Read the project and report the test entry point.' };
+  assert.match(JSON.stringify(await configured.tool(agent, name, request)), /EXTERNAL_CLI_APPROVAL_UNAVAILABLE/);
+  const approvals = [];
+  configured.ctx.provide('approval');
+  configured.ctx.set('approval', { request: async input => { approvals.push(input); return 'denied'; } });
+
+  assert.match(JSON.stringify(await configured.tool(agent, name, { ...request, cwd: 'forged' })), /Unrecognized key/);
+  assert.match(JSON.stringify(await configured.tool(agent, name, { ...request, sessionId: '--last' })), /Invalid UUID/);
+  assert.match(JSON.stringify(await configured.tool(agent, name, { ...request, provider: 'grok' })), /EXTERNAL_CLI_NOT_CONFIGURED/);
+  assert.equal(approvals.length, 0);
+  assert.match(JSON.stringify(await configured.tool(agent, name, request)), /EXTERNAL_CLI_APPROVAL_DENIED/);
+  assert.equal(approvals.length, 1);
+  assert.ok(approvals[0].reason.includes(agent.session.header.cwd));
+  assert.ok(approvals[0].reason.endsWith(request.prompt));
+});
+
+test('only an explicitly configured external CLI can dispatch without a repeated approval', async t => {
+  const h = await host(undefined, {
+    ...Plugin,
+    apply: ctx => Plugin.apply(ctx, { externalCli: {
+      codex: { executable: process.execPath, dispatchApproval: 'direct' },
+      claude: { executable: process.execPath },
+    } }),
+  });
+  t.after(() => h.close());
+  const { agent } = await h.create('cli-direct-owner');
+  const tool = 'sessivra_external_cli';
+  const prompt = 'Reply with a brief test marker.';
+  // Node exits on the CLI arguments, proving dispatch reached the process without an approval service.
+  const result = value(await h.tool(agent, tool, { provider: 'codex', prompt }));
+  assert.equal(result.status, 'failed');
+  assert.ok(result.exitCode > 0);
+  assert.match(JSON.stringify(await h.tool(agent, tool, { provider: 'claude', prompt })), /EXTERNAL_CLI_APPROVAL_UNAVAILABLE/);
+});
 
 test('A composer recipient persists before an explicit A model tool call',async t=>{
   const h=await host();t.after(()=>h.close());

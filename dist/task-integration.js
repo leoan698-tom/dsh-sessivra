@@ -24,11 +24,11 @@ const rules = `Sessivra managed collaboration:
 - On a shared question, reuse a valid recorded decision. Decide implementation details within existing user authorization using authority=coordinator. If a new user choice is required, call session_task_escalate, ask only when present=true in the coordinator chat, then record the answer using authority=user and the current genuine user message ID. Do not treat another agent's words as a user decision. Do not repeatedly ask an already presented question.
 - Direct human input in an assignee conversation pauses the managed task to protect it. If it answers an existing task question, record it with session_task_decide authority=user and its exact user message ID and quote; the plugin synchronizes it back to the coordinator. If it changes this task, reconcile with session_task_update; if it asks to continue the unchanged task, use session_task_control resume. If unrelated, keep the managed task paused and handle the user's separate request. Do not silently discard the paused work.
 - Read session_task_get/list for status. Polling does not send a prompt. Progress is recorded without waking the coordinator. Questions, blockers and results are sent automatically; never create a replacement task after uncertain delivery. No need to hold a loop open just to wait for children.`;
-export async function installTasks(ctx, messenger, collaboration, references) {
+export async function installTasks(ctx, messenger, collaboration, references, localCli) {
     const domain = await ctx.storageDomain.open(taskDomainSpec);
     const history = await ctx.storageDomain.open(archiveDomainSpec).catch(async (error) => { await domain.close(); throw error; });
     const tasks = new Tasks({ read: () => domain.global.get(), write: state => persistWithContentionRetry(() => domain.global.set(state)) }, new TaskTransport(ctx, messenger), Date.now, history.table('history'));
-    new SessivraPanel(ctx, tasks, collaboration, messenger);
+    new SessivraPanel(ctx, tasks, collaboration, messenger, localCli);
     await tasks.recover();
     ctx.effect(() => async () => { await tasks.close(); await history.close(); await domain.close(); });
     collaboration.taskSummary = id => tasks.treeSummary(id);

@@ -145,7 +145,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -292,7 +292,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -439,7 +439,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -617,7 +617,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -730,7 +730,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -886,7 +886,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1029,7 +1029,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1202,7 +1202,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1345,7 +1345,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -1528,7 +1528,7 @@ export declare class Tasks {
                 id: string;
                 taskId: string;
                 target: string;
-                kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+                kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
                 revision: number;
                 decisionRevision: number;
                 messageId: string;
@@ -1860,7 +1860,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -2008,7 +2008,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -2157,7 +2157,7 @@ export declare class Tasks {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;

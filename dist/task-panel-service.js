@@ -59,6 +59,10 @@ export const labels = {
 let SessivraPanel = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
+    let _cliStatus_decorators;
+    let _refreshCliStatus_decorators;
+    let _cliChatProviders_decorators;
+    let _cliLogin_decorators;
     let _searchHistory_decorators;
     let _locateMessage_decorators;
     let _bookmarkedTurns_decorators;
@@ -73,6 +77,10 @@ let SessivraPanel = (() => {
     return class SessivraPanel extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _cliStatus_decorators = [Remote];
+            _refreshCliStatus_decorators = [Remote];
+            _cliChatProviders_decorators = [Remote];
+            _cliLogin_decorators = [Remote];
             _searchHistory_decorators = [Remote];
             _locateMessage_decorators = [Remote];
             _bookmarkedTurns_decorators = [Remote];
@@ -84,6 +92,10 @@ let SessivraPanel = (() => {
             _preview_decorators = [Remote];
             _detail_decorators = [Remote];
             _command_decorators = [Remote];
+            __esDecorate(this, null, _cliStatus_decorators, { kind: "method", name: "cliStatus", static: false, private: false, access: { has: obj => "cliStatus" in obj, get: obj => obj.cliStatus }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _refreshCliStatus_decorators, { kind: "method", name: "refreshCliStatus", static: false, private: false, access: { has: obj => "refreshCliStatus" in obj, get: obj => obj.refreshCliStatus }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _cliChatProviders_decorators, { kind: "method", name: "cliChatProviders", static: false, private: false, access: { has: obj => "cliChatProviders" in obj, get: obj => obj.cliChatProviders }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _cliLogin_decorators, { kind: "method", name: "cliLogin", static: false, private: false, access: { has: obj => "cliLogin" in obj, get: obj => obj.cliLogin }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _searchHistory_decorators, { kind: "method", name: "searchHistory", static: false, private: false, access: { has: obj => "searchHistory" in obj, get: obj => obj.searchHistory }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _locateMessage_decorators, { kind: "method", name: "locateMessage", static: false, private: false, access: { has: obj => "locateMessage" in obj, get: obj => obj.locateMessage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _bookmarkedTurns_decorators, { kind: "method", name: "bookmarkedTurns", static: false, private: false, access: { has: obj => "bookmarkedTurns" in obj, get: obj => obj.bookmarkedTurns }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -100,18 +112,36 @@ let SessivraPanel = (() => {
         tasks = __runInitializers(this, _instanceExtraInitializers);
         collaboration;
         messenger;
+        localCli;
         history;
-        constructor(ctx, tasks, collaboration, messenger) {
+        constructor(ctx, tasks, collaboration, messenger, localCli) {
             super(ctx, 'sessivraTaskPanel');
             this.tasks = tasks;
             this.collaboration = collaboration;
             this.messenger = messenger;
+            this.localCli = localCli;
             this.history = new MessageHistory(ctx);
             ctx.effect(() => () => this.history.close());
         }
         owner() {
             if (this.ctx.invocation?.peer.principal.kind !== 'owner')
                 throw new Error('PANEL_OWNER_REQUIRED');
+        }
+        async cliStatus() {
+            this.owner();
+            return this.localCli.status();
+        }
+        async refreshCliStatus() {
+            this.owner();
+            return this.localCli.status(true);
+        }
+        cliChatProviders() {
+            this.owner();
+            return this.localCli.chatProviders();
+        }
+        async cliLogin(provider) {
+            this.owner();
+            return this.localCli.login(provider);
         }
         async searchHistory(query) {
             this.owner();

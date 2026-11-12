@@ -1,9 +1,11 @@
 import type { Context } from '@deepseek-ai/cordis';
 import '@deepseek-ai/dsh-agent';
+import { z } from 'zod';
 import { type Limits, type Root } from './core.js';
 import { MessengerSettings } from './settings.js';
 import '@deepseek-ai/dsh-typert-registry';
 import { type TreeSessionSummary } from './collaboration.js';
+import { externalCliSchema } from './external-cli.js';
 export declare const name = "dsh-plugin-sessivra";
 export declare const inject: string[];
 interface SessionControllerAccess {
@@ -43,5 +45,7 @@ declare module '@deepseek-ai/cordis' {
         sessionController: SessionControllerAccess;
     }
 }
-export declare function apply(ctx: Context, config?: Partial<Limits>): Promise<void>;
+export declare function apply(ctx: Context, config?: Partial<Limits> & {
+    externalCli?: z.input<typeof externalCliSchema>;
+}): Promise<void>;
 export {};

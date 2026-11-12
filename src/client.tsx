@@ -7,6 +7,8 @@ import { TaskPanel, taskPanelTitle, type TaskHistoryApi, type TaskPanelApi } fro
 import { createMessageNavigator, MessageJumpNotice } from './message-navigation.js';
 import { BookmarkLibrary } from './bookmark-library.js';
 import { createBookmarkMentionSource } from './bookmark-mention.js';
+import { cliUserText, createCliMentionSource } from './cli-mention.js';
+import { installCliToolOutput } from './cli-tool-output.js';
 import { compactNativeReferences, createSidebarMentionSource, type MentionRegistry } from './mention-menu.js';
 import { bookmarkUserText, type SentBookmark } from './bookmark-user-text.js';
 import { SentBookmarkChip } from './sent-bookmark.js';
@@ -41,6 +43,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' { interface TypertRemoteNamesp
 export const inject = ['slots', 'remote'];
 export async function apply(ctx: Context) {
   await ctx.remote.$mount(remoteContribution);
+  if (typeof document !== 'undefined' && document.body) ctx.effect(() => installCliToolOutput(document), 'sessivra: collapse CLI tool output');
   await ctx.inject(['remote.sessionMessenger'], remoteCtx => {
     remoteCtx.inject(['uiWorkspace', 'sessions', 'conversation', 'remote.sessionCollaboration'], treeCtx => {
       // Extend native session rows; never occupy sidebar.workspaces, whose owner
@@ -134,6 +137,12 @@ export async function apply(ctx: Context) {
           return result.value;
         };
         panelCtx.inject(['inputTriggers'], mentionCtx => {
+          const cli = createCliMentionSource(async () => {
+            const result = await api.cliChatProviders();
+            return result.ok ? result.value : [];
+          });
+          const registry = (mentionCtx as unknown as { inputTriggers: MentionRegistry }).inputTriggers;
+          mentionCtx.effect(() => registry.registerSource(cli), 'sessivra: CLI chat mentions');
           const source = createBookmarkMentionSource(loadBookmarks, async (origin, turn) => {
             const result = await api.bookmarkReference(origin, turn);
             if (!result.ok) throw new Error(result.error.message);
@@ -151,7 +160,12 @@ export async function apply(ctx: Context) {
         });
         const jumpBookmark = ({ sessionId, seq, messageId }: MessageOrigin) => { void navigator.jump({ sessionId, seq }, messageId, true); };
         panelCtx.inject(['uiConversation'], textCtx => {
-          const { uiConversation } = textCtx as unknown as { uiConversation: { userText: { register(rule: typeof bookmarkUserText): () => void } } };
+          const { uiConversation } = textCtx as unknown as { uiConversation: { userText: { register(rule: typeof bookmarkUserText | typeof cliUserText): () => void } } };
+          textCtx.effect(() => uiConversation.userText.register(cliUserText), 'sessivra: display sent CLI selection');
+          panelSlots.inject('conversation.user.text.node', () => panelSlots.register({
+            name: 'conversation.user.text.node', key: cliUserText.id, priority: 100,
+          }, ({ node }: { node: { data: { label: string } } }) =>
+            <strong>{node.data.label}</strong>));
           textCtx.effect(() => uiConversation.userText.register(bookmarkUserText), 'sessivra: display sent bookmark references');
           panelSlots.inject('conversation.user.text.node', () => panelSlots.register({
             name: 'conversation.user.text.node', key: bookmarkUserText.id, priority: 100,

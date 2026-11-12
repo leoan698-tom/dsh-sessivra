@@ -35,10 +35,10 @@ __export(client_exports, {
   inject: () => inject
 });
 module.exports = __toCommonJS(client_exports);
-var import_react15 = __toESM(require("react"), 1);
+var import_react16 = __toESM(require("react"), 1);
 
 // src/task-panel.tsx
-var import_react = require("react");
+var import_react2 = require("react");
 
 // src/task-panel-styles.ts
 var css = `
@@ -108,6 +108,18 @@ var css = `
   & nav { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 14px; }
   & nav button { min-height: 28px; padding: 0 10px; border: 0; border-radius: 14px; color: var(--muted); }
   & nav button[aria-pressed=true] { color: var(--text); background: var(--hover); }
+  & .st-cli { max-width: 760px; }
+  & .st-cli-head, & .st-cli-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; }
+  & .st-cli-head { margin: 18px 0 14px; }
+  & .st-cli-head h3 { margin: 0; }
+  & .st-cli button { min-height: 36px; }
+  & .st-cli-list { list-style: none; border: 1px solid var(--stroke); border-radius: 14px; margin: 0; padding: 0; }
+  & .st-cli-list li { padding: 16px; }
+  & .st-cli-list li + li { border-top: 1px solid var(--stroke); }
+  & .st-cli-row > div { flex: 1 0 125px; display: grid; gap: 4px; }
+  & .st-cli-state, & .st-cli-note, & .st-cli-row small { color: var(--secondary); }
+  & .st-cli-state[data-ready=true] { color: var(--text); }
+  & .st-cli-note { margin: 10px 0 0; }
 
   & .st-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   & .st-search {
@@ -281,8 +293,97 @@ function resultOverview(result2) {
   return { text: lead || "\u6267\u884C\u4F1A\u8BDD\u5DF2\u63D0\u4EA4\u7ED3\u679C", highlights };
 }
 
-// src/task-panel.tsx
+// src/local-cli-page.tsx
+var import_react = require("react");
 var import_jsx_runtime2 = require("react/jsx-runtime");
+var names = { claude: "Claude Code", codex: "Codex", grok: "Grok Build" };
+var commands = { claude: "claude auth login", codex: "codex login", grok: "grok login" };
+function LocalCliPage({ api }) {
+  const [rows, setRows] = (0, import_react.useState)();
+  const [checking, setChecking] = (0, import_react.useState)(false);
+  const [failed, setFailed] = (0, import_react.useState)(false);
+  const [starting, setStarting] = (0, import_react.useState)();
+  const [loginNote, setLoginNote] = (0, import_react.useState)();
+  const scan = (0, import_react.useRef)(false);
+  const refresh = (0, import_react.useCallback)(async (force = false) => {
+    if (scan.current) return;
+    scan.current = true;
+    if (force) setChecking(true);
+    try {
+      const result2 = await (force ? api.refreshCliStatus() : api.cliStatus());
+      if (!result2.ok) throw new Error();
+      setRows(result2.value);
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    } finally {
+      scan.current = false;
+      setChecking(false);
+    }
+  }, [api]);
+  (0, import_react.useEffect)(() => {
+    void refresh();
+  }, [refresh]);
+  const loginRunning = rows?.some((row) => row.loginRunning);
+  (0, import_react.useEffect)(() => {
+    if (!loginRunning) return;
+    const timer = setInterval(() => void refresh(), 4e3);
+    return () => clearInterval(timer);
+  }, [loginRunning, refresh]);
+  async function login(provider) {
+    setStarting(provider);
+    setLoginNote(void 0);
+    try {
+      const result2 = await api.cliLogin(provider);
+      if (!result2.ok) throw new Error();
+      const text2 = {
+        started: "\u8BF7\u5728 CLI \u6253\u5F00\u7684\u7EC8\u7AEF\u6216\u6D4F\u89C8\u5668\u4E2D\u5B8C\u6210\u6388\u6743\u3002",
+        "already-running": "\u6B64 CLI \u5DF2\u6709\u767B\u5F55\u7A97\u53E3\uFF0C\u8BF7\u5728\u8BE5\u7A97\u53E3\u7EE7\u7EED\u3002",
+        "terminal-required": "\u8BF7\u5728\u672C\u673A\u7EC8\u7AEF\u8FD0\u884C " + commands[provider] + "\uFF0C\u5B8C\u6210\u540E\u91CD\u65B0\u68C0\u6D4B\u3002",
+        missing: "\u6CA1\u6709\u627E\u5230\u53EF\u6267\u884C\u6587\u4EF6\uFF0C\u8BF7\u68C0\u67E5\u5B89\u88C5\u540E\u91CD\u65B0\u68C0\u6D4B\u3002"
+      }[result2.value];
+      setLoginNote({ provider, text: text2 });
+    } catch {
+      setLoginNote({ provider, text: "\u65E0\u6CD5\u6253\u5F00\u767B\u5F55\u7A97\u53E3\u3002\u53EF\u5728\u672C\u673A\u7EC8\u7AEF\u8FD0\u884C " + commands[provider] + "\u3002" });
+    } finally {
+      setStarting(void 0);
+      void refresh();
+    }
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "st-cli", "aria-labelledby": "st-cli-title", "aria-busy": checking, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-cli-head", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { id: "st-cli-title", children: "\u672C\u673A CLI" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => void refresh(true), disabled: checking, children: checking ? "\u68C0\u6D4B\u4E2D\u2026" : "\u91CD\u65B0\u68C0\u6D4B" })
+    ] }),
+    failed && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { role: "alert", children: "\u672C\u673A\u68C0\u6D4B\u5931\u8D25\uFF0C\u8BF7\u91CD\u65B0\u68C0\u6D4B\u3002" }),
+    rows && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("ul", { className: "st-cli-list", "aria-live": "polite", children: rows.map((row) => {
+      const label = !row.installed ? "\u672A\u5B89\u88C5" : row.loginRunning ? "\u7B49\u5F85\u6388\u6743" : row.auth === "signed-in" ? row.authUnverified ? "\u4E0A\u6B21\u68C0\u6D4B\u5DF2\u767B\u5F55" : "\u5DF2\u767B\u5F55" : row.auth === "signed-out" ? "\u672A\u767B\u5F55" : "\u767B\u5F55\u72B6\u6001\u5F85\u786E\u8BA4";
+      return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("li", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-cli-row", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: names[row.provider] }),
+            row.installed && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: [row.version, row.dispatchConfigured ? "\u5DF2\u63A5\u5165\u6D3E\u53D1" : "\u5C1A\u672A\u914D\u7F6E\u6D3E\u53D1"].filter(Boolean).join(" \xB7 ") })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-cli-state", "data-ready": row.auth === "signed-in", children: label }),
+          row.installed && row.auth === "signed-out" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "button",
+            {
+              type: "button",
+              "aria-label": names[row.provider] + " \u6388\u6743\u767B\u5F55",
+              disabled: !!starting || row.loginRunning,
+              onClick: () => void login(row.provider),
+              children: starting === row.provider ? "\u6B63\u5728\u6253\u5F00\u2026" : "\u6388\u6743\u767B\u5F55"
+            }
+          )
+        ] }),
+        row.auth !== "signed-in" && (row.launchFailed || loginNote?.provider === row.provider) && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "st-cli-note", children: row.launchFailed ? "\u767B\u5F55\u7A97\u53E3\u5DF2\u9000\u51FA\u3002\u53EF\u4EE5\u91CD\u65B0\u6388\u6743\u6216\u91CD\u65B0\u68C0\u6D4B\u3002" : loginNote?.text })
+      ] }, row.provider);
+    }) })
+  ] });
+}
+
+// src/task-panel.tsx
+var import_jsx_runtime3 = require("react/jsx-runtime");
 var taskPanelTitle = "\u4EFB\u52A1\u4E2D\u5FC3";
 var actions = {
   update: "\u4FEE\u6539\u8981\u6C42",
@@ -337,15 +438,15 @@ function Notes({
   value = "",
   required: required2 = false
 }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
     label,
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("textarea", { name, defaultValue: value, required: required2, rows: 2 })
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("textarea", { name, defaultValue: value, required: required2, rows: 2 })
   ] });
 }
 function RecordList({ title, items }) {
-  return items.length ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: title }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("ul", { children: items.map((item, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("li", { children: item }, i)) })
+  return items.length ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("ul", { children: items.map((item, i) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("li", { children: item }, i)) })
   ] }) : null;
 }
 function ResultHeader({ task, name }) {
@@ -365,30 +466,30 @@ function ResultHeader({ task, name }) {
     status = "\u5DF2\u9000\u56DE\u8865\u505A";
     at = review.at;
   }
-  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "st-outcome", "aria-label": "\u7ED3\u679C\u4E0E\u9A8C\u6536", children: [
-    result2 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EFB\u52A1\u7ED3\u679C" }),
-      result2.highlights.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "st-figures", children: result2.highlights.join(" \xB7 ") }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: result2.text })
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { className: "st-outcome", "aria-label": "\u7ED3\u679C\u4E0E\u9A8C\u6536", children: [
+    result2 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: "\u4EFB\u52A1\u7ED3\u679C" }),
+      result2.highlights.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-figures", children: result2.highlights.join(" \xB7 ") }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: result2.text })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-review-state", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "\u5F53\u524D\u9A8C\u6536\u72B6\u6001" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: status }),
-      at !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: when(at) })
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-review-state", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "\u5F53\u524D\u9A8C\u6536\u72B6\u6001" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: status }),
+      at !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("small", { children: when(at) })
     ] })
   ] });
 }
 function FilePreview({ file: file2, renderMarkdown }) {
-  const [source2, setSource] = (0, import_react.useState)(false);
-  const [expanded, setExpanded] = (0, import_react.useState)(false);
+  const [source2, setSource] = (0, import_react2.useState)(false);
+  const [expanded, setExpanded] = (0, import_react2.useState)(false);
   const markdown = /\.(md|markdown)$/i.test(file2.name);
-  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-preview", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-readtools", children: [
-      markdown && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setSource(!source2), "aria-pressed": source2, children: source2 ? "\u8FD4\u56DE\u9884\u89C8" : "\u67E5\u770B\u539F\u6587" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setExpanded(!expanded), "aria-expanded": expanded, children: expanded ? "\u6536\u8D77\u5168\u6587" : "\u5C55\u5F00\u9605\u8BFB" })
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-preview", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-readtools", children: [
+      markdown && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => setSource(!source2), "aria-pressed": source2, children: source2 ? "\u8FD4\u56DE\u9884\u89C8" : "\u67E5\u770B\u539F\u6587" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => setExpanded(!expanded), "aria-expanded": expanded, children: expanded ? "\u6536\u8D77\u5168\u6587" : "\u5C55\u5F00\u9605\u8BFB" })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-readbody", "data-expanded": expanded, children: markdown && !source2 ? renderMarkdown(file2.text) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("pre", { children: file2.text }) }),
-    file2.truncated && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u9884\u89C8\u663E\u793A\u524D 32 KiB\uFF0C\u5B8C\u6574\u6587\u4EF6\u8BF7\u5728\u6267\u884C\u76EE\u5F55\u67E5\u770B\u3002" })
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-readbody", "data-expanded": expanded, children: markdown && !source2 ? renderMarkdown(file2.text) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("pre", { children: file2.text }) }),
+    file2.truncated && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "\u9884\u89C8\u663E\u793A\u524D 32 KiB\uFF0C\u5B8C\u6574\u6587\u4EF6\u8BF7\u5728\u6267\u884C\u76EE\u5F55\u67E5\u770B\u3002" })
   ] });
 }
 function TaskPanel({
@@ -400,15 +501,16 @@ function TaskPanel({
   source: initialSource,
   openOrigin
 }) {
-  const [query, setQuery] = (0, import_react.useState)({ view: "attention" }), [page, setPage] = (0, import_react.useState)(), [sessions, setSessions] = (0, import_react.useState)([]);
-  const [source2, setSource] = (0, import_react.useState)(initialSource);
-  const [id2, select] = (0, import_react.useState)(initialTask ?? ""), [item, detail] = (0, import_react.useState)(), [mode, setMode] = (0, import_react.useState)(source2 ? "create" : ""), [question, setQuestion] = (0, import_react.useState)("");
-  const [owner, setOwner] = (0, import_react.useState)(initialSession ?? ""), [executor, setExecutor] = (0, import_react.useState)(""), [tick, reload] = (0, import_react.useState)(0);
-  const [filtersOpen, showFilters] = (0, import_react.useState)(false);
-  const panel = (0, import_react.useRef)(null);
-  const autoPick = (0, import_react.useRef)(false);
+  const [query, setQuery] = (0, import_react2.useState)({ view: "attention" }), [page, setPage] = (0, import_react2.useState)(), [sessions, setSessions] = (0, import_react2.useState)([]);
+  const [source2, setSource] = (0, import_react2.useState)(initialSource);
+  const [id2, select] = (0, import_react2.useState)(initialTask ?? ""), [item, detail] = (0, import_react2.useState)(), [mode, setMode] = (0, import_react2.useState)(source2 ? "create" : ""), [question, setQuestion] = (0, import_react2.useState)("");
+  const [owner, setOwner] = (0, import_react2.useState)(initialSession ?? ""), [executor, setExecutor] = (0, import_react2.useState)(""), [tick, reload] = (0, import_react2.useState)(0);
+  const [filtersOpen, showFilters] = (0, import_react2.useState)(false);
+  const [showCli, setShowCli] = (0, import_react2.useState)(false);
+  const panel = (0, import_react2.useRef)(null);
+  const autoPick = (0, import_react2.useRef)(false);
   const pendingKey = "sessivra-task-panel/pending-operation";
-  const [pending, setPending] = (0, import_react.useState)(() => {
+  const [pending, setPending] = (0, import_react2.useState)(() => {
     try {
       return sessionStorage.getItem(pendingKey) ?? "";
     } catch {
@@ -438,13 +540,13 @@ function TaskPanel({
       fail(problem(e));
     }
   }
-  const [error51, fail] = (0, import_react.useState)(""), [busy, setBusy] = (0, import_react.useState)(false), [checkedToken, setChecked] = (0, import_react.useState)("");
-  const base = (0, import_react.useRef)(), operation = (0, import_react.useRef)(), inFlight = (0, import_react.useRef)(false);
+  const [error51, fail] = (0, import_react2.useState)(""), [busy, setBusy] = (0, import_react2.useState)(false), [checkedToken, setChecked] = (0, import_react2.useState)("");
+  const base = (0, import_react2.useRef)(), operation = (0, import_react2.useRef)(), inFlight = (0, import_react2.useRef)(false);
   const selected = item?.id === id2 ? item : void 0;
-  const [preview, setPreview] = (0, import_react.useState)();
-  const previewRequest = (0, import_react.useRef)(0);
+  const [preview, setPreview] = (0, import_react2.useState)();
+  const previewRequest = (0, import_react2.useRef)(0);
   const name = (key) => sessions.find((s) => s.id === key)?.label ?? key;
-  (0, import_react.useEffect)(() => {
+  (0, import_react2.useEffect)(() => {
     let active = true;
     read(api.participants()).then((rows) => {
       if (active) {
@@ -458,7 +560,7 @@ function TaskPanel({
       active = false;
     };
   }, [api, initialSession, source2]);
-  (0, import_react.useEffect)(() => {
+  (0, import_react2.useEffect)(() => {
     let active = true;
     let timer;
     const refresh = async () => {
@@ -634,16 +736,16 @@ function TaskPanel({
     const v = query[k] ?? "";
     return k === "workspace" ? fileName(v) : k === "status" ? statusNames[v] ?? v : k === "scope" ? page?.groups.find((g) => g.id === v)?.label ?? "\u534F\u4F5C\u7EC4" : name(v);
   };
-  const actionForm = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("form", { onSubmit: submit, "aria-label": actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1" }),
-    mode === "create" && source2 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { className: "st-question", children: [
+  const actionForm = /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("form", { onSubmit: submit, "aria-label": actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h3", { children: actions[mode] ?? "\u65B0\u5EFA\u4EFB\u52A1" }),
+    mode === "create" && source2 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { className: "st-question", children: [
       "\u6765\u6E90 \xB7 ",
       source2.title
     ] }),
-    (mode === "create" || mode === "update") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+    (mode === "create" || mode === "update") && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u6807\u9898",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "input",
           {
             required: true,
@@ -653,8 +755,8 @@ function TaskPanel({
           }
         )
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u76EE\u6807", name: "goal", required: true, value: mode === "update" ? base.current?.goal : source2?.excerpt }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Notes, { label: "\u76EE\u6807", name: "goal", required: true, value: mode === "update" ? base.current?.goal : source2?.excerpt }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         Notes,
         {
           label: "\u9A8C\u6536\u6761\u4EF6\uFF08\u6BCF\u884C\u4E00\u9879\uFF09",
@@ -664,10 +766,10 @@ function TaskPanel({
         }
       )
     ] }),
-    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u534F\u8C03\u4F1A\u8BDD",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
           "select",
           {
             required: true,
@@ -677,9 +779,9 @@ function TaskPanel({
               setExecutor("");
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u9009\u62E9\u4F1A\u8BDD" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "new", children: "\u65B0\u5EFA\u534F\u8C03\u4F1A\u8BDD" }),
-              sessions.filter((s) => !s.child).map((s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("option", { value: s.id, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: "\u9009\u62E9\u4F1A\u8BDD" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "new", children: "\u65B0\u5EFA\u534F\u8C03\u4F1A\u8BDD" }),
+              sessions.filter((s) => !s.child).map((s) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("option", { value: s.id, children: [
                 s.label,
                 " \xB7 ",
                 s.workspace
@@ -688,15 +790,15 @@ function TaskPanel({
           }
         )
       ] }),
-      owner === "new" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      owner === "new" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u534F\u8C03\u4F1A\u8BDD\u5DE5\u4F5C\u76EE\u5F55",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "coordinatorDirectory", required: true, defaultValue: source2?.cwd ?? query.workspace ?? sessions.find((s) => s.id === initialSession)?.workspace ?? "" })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { name: "coordinatorDirectory", required: true, defaultValue: source2?.cwd ?? query.workspace ?? sessions.find((s) => s.id === initialSession)?.workspace ?? "" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u6267\u884C\u4F1A\u8BDD",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { value: executor, onChange: (e) => setExecutor(e.target.value), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u65B0\u5EFA\u666E\u901A\u5B50\u4F1A\u8BDD" }),
-          sessions.filter((s) => s.id !== owner && (!s.child || s.parent === owner)).map((s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("option", { value: s.id, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { value: executor, onChange: (e) => setExecutor(e.target.value), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: "\u65B0\u5EFA\u666E\u901A\u5B50\u4F1A\u8BDD" }),
+          sessions.filter((s) => s.id !== owner && (!s.child || s.parent === owner)).map((s) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("option", { value: s.id, children: [
             s.label,
             " \xB7 ",
             s.workspace
@@ -704,73 +806,73 @@ function TaskPanel({
         ] })
       ] })
     ] }),
-    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u534F\u4F5C\u7EC4\u3001\u8D44\u6E90\u4E0E\u524D\u7F6E\u95EE\u9898" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("details", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("summary", { children: "\u534F\u4F5C\u7EC4\u3001\u8D44\u6E90\u4E0E\u524D\u7F6E\u95EE\u9898" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u534F\u4F5C\u7EC4",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { name: "group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u65B0\u5EFA\u72EC\u7ACB\u7EC4" }),
-          page?.groups.filter((g) => g.coordinator === owner).map((g) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: g.id, children: g.label }, g.id))
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { name: "group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: "\u65B0\u5EFA\u72EC\u7ACB\u7EC4" }),
+          page?.groups.filter((g) => g.coordinator === owner).map((g) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: g.id, children: g.label }, g.id))
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u65B0\u7EC4\u540D\u79F0",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "groupLabel" })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { name: "groupLabel" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u58F0\u660E\u8D44\u6E90\uFF08\u6BCF\u884C\u4E00\u4E2A\u8DEF\u5F84\uFF09", name: "resources" }),
-      !executor && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Notes, { label: "\u58F0\u660E\u8D44\u6E90\uFF08\u6BCF\u884C\u4E00\u4E2A\u8DEF\u5F84\uFF09", name: "resources" }),
+      !executor && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
           "\u5B50\u4F1A\u8BDD\u76EE\u5F55",
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "cwd", placeholder: sessions.find((s) => s.id === owner)?.workspace ?? "" })
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { name: "cwd", placeholder: sessions.find((s) => s.id === owner)?.workspace ?? "" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
           "\u63A8\u7406\u7EA7\u522B",
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "effort" })
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { name: "effort" })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u5F00\u59CB\u524D\u9700\u8981\u56DE\u7B54\u7684\u95EE\u9898", name: "prerequisite" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Notes, { label: "\u5F00\u59CB\u524D\u9700\u8981\u56DE\u7B54\u7684\u95EE\u9898", name: "prerequisite" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u95EE\u9898\u4E3B\u9898",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "topic" })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { name: "topic" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u9002\u7528\u6761\u4EF6",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "context" })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { name: "context" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u53EF\u9009\u7B54\u6848\uFF08\u6BCF\u884C\u4E00\u9879\uFF09", name: "options" })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Notes, { label: "\u53EF\u9009\u7B54\u6848\uFF08\u6BCF\u884C\u4E00\u9879\uFF09", name: "options" })
     ] }),
-    mode === "answer" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected?.questions.find((q) => q.id === question)?.question }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+    mode === "answer" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected?.questions.find((q) => q.id === question)?.question }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u7B54\u590D",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { name: "answer", required: true, list: "sessivra-answer-options" })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { name: "answer", required: true, list: "sessivra-answer-options" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("datalist", { id: "sessivra-answer-options", children: selected?.questions.find((q) => q.id === question)?.options.map((o) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: o }, o)) })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("datalist", { id: "sessivra-answer-options", children: selected?.questions.find((q) => q.id === question)?.options.map((o) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: o }, o)) })
     ] }),
-    mode === "review" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("fieldset", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("legend", { children: "\u9010\u9879\u6838\u9A8C" }),
-        selected?.acceptance.map((rule, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { style: { display: "flex", alignItems: "center" }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { type: "checkbox", name: "criterion-" + i }),
+    mode === "review" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("fieldset", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("legend", { children: "\u9010\u9879\u6838\u9A8C" }),
+        selected?.acceptance.map((rule, i) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { style: { display: "flex", alignItems: "center" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "checkbox", name: "criterion-" + i }),
           rule
         ] }, i))
       ] }, selected?.token),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
         "\u9A8C\u6536\u7ED3\u8BBA",
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { name: "outcome", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "accepted", children: "\u901A\u8FC7" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "rework", children: "\u9000\u56DE\u8865\u505A" })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { name: "outcome", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "accepted", children: "\u901A\u8FC7" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "rework", children: "\u9000\u56DE\u8865\u505A" })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { name: "evidence", label: "\u6838\u9A8C\u7684\u4EA7\u7269\u4E0E\u8BC1\u636E\uFF08\u6BCF\u884C\u4E00\u9879\uFF09", required: true }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { name: "remaining", label: "\u9000\u56DE\u540E\u9700\u5B8C\u6210\u7684\u4E8B\u9879" })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Notes, { name: "evidence", label: "\u6838\u9A8C\u7684\u4EA7\u7269\u4E0E\u8BC1\u636E\uFF08\u6BCF\u884C\u4E00\u9879\uFF09", required: true }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Notes, { name: "remaining", label: "\u9000\u56DE\u540E\u9700\u5B8C\u6210\u7684\u4E8B\u9879" })
     ] }),
-    ["update", "review", "pause", "resume", "cancel"].includes(mode) && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Notes, { label: "\u8BF4\u660E", name: "reason", required: true }),
-    mode === "cancel" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u5F53\u524D\u5DE5\u5177\u7ED3\u675F\u540E\u53D6\u6D88\u3002\u540E\u7EED\u6392\u961F\u4EFB\u52A1\u53EF\u80FD\u5F00\u59CB\uFF0C\u5DF2\u4EA7\u751F\u7684\u5916\u90E8\u64CD\u4F5C\u4F1A\u4FDD\u7559\u3002" }),
-    mode === "archive" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u5F52\u6863\u540E\u5728\u5386\u53F2\u4E2D\u67E5\u770B\u4EFB\u52A1\u3001\u51B3\u5B9A\u548C\u8BC1\u636E\u3002" }),
-    mode === "reconcile" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u68C0\u67E5\u539F\u4F1A\u8BDD\u7684\u6536\u4EF6\u7BB1\u548C\u5386\u53F2\u3002\u5982\u679C\u4F1A\u8BDD\u5C1A\u672A\u6253\u5F00\uFF0C\u8BF7\u5148\u6253\u5F00\u6267\u884C\u4F1A\u8BDD\u3002" }),
-    stale && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    ["update", "review", "pause", "resume", "cancel"].includes(mode) && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Notes, { label: "\u8BF4\u660E", name: "reason", required: true }),
+    mode === "cancel" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "\u5F53\u524D\u5DE5\u5177\u7ED3\u675F\u540E\u53D6\u6D88\u3002\u540E\u7EED\u6392\u961F\u4EFB\u52A1\u53EF\u80FD\u5F00\u59CB\uFF0C\u5DF2\u4EA7\u751F\u7684\u5916\u90E8\u64CD\u4F5C\u4F1A\u4FDD\u7559\u3002" }),
+    mode === "archive" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "\u5F52\u6863\u540E\u5728\u5386\u53F2\u4E2D\u67E5\u770B\u4EFB\u52A1\u3001\u51B3\u5B9A\u548C\u8BC1\u636E\u3002" }),
+    mode === "reconcile" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "\u68C0\u67E5\u539F\u4F1A\u8BDD\u7684\u6536\u4EF6\u7BB1\u548C\u5386\u53F2\u3002\u5982\u679C\u4F1A\u8BDD\u5C1A\u672A\u6253\u5F00\uFF0C\u8BF7\u5148\u6253\u5F00\u6267\u884C\u4F1A\u8BDD\u3002" }),
+    stale && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         "input",
         {
           type: "checkbox",
@@ -780,13 +882,13 @@ function TaskPanel({
       ),
       "\u6211\u5DF2\u6838\u5BF9\u4E0B\u65B9\u6700\u65B0\u8981\u6C42\u4E0E\u7ED3\u679C\uFF0C\u4F7F\u7528\u5F53\u524D\u7248\u672C"
     ] }),
-    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: coordinator || owner === "new" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      coordinator ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+    mode === "create" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: coordinator || owner === "new" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      coordinator ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
         "\u300C",
         coordinator.label,
         "\u300D\u8D1F\u8D23\u534F\u8C03\u3002"
       ] }) : "\u5C06\u65B0\u5EFA\u4F1A\u8BDD\u8D1F\u8D23\u534F\u8C03\u3002",
-      assignee ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      assignee ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
         "\u300C",
         assignee.label,
         "\u300D\u8D1F\u8D23\u6267\u884C\u3002"
@@ -794,201 +896,209 @@ function TaskPanel({
       assigneeHasTasks && "\u6267\u884C\u4F1A\u8BDD\u6709\u5176\u4ED6\u5F85\u5904\u7406\u4EFB\u52A1\uFF0C\u672C\u4EFB\u52A1\u53EF\u80FD\u9700\u8981\u6392\u961F\u3002",
       "\u5982\u6709\u524D\u7F6E\u95EE\u9898\uFF0C\u8BF7\u5148\u7B54\u590D\u3002\u6267\u884C\u4F1A\u8BDD\u548C\u6240\u9700\u8D44\u6E90\u53EF\u7528\u540E\uFF0C\u7CFB\u7EDF\u4F1A\u5B89\u6392\u4EFB\u52A1\u3002"
     ] }) : "\u8BF7\u9009\u62E9\u8D1F\u8D23\u534F\u8C03\u7684\u4F1A\u8BDD\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-actions", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "submit", disabled: busy || stale && !checkedVersion, children: busy ? "\u63D0\u4EA4\u4E2D\u2026" : mode === "create" ? "\u521B\u5EFA\u5E76\u5B89\u6392" : "\u786E\u8BA4" + actions[mode] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", disabled: busy, onClick: () => {
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-actions", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "submit", disabled: busy || stale && !checkedVersion, children: busy ? "\u63D0\u4EA4\u4E2D\u2026" : mode === "create" ? "\u521B\u5EFA\u5E76\u5B89\u6392" : "\u786E\u8BA4" + actions[mode] }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", disabled: busy, onClick: () => {
         setSource(void 0);
         setMode("");
       }, children: "\u8FD4\u56DE" })
     ] })
   ] }, mode + question);
-  const showDetail = !!selected && mode !== "create";
-  const feedback = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-    error51 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { role: "alert", children: error51 }),
-    pending && !busy && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => void checkPending(), children: "\u56DE\u67E5\u4E0A\u6B21\u63D0\u4EA4" })
+  const showDetail = !!selected && mode !== "create" && !showCli;
+  const feedback = /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+    error51 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { role: "alert", children: error51 }),
+    pending && !busy && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => void checkPending(), children: "\u56DE\u67E5\u4E0A\u6B21\u63D0\u4EA4" })
   ] });
-  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("main", { className: "sessivra-tasks", ref: panel, "data-detail": showDetail || void 0, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("style", { children: css }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-master", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-shell", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("header", { className: "st-head", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { children: taskPanelTitle }),
-        mode !== "create" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "st-primary", onClick: () => edit("create"), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "plus", size: 14 }),
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("main", { className: "sessivra-tasks", ref: panel, "data-detail": showDetail || void 0, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: css }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-master", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-shell", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("header", { className: "st-head", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h2", { children: taskPanelTitle }),
+        mode !== "create" && !showCli && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "st-primary", onClick: () => edit("create"), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "plus", size: 14 }),
           "\u65B0\u5EFA\u4EFB\u52A1"
         ] })
       ] }),
-      !showDetail && feedback,
-      mode === "create" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-formpage", children: actionForm }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("nav", { "aria-label": "\u4EFB\u52A1\u89C6\u56FE", children: ["attention", "all", "history"].map((v, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { "aria-pressed": query.view === v, onClick: () => filter("view", v), children: ["\u5F85\u5904\u7406", "\u5168\u90E8\u4EFB\u52A1", "\u5386\u53F2"][i] }, v)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-bar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "st-search", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "search" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { type: "search", "aria-label": "\u641C\u7D22\u4EFB\u52A1", placeholder: "\u641C\u7D22\u4EFB\u52A1", value: query.search ?? "", onChange: (e) => filter("search", e.target.value) })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { "aria-expanded": filtersOpen, onClick: () => showFilters(!filtersOpen), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "filter" }),
-            "\u7B5B\u9009",
-            chips.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-count", children: chips.length })
-          ] })
+      !showDetail && !showCli && feedback,
+      mode === "create" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-formpage", children: actionForm }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("nav", { "aria-label": "\u4EFB\u52A1\u89C6\u56FE", children: [
+          ["attention", "all", "history"].map((v, i) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { "aria-pressed": !showCli && query.view === v, onClick: () => {
+            setShowCli(false);
+            filter("view", v);
+          }, children: ["\u5F85\u5904\u7406", "\u5168\u90E8\u4EFB\u52A1", "\u5386\u53F2"][i] }, v)),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { "aria-pressed": showCli, onClick: () => setShowCli(true), children: "\u672C\u673A CLI" })
         ] }),
-        filtersOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-filters", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
-            "\u5DE5\u4F5C\u76EE\u5F55",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
-              "select",
-              {
-                "aria-label": "\u5DE5\u4F5C\u76EE\u5F55",
-                value: query.workspace ?? "",
-                onChange: (e) => filter("workspace", e.target.value),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u5168\u90E8\u5DE5\u4F5C\u76EE\u5F55" }),
-                  Array.from(/* @__PURE__ */ new Set([...page?.workspaces ?? [], ...query.workspace ? [query.workspace] : []])).map(
-                    (s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { children: s }, s)
-                  )
-                ]
-              }
-            )
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
-            "\u72B6\u6001",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { "aria-label": "\u72B6\u6001", value: query.status ?? "", onChange: (e) => filter("status", e.target.value), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u6240\u6709\u72B6\u6001" }),
-              Object.entries(statusNames).map(([k, v]) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: k, children: v }, k))
+        showCli ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(LocalCliPage, { api }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-bar", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { className: "st-search", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "search" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "search", "aria-label": "\u641C\u7D22\u4EFB\u52A1", placeholder: "\u641C\u7D22\u4EFB\u52A1", value: query.search ?? "", onChange: (e) => filter("search", e.target.value) })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { "aria-expanded": filtersOpen, onClick: () => showFilters(!filtersOpen), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "filter" }),
+              "\u7B5B\u9009",
+              chips.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "st-count", children: chips.length })
             ] })
           ] }),
-          query.view === "all" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
-            "\u6392\u5E8F",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
-              "select",
-              {
-                "aria-label": "\u6392\u5E8F",
-                value: query.sort ?? "attention",
-                onChange: (e) => filter("sort", e.target.value),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "attention", children: "\u9700\u5904\u7406\u4F18\u5148" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "recent", children: "\u6700\u8FD1\u66F4\u65B0\u4F18\u5148" })
-                ]
-              }
-            )
-          ] }),
-          ["coordinator", "assignee"].map((k) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
-            k === "coordinator" ? "\u534F\u8C03\u4F1A\u8BDD" : "\u6267\u884C\u4F1A\u8BDD",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
-              "select",
-              {
-                "aria-label": k === "coordinator" ? "\u534F\u8C03\u4F1A\u8BDD\u7B5B\u9009" : "\u6267\u884C\u4F1A\u8BDD\u7B5B\u9009",
-                value: query[k] ?? "",
-                onChange: (e) => filter(k, e.target.value),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: k === "coordinator" ? "\u6240\u6709\u534F\u8C03\u4F1A\u8BDD" : "\u6240\u6709\u6267\u884C\u4F1A\u8BDD" }),
-                  sessions.map((s) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: s.id, children: s.label }, s.id))
-                ]
-              }
-            )
-          ] }, k)),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { children: [
-            "\u534F\u4F5C\u7EC4",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
-              "select",
-              {
-                "aria-label": "\u534F\u4F5C\u7EC4\u7B5B\u9009",
-                value: query.scope ?? "",
-                onChange: (e) => filter("scope", e.target.value),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: "", children: "\u5168\u90E8\u534F\u4F5C\u7EC4" }),
-                  page?.groups.map((g) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: g.id, children: g.label }, g.id))
-                ]
-              }
-            )
-          ] })
-        ] }),
-        chips.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-chipbar", children: chips.map((k) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { title: "\u79FB\u9664\u7B5B\u9009\uFF1A" + query[k], onClick: () => filter(k, void 0), children: [
-          labelFor(k),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "close", size: 13 })
-        ] }, k)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("aside", { className: "st-items", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-listhead", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: query.view === "history" ? "\u5F52\u6863\u4EFB\u52A1" : query.view === "all" ? "\u4EFB\u52A1\u5217\u8868" : "\u9700\u8981\u4F60\u5904\u7406" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-count", children: page ? query.view === "attention" ? page.attention.length : page.total : "\u2026" })
-          ] }),
-          !page ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "st-empty", role: "status", children: "\u8BFB\u53D6\u4E2D\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-            query.view === "attention" ? ["\u5F85\u56DE\u7B54", "\u5F85\u9A8C\u6536", "\u53D7\u963B", "\u6295\u9012\u4E0D\u786E\u5B9A", "\u5F85\u540C\u6B65"].map((kind) => {
-              const group = page.attention.filter((a) => a.kind === kind);
-              return group.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-groupname", children: [
-                  kind,
-                  " \xB7 ",
-                  group.length
-                ] }),
-                group.map((a) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "st-row", "aria-pressed": id2 === a.taskId, onClick: () => choose(a.taskId), children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: a.title }),
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("small", { children: [
-                    a.affected.length > 1 ? "\u5F71\u54CD " + a.affected.length + " \u9879\u4EFB\u52A1" : kind,
-                    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chevron", size: 14 })
-                  ] })
-                ] }, a.key))
-              ] }, kind);
-            }) : page.items.map((t) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "st-row", "aria-pressed": id2 === t.id, onClick: () => choose(t.id), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: t.title }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("small", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Pill, { label: t.label, status: t.status }),
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("time", { title: when(t.updatedAt), children: when(t.updatedAt, true) })
-              ] }),
-              typeof t.wait === "string" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: readableReason(t.wait) })
-            ] }, t.id)),
-            (query.view === "attention" ? !page.attention.length : !page.items.length) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-empty", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-emptyicon", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: query.view === "attention" ? "inbox" : query.view === "history" ? "archive" : "list", size: 24 }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: chips.length || query.search ? "\u6CA1\u6709\u7B26\u5408\u6761\u4EF6\u7684\u4EFB\u52A1\u3002" : query.view === "attention" ? "\u5F53\u524D\u6CA1\u6709\u9700\u8981\u5904\u7406\u7684\u4E8B\u9879\u3002" : query.view === "history" ? "\u8FD8\u6CA1\u6709\u5F52\u6863\u4EFB\u52A1" : "\u8FD8\u6CA1\u6709\u4EFB\u52A1" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: chips.length || query.search ? "\u6362\u4E2A\u5173\u952E\u8BCD\uFF0C\u6216\u6E05\u9664\u7B5B\u9009\u518D\u67E5\u770B\u3002" : query.view === "attention" ? "\u5171\u540C\u95EE\u9898\u3001\u5F85\u9A8C\u6536\u7ED3\u679C\u548C\u53D7\u963B\u4EFB\u52A1\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002" : query.view === "history" ? "\u4EFB\u52A1\u5F52\u6863\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u56DE\u770B\u51B3\u5B9A\u548C\u4EA4\u4ED8\u6587\u4EF6\u3002" : "\u521B\u5EFA\u4EFB\u52A1\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u8DDF\u8FDB\u6267\u884C\u548C\u9A8C\u6536\u3002" }),
-              chips.length || query.search ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: clearFilters, children: "\u6E05\u9664\u7B5B\u9009" }) : query.view === "attention" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => filter("view", "all"), children: "\u67E5\u770B\u5168\u90E8\u4EFB\u52A1" }) : query.view === "all" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => edit("create"), children: "\u521B\u5EFA\u7B2C\u4E00\u9879\u4EFB\u52A1" }) : null
+          filtersOpen && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-filters", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+              "\u5DE5\u4F5C\u76EE\u5F55",
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+                "select",
+                {
+                  "aria-label": "\u5DE5\u4F5C\u76EE\u5F55",
+                  value: query.workspace ?? "",
+                  onChange: (e) => filter("workspace", e.target.value),
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: "\u5168\u90E8\u5DE5\u4F5C\u76EE\u5F55" }),
+                    Array.from(/* @__PURE__ */ new Set([...page?.workspaces ?? [], ...query.workspace ? [query.workspace] : []])).map(
+                      (s) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { children: s }, s)
+                    )
+                  ]
+                }
+              )
             ] }),
-            (query.cursor || page.next) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-listfoot", children: [
-              query.cursor && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setQuery((q) => ({ ...q, cursor: void 0 })), children: "\u9996\u9875" }),
-              page.next && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => setQuery((q) => ({ ...q, cursor: page.next })), children: "\u4E0B\u4E00\u9875" })
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+              "\u72B6\u6001",
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { "aria-label": "\u72B6\u6001", value: query.status ?? "", onChange: (e) => filter("status", e.target.value), children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: "\u6240\u6709\u72B6\u6001" }),
+                Object.entries(statusNames).map(([k, v]) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: k, children: v }, k))
+              ] })
+            ] }),
+            query.view === "all" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+              "\u6392\u5E8F",
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+                "select",
+                {
+                  "aria-label": "\u6392\u5E8F",
+                  value: query.sort ?? "attention",
+                  onChange: (e) => filter("sort", e.target.value),
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "attention", children: "\u9700\u5904\u7406\u4F18\u5148" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "recent", children: "\u6700\u8FD1\u66F4\u65B0\u4F18\u5148" })
+                  ]
+                }
+              )
+            ] }),
+            ["coordinator", "assignee"].map((k) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+              k === "coordinator" ? "\u534F\u8C03\u4F1A\u8BDD" : "\u6267\u884C\u4F1A\u8BDD",
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+                "select",
+                {
+                  "aria-label": k === "coordinator" ? "\u534F\u8C03\u4F1A\u8BDD\u7B5B\u9009" : "\u6267\u884C\u4F1A\u8BDD\u7B5B\u9009",
+                  value: query[k] ?? "",
+                  onChange: (e) => filter(k, e.target.value),
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: k === "coordinator" ? "\u6240\u6709\u534F\u8C03\u4F1A\u8BDD" : "\u6240\u6709\u6267\u884C\u4F1A\u8BDD" }),
+                    sessions.map((s) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: s.id, children: s.label }, s.id))
+                  ]
+                }
+              )
+            ] }, k)),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+              "\u534F\u4F5C\u7EC4",
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+                "select",
+                {
+                  "aria-label": "\u534F\u4F5C\u7EC4\u7B5B\u9009",
+                  value: query.scope ?? "",
+                  onChange: (e) => filter("scope", e.target.value),
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: "\u5168\u90E8\u534F\u4F5C\u7EC4" }),
+                    page?.groups.map((g) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: g.id, children: g.label }, g.id))
+                  ]
+                }
+              )
+            ] })
+          ] }),
+          chips.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-chipbar", children: chips.map((k) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { title: "\u79FB\u9664\u7B5B\u9009\uFF1A" + query[k], onClick: () => filter(k, void 0), children: [
+            labelFor(k),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "close", size: 13 })
+          ] }, k)) }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("aside", { className: "st-items", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-listhead", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: query.view === "history" ? "\u5F52\u6863\u4EFB\u52A1" : query.view === "all" ? "\u4EFB\u52A1\u5217\u8868" : "\u9700\u8981\u4F60\u5904\u7406" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "st-count", children: page ? query.view === "attention" ? page.attention.length : page.total : "\u2026" })
+            ] }),
+            !page ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "st-empty", role: "status", children: "\u8BFB\u53D6\u4E2D\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+              query.view === "attention" ? ["\u5F85\u56DE\u7B54", "\u5F85\u9A8C\u6536", "\u53D7\u963B", "\u6295\u9012\u4E0D\u786E\u5B9A", "\u5F85\u540C\u6B65"].map((kind) => {
+                const group = page.attention.filter((a) => a.kind === kind);
+                return group.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-groupname", children: [
+                    kind,
+                    " \xB7 ",
+                    group.length
+                  ] }),
+                  group.map((a) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "st-row", "aria-pressed": id2 === a.taskId, onClick: () => choose(a.taskId), children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: a.title }),
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("small", { children: [
+                      a.affected.length > 1 ? "\u5F71\u54CD " + a.affected.length + " \u9879\u4EFB\u52A1" : kind,
+                      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "chevron", size: 14 })
+                    ] })
+                  ] }, a.key))
+                ] }, kind);
+              }) : page.items.map((t) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "st-row", "aria-pressed": id2 === t.id, onClick: () => choose(t.id), children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: t.title }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("small", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Pill, { label: t.label, status: t.status }),
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("time", { title: when(t.updatedAt), children: when(t.updatedAt, true) })
+                ] }),
+                typeof t.wait === "string" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("small", { children: readableReason(t.wait) })
+              ] }, t.id)),
+              (query.view === "attention" ? !page.attention.length : !page.items.length) && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-empty", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "st-emptyicon", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: query.view === "attention" ? "inbox" : query.view === "history" ? "archive" : "list", size: 24 }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: chips.length || query.search ? "\u6CA1\u6709\u7B26\u5408\u6761\u4EF6\u7684\u4EFB\u52A1\u3002" : query.view === "attention" ? "\u5F53\u524D\u6CA1\u6709\u9700\u8981\u5904\u7406\u7684\u4E8B\u9879\u3002" : query.view === "history" ? "\u8FD8\u6CA1\u6709\u5F52\u6863\u4EFB\u52A1" : "\u8FD8\u6CA1\u6709\u4EFB\u52A1" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: chips.length || query.search ? "\u6362\u4E2A\u5173\u952E\u8BCD\uFF0C\u6216\u6E05\u9664\u7B5B\u9009\u518D\u67E5\u770B\u3002" : query.view === "attention" ? "\u5171\u540C\u95EE\u9898\u3001\u5F85\u9A8C\u6536\u7ED3\u679C\u548C\u53D7\u963B\u4EFB\u52A1\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002" : query.view === "history" ? "\u4EFB\u52A1\u5F52\u6863\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u56DE\u770B\u51B3\u5B9A\u548C\u4EA4\u4ED8\u6587\u4EF6\u3002" : "\u521B\u5EFA\u4EFB\u52A1\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u8DDF\u8FDB\u6267\u884C\u548C\u9A8C\u6536\u3002" }),
+                chips.length || query.search ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: clearFilters, children: "\u6E05\u9664\u7B5B\u9009" }) : query.view === "attention" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => filter("view", "all"), children: "\u67E5\u770B\u5168\u90E8\u4EFB\u52A1" }) : query.view === "all" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => edit("create"), children: "\u521B\u5EFA\u7B2C\u4E00\u9879\u4EFB\u52A1" }) : null
+              ] }),
+              (query.cursor || page.next) && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-listfoot", children: [
+                query.cursor && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => setQuery((q) => ({ ...q, cursor: void 0 })), children: "\u9996\u9875" }),
+                page.next && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => setQuery((q) => ({ ...q, cursor: page.next })), children: "\u4E0B\u4E00\u9875" })
+              ] })
             ] })
           ] })
         ] })
       ] })
     ] }) }),
-    showDetail && selected && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("article", { className: "st-detail", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("header", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-detailtop", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: selected.title }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { "aria-label": "\u8FD4\u56DE\u5217\u8868", title: "\u8FD4\u56DE\u5217\u8868", onClick: () => choose(""), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "close", size: 16 }) })
+    showDetail && selected && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("article", { className: "st-detail", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("header", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-detailtop", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h3", { children: selected.title }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { "aria-label": "\u8FD4\u56DE\u5217\u8868", title: "\u8FD4\u56DE\u5217\u8868", onClick: () => choose(""), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "close", size: 16 }) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-meta", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Pill, { status: selected.status, label: statusNames[selected.status] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "archivedAt" in selected ? "\u5F52\u6863\u4E8E " + when(selected.archivedAt) : "\u66F4\u65B0\u4E8E " + when(selected.updatedAt) })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-meta", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Pill, { status: selected.status, label: statusNames[selected.status] }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "archivedAt" in selected ? "\u5F52\u6863\u4E8E " + when(selected.archivedAt) : "\u66F4\u65B0\u4E8E " + when(selected.updatedAt) })
         ] }),
-        selected.scopeLabel && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-meta", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "group", size: 14 }),
+        selected.scopeLabel && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-meta", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "group", size: 14 }),
           selected.scopeLabel
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ResultHeader, { task: selected, name }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(ResultHeader, { task: selected, name }),
       feedback,
-      !!(selected.queueReason || selected.reason) && selected.runtime !== "\u5386\u53F2" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: readableReason(selected.queueReason || selected.reason || "") }),
-      mode && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { children: actionForm }),
-      !mode && selected.actions.some((a) => a !== "answer") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-actions", children: ["review", "resume", "reconcile", "archive", "update", "pause", "cancel"].filter((a) => selected.actions.includes(a)).map((a) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: ["review", "resume", "reconcile", "archive"].includes(a) ? "st-primary" : void 0, onClick: () => edit(a), children: actions[a] }, a)) }),
-      qs.some((q) => !q.decision) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-blocktitle", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chat" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u9700\u8981\u56DE\u7B54" })
+      !!(selected.queueReason || selected.reason) && selected.runtime !== "\u5386\u53F2" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: readableReason(selected.queueReason || selected.reason || "") }),
+      mode && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { children: actionForm }),
+      !mode && selected.actions.some((a) => a !== "answer") && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-actions", children: ["review", "resume", "reconcile", "archive", "update", "pause", "cancel"].filter((a) => selected.actions.includes(a)).map((a) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: ["review", "resume", "reconcile", "archive"].includes(a) ? "st-primary" : void 0, onClick: () => edit(a), children: actions[a] }, a)) }),
+      qs.some((q) => !q.decision) && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-blocktitle", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "chat" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: "\u9700\u8981\u56DE\u7B54" })
         ] }),
-        qs.filter((q) => !q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-question", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: q.question }),
-          q.context && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: q.context }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+        qs.filter((q) => !q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-question", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: q.question }),
+          q.context && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: q.context }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { children: [
             q.options.join(" / "),
             q.taskIds.length > 1 && " \xB7 \u5F71\u54CD " + q.taskIds.length + " \u9879\u4EFB\u52A1"
           ] }),
-          !mode && selected.actions.includes("answer") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "st-primary", onClick: () => edit("answer", q.id), children: "\u56DE\u7B54\u95EE\u9898" })
+          !mode && selected.actions.includes("answer") && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "st-primary", onClick: () => edit("answer", q.id), children: "\u56DE\u7B54\u95EE\u9898" })
         ] }, q.id))
       ] }),
-      files.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-blocktitle", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EA4\u4ED8\u6587\u4EF6" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-count", children: files.length })
+      files.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-blocktitle", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: "\u4EA4\u4ED8\u6587\u4EF6" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "st-count", children: files.length })
         ] }),
         files.map((file2, index) => {
           const visible = preview?.task === selected.id && preview.name === file2 ? preview : void 0;
@@ -999,14 +1109,14 @@ function TaskPanel({
               return;
             }
             try {
-              const content = await read(api.preview(selected.id, index));
-              if (request2 === previewRequest.current) setPreview({ task: selected.id, ...content });
+              const content2 = await read(api.preview(selected.id, index));
+              if (request2 === previewRequest.current) setPreview({ task: selected.id, ...content2 });
             } catch (e) {
               if (request2 === previewRequest.current) fail(problem(e));
             }
           };
-          return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-file", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-file", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
               "button",
               {
                 className: "st-file-toggle",
@@ -1015,49 +1125,49 @@ function TaskPanel({
                 "aria-label": visible ? "\u5173\u95ED\u9884\u89C8" : "\u9884\u89C8\u4EA7\u7269",
                 title: file2,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "file", size: 16 }),
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: fileName(file2) }),
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: visible ? "\u6536\u8D77" : "\u9884\u89C8" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chevron", size: 14 })
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "file", size: 16 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: fileName(file2) }),
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("small", { children: visible ? "\u6536\u8D77" : "\u9884\u89C8" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "chevron", size: 14 })
                 ]
               }
             ),
-            visible && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(FilePreview, { file: visible, renderMarkdown })
+            visible && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(FilePreview, { file: visible, renderMarkdown })
           ] }, index);
         })
       ] }),
-      selected.origin && openOrigin && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("section", { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => openOrigin(selected.origin), children: "\u67E5\u770B\u539F\u6D88\u606F" }) }),
-      !selected.review && !selected.result && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-blocktitle", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u4EFB\u52A1\u76EE\u6807" }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.goal }),
-        selected.checkpoint.remaining.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u5269\u4F59\u5DE5\u4F5C", items: selected.checkpoint.remaining })
+      selected.origin && openOrigin && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("section", { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", onClick: () => openOrigin(selected.origin), children: "\u67E5\u770B\u539F\u6D88\u606F" }) }),
+      !selected.review && !selected.result && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-blocktitle", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: "\u4EFB\u52A1\u76EE\u6807" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected.goal }),
+        selected.checkpoint.remaining.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(RecordList, { title: "\u5269\u4F59\u5DE5\u4F5C", items: selected.checkpoint.remaining })
       ] }),
-      qs.some((q) => q.decision) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-blocktitle", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "chat" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u5DF2\u7B54\u95EE\u9898" })
+      qs.some((q) => q.decision) && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-blocktitle", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "chat" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: "\u5DF2\u7B54\u95EE\u9898" })
         ] }),
-        qs.filter((q) => q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-question", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: q.question }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "st-answer", children: q.decision.answer }),
+        qs.filter((q) => q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-question", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: q.question }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "st-answer", children: q.decision.answer }),
             q.decision.authority === "user" ? "\u7528\u6237\u56DE\u7B54" : "\u534F\u8C03\u4F1A\u8BDD\u56DE\u7B54"
           ] }),
-          !mode && selected.actions.includes("answer") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { onClick: () => edit("answer", q.id), children: "\u66F4\u65B0\u51B3\u5B9A" })
+          !mode && selected.actions.includes("answer") && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: () => edit("answer", q.id), children: "\u66F4\u65B0\u51B3\u5B9A" })
         ] }, q.id))
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-folds", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u4EFB\u52A1\u8981\u6C42\u4E0E\u4F1A\u8BDD" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-foldbody", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.goal }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u9A8C\u6536\u6761\u4EF6", items: selected.acceptance }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u58F0\u660E\u8D44\u6E90", items: selected.resources }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u5DE5\u4F5C\u76EE\u5F55" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.assignee.cwd })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-folds", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("summary", { children: "\u4EFB\u52A1\u8981\u6C42\u4E0E\u4F1A\u8BDD" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-foldbody", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected.goal }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(RecordList, { title: "\u9A8C\u6536\u6761\u4EF6", items: selected.acceptance }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(RecordList, { title: "\u58F0\u660E\u8D44\u6E90", items: selected.resources }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: "\u5DE5\u4F5C\u76EE\u5F55" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected.assignee.cwd })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "st-actions", children: [selected.coordinator, selected.assignee].map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { onClick: () => {
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "st-actions", children: [selected.coordinator, selected.assignee].map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { onClick: () => {
               try {
                 open(p.id);
               } catch (e) {
@@ -1067,55 +1177,55 @@ function TaskPanel({
               i ? "\u6267\u884C" : "\u534F\u8C03",
               " \xB7 ",
               name(p.id).replace(/^协调\s*[·・]\s*/, ""),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Icon, { name: "external", size: 13 })
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Icon, { name: "external", size: 13 })
             ] }, i)) })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u6267\u884C\u4E0E\u9A8C\u6536\u8BB0\u5F55" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-foldbody", children: [
-            selected.checkpoint.summary && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: "\u6267\u884C\u8FDB\u5C55" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.checkpoint.summary })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("summary", { children: "\u6267\u884C\u4E0E\u9A8C\u6536\u8BB0\u5F55" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-foldbody", children: [
+            selected.checkpoint.summary && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: "\u6267\u884C\u8FDB\u5C55" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected.checkpoint.summary })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u5DF2\u5B8C\u6210", items: selected.checkpoint.done }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u5269\u4F59\u5DE5\u4F5C", items: selected.checkpoint.remaining }),
-            selected.result && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("h4", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(RecordList, { title: "\u5DF2\u5B8C\u6210", items: selected.checkpoint.done }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(RecordList, { title: "\u5269\u4F59\u5DE5\u4F5C", items: selected.checkpoint.remaining }),
+            selected.result && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("h4", { children: [
                   "\u63D0\u4EA4\u7ED3\u679C \xB7 ",
                   when(selected.result.at)
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.result.summary })
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected.result.summary })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u7ED3\u679C\u8BC1\u636E", items: selected.result.evidence })
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(RecordList, { title: "\u7ED3\u679C\u8BC1\u636E", items: selected.result.evidence })
             ] }),
-            selected.review && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("h4", { children: [
+            selected.review && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("h4", { children: [
                   selected.review.accepted ? "\u9A8C\u6536\u901A\u8FC7" : "\u9000\u56DE\u8865\u505A",
                   " \xB7 ",
                   when(selected.review.at)
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.review.explanation }),
-                selected.review.checked?.map((yes, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected.review.explanation }),
+                selected.review.checked?.map((yes, i) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { children: [
                   yes ? "\u5DF2\u6838\u5BF9" : "\u5F85\u8865\u505A",
                   "\uFF1A",
                   selected.acceptance[i]
                 ] }, i))
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(RecordList, { title: "\u6838\u9A8C\u8BC1\u636E", items: selected.review.evidence })
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(RecordList, { title: "\u6838\u9A8C\u8BC1\u636E", items: selected.review.evidence })
             ] }),
-            qs.filter((q) => q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h4", { children: q.question }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: [q.context, q.options.join(" / "), "\u5F71\u54CD " + q.taskIds.length + " \u9879\u4EFB\u52A1", "\u51B3\u5B9A v" + q.version].filter(Boolean).join(" \xB7 ") })
+            qs.filter((q) => q.decision).map((q) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h4", { children: q.question }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: [q.context, q.options.join(" / "), "\u5F71\u54CD " + q.taskIds.length + " \u9879\u4EFB\u52A1", "\u51B3\u5B9A v" + q.version].filter(Boolean).join(" \xB7 ") })
             ] }, q.id))
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u7248\u672C\u4E0E\u6295\u9012" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "st-foldbody", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("summary", { children: "\u7248\u672C\u4E0E\u6295\u9012" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "st-foldbody", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { children: [
               "\u5F53\u524D v",
               selected.revision,
               " \xB7 \u5DF2\u91C7\u7528 v",
@@ -1125,7 +1235,7 @@ function TaskPanel({
               " / \u5DF2\u91C7\u7528 v",
               selected.appliedDecisionRevision
             ] }),
-            selected.deliveries.map((e) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+            selected.deliveries.map((e) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("p", { children: [
               e.kind,
               " \xB7 ",
               e.status,
@@ -1134,9 +1244,9 @@ function TaskPanel({
             ] }, e.id))
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("details", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("summary", { children: "\u6700\u8FD1\u6D3B\u52A8" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("ol", { children: selected.history.map((h, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("li", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("details", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("summary", { children: "\u6700\u8FD1\u6D3B\u52A8" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("ol", { children: selected.history.map((h, i) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("li", { children: [
             when(h.at),
             " \xB7 ",
             h.actor === "operator:owner" ? "\u7528\u6237" : name(h.actor),
@@ -1152,8 +1262,8 @@ function TaskPanel({
 }
 
 // src/message-navigation.tsx
-var import_react2 = require("react");
-var import_jsx_runtime3 = require("react/jsx-runtime");
+var import_react3 = require("react");
+var import_jsx_runtime4 = require("react/jsx-runtime");
 function findRow(message, mainOnly) {
   const chat = [...document.querySelectorAll("[data-conversation-session]")].find(
     (element) => element.dataset.conversationSession === message.origin.sessionId && (!mainOnly || !element.closest("[data-sessivra-pane]")) && !element.closest("[hidden], [inert]") && element.getClientRects().length > 0
@@ -1218,9 +1328,9 @@ function createMessageNavigator(sessions, open, resolve2) {
   };
 }
 function MessageJumpNotice({ navigator: navigator2, Button: Button3 }) {
-  const state = (0, import_react2.useSyncExternalStore)(navigator2.subscribe, navigator2.snapshot);
+  const state = (0, import_react3.useSyncExternalStore)(navigator2.subscribe, navigator2.snapshot);
   const { row, loading, error: error51 } = state;
-  (0, import_react2.useEffect)(() => {
+  (0, import_react3.useEffect)(() => {
     if (!row) return;
     row.setAttribute("data-sessivra-message-highlight", "");
     const timer = setTimeout(() => {
@@ -1231,14 +1341,14 @@ function MessageJumpNotice({ navigator: navigator2, Button: Button3 }) {
       row.removeAttribute("data-sessivra-message-highlight");
     };
   }, [navigator2, row, state]);
-  if (row) return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("style", { children: `
+  if (row) return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("style", { children: `
     [data-sessivra-message-highlight]{
       outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));
       outline-offset:3px;border-radius:var(--dsw-radius-md);
     }
   ` });
   if (!loading && !error51) return null;
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: {
+  return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: {
     position: "fixed",
     bottom: 24,
     right: 24,
@@ -1254,13 +1364,13 @@ function MessageJumpNotice({ navigator: navigator2, Button: Button3 }) {
     background: "var(--dsw-alias-bg-layer-1)",
     boxShadow: "var(--dsw-elevation-soft)"
   }, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { role: error51 ? "alert" : "status", children: error51 ?? "\u6B63\u5728\u5B9A\u4F4D\u539F\u6D88\u606F\u2026" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Button3, { size: "sm", variant: "ghost", onClick: () => navigator2.dismiss(), children: error51 ? "\u5173\u95ED" : "\u53D6\u6D88" })
+    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { role: error51 ? "alert" : "status", children: error51 ?? "\u6B63\u5728\u5B9A\u4F4D\u539F\u6D88\u606F\u2026" }),
+    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Button3, { size: "sm", variant: "ghost", onClick: () => navigator2.dismiss(), children: error51 ? "\u5173\u95ED" : "\u53D6\u6D88" })
   ] });
 }
 
 // src/bookmark-library.tsx
-var import_react3 = require("react");
+var import_react4 = require("react");
 
 // src/turn-bookmarks.ts
 var storageKey = "sessivra.turn-bookmarks.v1";
@@ -1436,7 +1546,7 @@ function mountTurnBookmarks(host, fish) {
 }
 
 // src/bookmark-library.tsx
-var import_jsx_runtime4 = require("react/jsx-runtime");
+var import_jsx_runtime5 = require("react/jsx-runtime");
 var styles2 = `
 .sessivra-bookmark-library{display:flex;flex-direction:column;height:100%;min-height:0;color:var(--dsw-alias-label-primary)}
 .sessivra-bookmark-library header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;height:40px;padding-inline:16px;border-bottom:1px solid var(--dsw-alias-border-l2)}
@@ -1460,11 +1570,11 @@ var styles2 = `
 .sessivra-bookmark-library li>button:disabled{cursor:default}
 `;
 function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
-  const [saved, setSaved] = (0, import_react3.useState)(() => listTurnBookmarks(window));
-  const [filter, setFilter] = (0, import_react3.useState)("");
-  const [filterOpen, setFilterOpen] = (0, import_react3.useState)(false);
-  const [sessions, setSessions] = (0, import_react3.useState)(() => /* @__PURE__ */ new Map());
-  (0, import_react3.useEffect)(() => {
+  const [saved, setSaved] = (0, import_react4.useState)(() => listTurnBookmarks(window));
+  const [filter, setFilter] = (0, import_react4.useState)("");
+  const [filterOpen, setFilterOpen] = (0, import_react4.useState)(false);
+  const [sessions, setSessions] = (0, import_react4.useState)(() => /* @__PURE__ */ new Map());
+  (0, import_react4.useEffect)(() => {
     const refresh = () => setSaved(listTurnBookmarks(window));
     window.addEventListener("storage", refresh);
     window.addEventListener(turnBookmarksChanged, refresh);
@@ -1475,7 +1585,7 @@ function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
   }, []);
   const sessionIds = [...new Set(saved.map((item) => item.sessionId))];
   const selected = sessionIds.includes(filter) ? filter : "";
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     let disposed = false;
     const groups = /* @__PURE__ */ new Map();
     for (const { sessionId, turn } of saved) {
@@ -1503,11 +1613,11 @@ function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
       disposed = true;
     };
   }, [saved, load]);
-  return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("section", { className: "sessivra-bookmark-library", "aria-label": "\u6536\u85CF", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("style", { children: styles2 }),
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("header", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h1", { children: "\u6536\u85CF" }),
-      saved.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("section", { className: "sessivra-bookmark-library", "aria-label": "\u6536\u85CF", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: styles2 }),
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("header", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("h1", { children: "\u6536\u85CF" }),
+      saved.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
         Menu2,
         {
           className: "bookmark-filter",
@@ -1518,13 +1628,13 @@ function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
           open: filterOpen,
           onClose: () => setFilterOpen(false),
           selectedId: selected ? `session:${selected}` : "all",
-          anchor: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { type: "button", "aria-label": "\u6309\u4F1A\u8BDD\u7B5B\u9009", "aria-haspopup": "menu", "aria-expanded": filterOpen, onClick: () => setFilterOpen(!filterOpen), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { children: selected ? sessions.get(selected)?.title ?? "\u4F1A\u8BDD" : "\u5168\u90E8\u4F1A\u8BDD" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Chevron, { path: "m3 4.5 3 3 3-3" })
+          anchor: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { type: "button", "aria-label": "\u6309\u4F1A\u8BDD\u7B5B\u9009", "aria-haspopup": "menu", "aria-expanded": filterOpen, onClick: () => setFilterOpen(!filterOpen), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: selected ? sessions.get(selected)?.title ?? "\u4F1A\u8BDD" : "\u5168\u90E8\u4F1A\u8BDD" }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Chevron, { path: "m3 4.5 3 3 3-3" })
           ] }),
           items: [{ id: "all", label: "\u5168\u90E8\u4F1A\u8BDD" }, ...sessionIds.map((id2, index) => ({
             id: `session:${id2}`,
-            label: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "sessivra-bookmark-filter-label", children: sessions.get(id2)?.title ?? `\u4F1A\u8BDD ${index + 1}` })
+            label: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "sessivra-bookmark-filter-label", children: sessions.get(id2)?.title ?? `\u4F1A\u8BDD ${index + 1}` })
           }))],
           onSelect: (id2) => {
             setFilter(id2 === "all" ? "" : id2.slice("session:".length));
@@ -1533,32 +1643,32 @@ function BookmarkLibrary({ load, jump, Menu: Menu2 }) {
         }
       )
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "bookmark-body", children: saved.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { children: "\u8FD8\u6CA1\u6709\u6536\u85CF\u3002\u70B9\u51FB\u4EFB\u610F\u8F6E\u6B21\u7684\u9C7C\u5F62\u6309\u94AE\uFF0C\u5C31\u53EF\u4EE5\u5728\u8FD9\u91CC\u627E\u5230\u5B83\u3002" }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("ul", { children: saved.filter((item) => !selected || item.sessionId === selected).map(({ sessionId, turn }) => {
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "bookmark-body", children: saved.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { children: "\u8FD8\u6CA1\u6709\u6536\u85CF\u3002\u70B9\u51FB\u4EFB\u610F\u8F6E\u6B21\u7684\u9C7C\u5F62\u6309\u94AE\uFF0C\u5C31\u53EF\u4EE5\u5728\u8FD9\u91CC\u627E\u5230\u5B83\u3002" }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("ul", { children: saved.filter((item) => !selected || item.sessionId === selected).map(({ sessionId, turn }) => {
       const session = sessions.get(sessionId), item = session?.items.find((entry) => entry.turn === turn);
-      return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { type: "button", disabled: !item, onClick: () => item && jump(item.anchor), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("span", { className: "bookmark-summary", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("small", { children: [
+      return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { type: "button", disabled: !item, onClick: () => item && jump(item.anchor), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("span", { className: "bookmark-summary", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("small", { children: [
             session?.title ?? "\u4F1A\u8BDD",
             " \xB7 \u7B2C ",
             turn,
             " \u8F6E"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "bookmark-prompt", children: item ? item.prompt || "\u672C\u8F6E\u95EE\u7B54" : session === void 0 ? "\u6B63\u5728\u8BFB\u53D6\u95EE\u7B54\u2026" : "\u539F\u8F6E\u6B21\u6682\u4E0D\u53EF\u7528" }),
-          item?.response && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "bookmark-response", children: item.response })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "bookmark-prompt", children: item ? item.prompt || "\u672C\u8F6E\u95EE\u7B54" : session === void 0 ? "\u6B63\u5728\u8BFB\u53D6\u95EE\u7B54\u2026" : "\u539F\u8F6E\u6B21\u6682\u4E0D\u53EF\u7528" }),
+          item?.response && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "bookmark-response", children: item.response })
         ] }),
-        item && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "bookmark-arrow", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(Chevron, { path: "m4.5 3 3 3-3 3" }) })
+        item && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "bookmark-arrow", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Chevron, { path: "m4.5 3 3 3-3 3" }) })
       ] }) }, JSON.stringify([sessionId, turn]));
     }) }) })
   ] });
 }
 function Chevron({ path: path2 }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("svg", { "aria-hidden": "true", width: "12", height: "12", viewBox: "0 0 12 12", fill: "none", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { d: path2, stroke: "currentColor", strokeWidth: "1.25", strokeLinecap: "round", strokeLinejoin: "round" }) });
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("svg", { "aria-hidden": "true", width: "12", height: "12", viewBox: "0 0 12 12", fill: "none", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: path2, stroke: "currentColor", strokeWidth: "1.25", strokeLinecap: "round", strokeLinejoin: "round" }) });
 }
 
 // src/session-tree.tsx
-var import_react4 = require("react");
+var import_react5 = require("react");
 var import_react_dom = require("react-dom");
-var import_jsx_runtime5 = require("react/jsx-runtime");
+var import_jsx_runtime6 = require("react/jsx-runtime");
 function sessionForest(sessions) {
   const offered = new Map(sessions.map((session) => [session.id, session]));
   const rooted = (session) => {
@@ -1782,16 +1892,16 @@ var styles3 = `
 .dshsm-tree-children{margin-inline-start:28px}
 .dshsm-tree-notice{font-size:12px;line-height:18px;padding:8px;color:var(--dsw-alias-label-tertiary)}
 `;
-var Chevron2 = ({ expanded }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", style: { transform: expanded ? "rotate(90deg)" : void 0 }, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: "m6 4 4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) });
+var Chevron2 = ({ expanded }) => /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", style: { transform: expanded ? "rotate(90deg)" : void 0 }, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("path", { d: "m6 4 4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) });
 function TreeLabel({ label }) {
   const chars = Array.from(label), long = chars.length > 18;
-  return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-label", "data-long": long, children: long ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-label-start", children: chars.slice(0, -6).join("") }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-label-end", children: chars.slice(-6).join("") })
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "dshsm-tree-label", "data-long": long, children: long ? /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "dshsm-tree-label-start", children: chars.slice(0, -6).join("") }),
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "dshsm-tree-label-end", children: chars.slice(-6).join("") })
   ] }) : label });
 }
 function TreeToggle({ expanded, label, className, onToggle }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
     "button",
     {
       type: "button",
@@ -1823,18 +1933,18 @@ function TreeToggle({ expanded, label, className, onToggle }) {
         event.stopPropagation();
         onToggle();
       },
-      children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(Chevron2, { expanded })
+      children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Chevron2, { expanded })
     }
   );
 }
 function NativeSessionChildren({ sessionId, store, openSession, currentId, statuses, pinnedIds, renderActions, openTask }) {
-  const anchor = (0, import_react4.useRef)(null);
-  const [target2, setTarget] = (0, import_react4.useState)();
-  const revealed = (0, import_react4.useRef)();
-  const snapshot2 = (0, import_react4.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const anchor = (0, import_react5.useRef)(null);
+  const [target2, setTarget] = (0, import_react5.useState)();
+  const revealed = (0, import_react5.useRef)();
+  const snapshot2 = (0, import_react5.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const node = snapshot2.nodes.get(sessionId);
   const hidden = snapshot2.hiddenSessions.has(sessionId);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react5.useEffect)(() => {
     const row = anchor.current?.closest("[data-row-key]");
     if (!row || row.dataset.rowKey !== `session:${sessionId}`) return;
     const children = row.ownerDocument.createElement("div");
@@ -1860,7 +1970,7 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
   const nested = snapshot2.parents.has(sessionId);
   const noticeOwner = [...snapshot2.rows].find((item) => item.row.isConnected && !snapshot2.hiddenSessions.has(item.sessionId) && !snapshot2.parents.has(item.sessionId));
   const showNotice = !hidden && !nested && noticeOwner === target2 && Boolean(snapshot2.problem || !snapshot2.loaded);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react5.useEffect)(() => {
     if (!target2) return;
     if (nested) target2.row.dataset.dshsmNested = "true";
     else delete target2.row.dataset.dshsmNested;
@@ -1870,10 +1980,10 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
     else delete target2.row.dataset.dshsmParent;
     target2.children.hidden = hidden || nested || !node?.children.length && !showNotice;
   }, [target2, hidden, nested, node, showNotice]);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react5.useEffect)(() => {
     store.reveal(currentId);
   }, [store, currentId, snapshot2.nodes]);
-  (0, import_react4.useEffect)(() => {
+  (0, import_react5.useEffect)(() => {
     if (!currentId) {
       revealed.current = void 0;
       return;
@@ -1894,49 +2004,49 @@ function NativeSessionChildren({ sessionId, store, openSession, currentId, statu
     }
     return false;
   };
-  const marker = (native = false) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: `dshsm-tree-current${native ? " dshsm-native-current" : ""}`, role: "img", "aria-label": "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD", title: "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD\uFF0C\u5C55\u5F00\u53EF\u5B9A\u4F4D" });
+  const marker = (native = false) => /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `dshsm-tree-current${native ? " dshsm-native-current" : ""}`, role: "img", "aria-label": "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD", title: "\u5305\u542B\u5F53\u524D\u4F1A\u8BDD\uFF0C\u5C55\u5F00\u53EF\u5B9A\u4F4D" });
   const branch = (child) => {
     const expanded2 = store.isExpanded(child.id), selected = currentId === child.id;
     const display = treePresentation(child, statuses?.get(child.id), snapshot2.aliases.get(child.id));
-    return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
+    return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { role: "listitem", className: "dshsm-tree-branch", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "dshsm-tree-row", "data-session-id": child.id, "data-selected": selected, draggable: !child.subagent || child.openable, onDragStart: (event) => {
         event.stopPropagation();
         event.dataTransfer.setData("text/plain", child.id);
         event.dataTransfer.effectAllowed = "copy";
       }, children: [
-        child.children.length ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeToggle, { className: "dshsm-tree-toggle", label: display.label, expanded: expanded2, onToggle: () => store.toggle(child.id) }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-spacer", "aria-hidden": "true" }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { type: "button", className: "dshsm-tree-name", disabled: child.subagent && !child.openable, "aria-current": selected ? "page" : void 0, "aria-label": `${child.subagent && !child.openable ? child.note ?? "\u6682\u4E0D\u53EF\u6253\u5F00" : "\u6253\u5F00\u4F1A\u8BDD"}\uFF1A${display.label}`, title: display.title, onClick: (event) => {
+        child.children.length ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(TreeToggle, { className: "dshsm-tree-toggle", label: display.label, expanded: expanded2, onToggle: () => store.toggle(child.id) }) : /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "dshsm-tree-spacer", "aria-hidden": "true" }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { type: "button", className: "dshsm-tree-name", disabled: child.subagent && !child.openable, "aria-current": selected ? "page" : void 0, "aria-label": `${child.subagent && !child.openable ? child.note ?? "\u6682\u4E0D\u53EF\u6253\u5F00" : "\u6253\u5F00\u4F1A\u8BDD"}\uFF1A${display.label}`, title: display.title, onClick: (event) => {
           event.stopPropagation();
           openSession(child);
         }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeLabel, { label: display.label }),
-          pinnedIds?.has(child.id) && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-pin", title: "\u5DF2\u7F6E\u9876", children: "\u7F6E\u9876" }),
-          child.subagent && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-member", children: "\u961F\u5458" }),
-          display.state && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dshsm-tree-status", "data-attention": display.waiting, title: display.state, children: display.state === "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" ? "\u9700\u5F00\u7236\u4F1A\u8BDD" : display.state })
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(TreeLabel, { label: display.label }),
+          pinnedIds?.has(child.id) && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "dshsm-tree-pin", title: "\u5DF2\u7F6E\u9876", children: "\u7F6E\u9876" }),
+          child.subagent && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "dshsm-tree-member", children: "\u961F\u5458" }),
+          display.state && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "dshsm-tree-status", "data-attention": display.waiting, title: display.state, children: display.state === "\u9700\u5148\u6253\u5F00\u7236\u4F1A\u8BDD" ? "\u9700\u5F00\u7236\u4F1A\u8BDD" : display.state })
         ] }),
         !expanded2 && containsCurrent(child.id) && marker(),
         renderActions?.(child)
       ] }),
-      child.children.length > 0 && expanded2 && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { role: "list", "aria-label": `${display.label}\u7684\u5B50\u4F1A\u8BDD`, className: "dshsm-tree-children", children: ordered(child.children).map(branch) })
+      child.children.length > 0 && expanded2 && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { role: "list", "aria-label": `${display.label}\u7684\u5B50\u4F1A\u8BDD`, className: "dshsm-tree-children", children: ordered(child.children).map(branch) })
     ] }, child.id);
   };
   const expanded = store.isExpanded(sessionId), hasChildren = Boolean(node?.children.length);
-  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { ref: anchor, hidden: true }),
-    target2 && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-      (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("style", { children: styles3 }),
-        showNotice && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { role: snapshot2.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { ref: anchor, hidden: true }),
+    target2 && /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
+      (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(import_jsx_runtime6.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("style", { children: styles3 }),
+        showNotice && /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { role: snapshot2.problem ? "alert" : "status", className: "dshsm-tree-notice", children: [
           snapshot2.problem ? `${snapshot2.problem}${snapshot2.loaded ? "\uFF0C\u5F53\u524D\u663E\u793A\u4E0A\u6B21\u7ED3\u679C" : ""}` : "\u6B63\u5728\u8BFB\u53D6\u5B50\u4F1A\u8BDD\u2026",
-          snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", disabled: snapshot2.refreshing, onClick: () => void store.refresh(), children: snapshot2.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
+          snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", disabled: snapshot2.refreshing, onClick: () => void store.refresh(), children: snapshot2.refreshing ? "\u91CD\u8BD5\u4E2D\u2026" : "\u91CD\u8BD5" })
         ] }),
-        !hidden && !nested && expanded && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(import_jsx_runtime5.Fragment, { children: hasChildren && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { role: "list", "aria-label": `${node.label}\u7684\u5B50\u4F1A\u8BDD`, onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: ordered(node.children).map(branch) }) })
+        !hidden && !nested && expanded && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(import_jsx_runtime6.Fragment, { children: hasChildren && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { role: "list", "aria-label": `${node.label}\u7684\u5B50\u4F1A\u8BDD`, onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: ordered(node.children).map(branch) }) })
       ] }), target2.children),
-      !hidden && !nested && node?.task && openTask && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", title: node.task.title, "aria-label": "\u67E5\u770B\u4EFB\u52A1 " + node.task.title, onClick: (event) => {
+      !hidden && !nested && node?.task && openTask && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", title: node.task.title, "aria-label": "\u67E5\u770B\u4EFB\u52A1 " + node.task.title, onClick: (event) => {
         event.stopPropagation();
         openTask(node.task.id);
       }, children: node.task.label }),
-      !hidden && !nested && hasChildren && (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime5.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target2.row),
+      !hidden && !nested && hasChildren && (0, import_react_dom.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime6.jsx)(TreeToggle, { className: "dshsm-native-toggle", label: node.label, expanded, onToggle: () => store.toggle(sessionId) }), target2.row),
       !hidden && !nested && !expanded && containsCurrent(sessionId) && (0, import_react_dom.createPortal)(marker(true), target2.row)
     ] })
   ] });
@@ -4190,8 +4300,8 @@ var Doc = class {
       arg(this, { execution: "async" });
       return;
     }
-    const content = arg;
-    const lines3 = content.split("\n").filter((x) => x);
+    const content2 = arg;
+    const lines3 = content2.split("\n").filter((x) => x);
     const minIndent = Math.min(...lines3.map((x) => x.length - x.trimStart().length));
     const dedented = lines3.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
     for (const line of dedented) {
@@ -4201,8 +4311,8 @@ var Doc = class {
   compile() {
     const F = Function;
     const args = this?.args;
-    const content = this?.content ?? [``];
-    const lines3 = [...content.map((x) => `  ${x}`)];
+    const content2 = this?.content ?? [``];
+    const lines3 = [...content2.map((x) => `  ${x}`)];
     return new F(...args, lines3.join("\n"));
   }
 };
@@ -16684,6 +16794,161 @@ function createBookmarkMentionSource(load, resolve2) {
   };
 }
 
+// src/cli-mention.ts
+var cliChatNames = { codex: "Codex", grok: "Grok Build", deepseek: "DeepSeek", auto: "\u81EA\u52A8\u9009\u62E9" };
+var markerPattern = () => /@\[(?:Codex|Grok Build|DeepSeek|自动选择)\]\(sessivra-cli:(codex|grok|deepseek|auto)\)/gu;
+function cliMarker(target2) {
+  return `@[${cliChatNames[target2]}](sessivra-cli:${target2})`;
+}
+var cliUserText = {
+  id: "sessivra-cli",
+  order: -10,
+  match(text2, from2) {
+    const pattern2 = markerPattern();
+    pattern2.lastIndex = from2;
+    const match = pattern2.exec(text2);
+    if (!match) return void 0;
+    return {
+      id: "sessivra-cli",
+      start: match.index,
+      end: match.index + match[0].length,
+      data: { label: "@" + cliChatNames[match[1]] }
+    };
+  }
+};
+function createCliMentionSource(load) {
+  const source2 = "sessivra-cli";
+  return {
+    name: source2,
+    trigger: "@",
+    order: -25,
+    showGroupTitle: false,
+    async candidates(_session, { query, quoted, signal }) {
+      if (quoted || signal.aborted) return [];
+      const providers = await load().catch(() => []);
+      if (!providers.length || signal.aborted) return [];
+      const targets = ["auto", ...providers, "deepseek"];
+      const search = query.trim().toLowerCase();
+      return targets.filter((target2) => cliChatNames[target2].toLowerCase().includes(search)).map((target2) => ({
+        name: cliChatNames[target2],
+        value: target2,
+        section: "\u804A\u5929\u5BF9\u8C61",
+        description: target2 === "auto" ? "\u6309\u4EFB\u52A1\u63A8\u8350\uFF0C\u786E\u8BA4\u540E\u5207\u6362" : target2 === "deepseek" ? "\u5207\u56DE DSH \u6A21\u578B" : "\u5728\u5F53\u524D\u4F1A\u8BDD\u4E2D\u804A\u5929"
+      }));
+    },
+    onPick({ candidate }) {
+      const target2 = candidate.value;
+      return { insert: { source: source2, ref: target2, label: cliChatNames[target2], appearance: "session", clipboardText: cliMarker(target2) } };
+    },
+    codec: {
+      clipboardText(ref) {
+        return cliMarker(ref);
+      },
+      serialize(ref, signal) {
+        signal.throwIfAborted();
+        return cliMarker(ref);
+      }
+    }
+  };
+}
+
+// src/cli-tool-output.ts
+var language = "sessivra-output";
+var codeBlock = ".md-code-block";
+var content = "[data-code-block-content]";
+function installCliToolOutput(doc) {
+  const style = doc.createElement("style");
+  style.textContent = `
+    .md-code-block[data-sessivra-cli-output] [data-code-block-content] { max-height: 280px; overflow: auto; }
+    .md-code-block[data-sessivra-cli-output="closed"] [data-code-block-content] { display: none; }
+    .md-code-block .sessivra-cli-output-toggle { cursor: pointer; }
+    .md-code-block .sessivra-cli-output-fallback { border: 0; background: transparent; color: inherit; display: inline-grid; place-items: center; width: 28px; height: 28px; }
+    .md-code-block .sessivra-cli-output-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  `;
+  doc.head.append(style);
+  const watched = /* @__PURE__ */ new Map();
+  const prepare = (block) => {
+    if (!block.isConnected || watched.has(block)) return;
+    const region = block.querySelector(content);
+    const banner = block.querySelector("[data-code-block-banner]") ?? region?.previousElementSibling;
+    if (!banner || !region) return;
+    const heading = block.previousElementSibling;
+    const headingText = heading?.matches("p") && heading.childElementCount === 1 && heading.firstElementChild?.matches("strong") ? heading.textContent?.trim() : void 0;
+    const cliHeading = !!headingText && /^(Grok|Codex) · /u.test(headingText);
+    const walker = doc.createTreeWalker(banner, 4);
+    let labeled = false;
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.textContent?.trim() === language) {
+        labeled = true;
+        break;
+      }
+    }
+    if (labeled || cliHeading) {
+      const button = doc.createElement("button");
+      const nativeButton = banner.querySelector("button");
+      button.type = "button";
+      button.className = nativeButton ? `${nativeButton.className} sessivra-cli-output-toggle` : "sessivra-cli-output-toggle sessivra-cli-output-fallback";
+      const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "14");
+      svg.setAttribute("height", "14");
+      svg.setAttribute("viewBox", "0 0 16 16");
+      svg.setAttribute("aria-hidden", "true");
+      const arrow = doc.createElementNS(svg.namespaceURI, "path");
+      arrow.setAttribute("d", "M4 6l4 4 4-4");
+      arrow.setAttribute("fill", "none");
+      arrow.setAttribute("stroke", "currentColor");
+      arrow.setAttribute("stroke-width", "1.5");
+      arrow.setAttribute("stroke-linecap", "round");
+      arrow.setAttribute("stroke-linejoin", "round");
+      svg.append(arrow);
+      button.append(svg);
+      const label = (expanded) => {
+        const caption = expanded ? "\u6536\u8D77\u539F\u59CB\u8F93\u51FA" : "\u5C55\u5F00\u539F\u59CB\u8F93\u51FA";
+        button.title = caption;
+        button.setAttribute("aria-label", caption);
+        button.setAttribute("aria-expanded", String(expanded));
+      };
+      label(false);
+      button.addEventListener("click", () => {
+        const expand = block.getAttribute("data-sessivra-cli-output") !== "open";
+        block.setAttribute("data-sessivra-cli-output", expand ? "open" : "closed");
+        label(expand);
+      });
+      block.setAttribute("data-sessivra-cli-output", "closed");
+      watched.set(block, button);
+      if (nativeButton) nativeButton.before(button);
+      else banner.prepend(button);
+    }
+  };
+  doc.querySelectorAll(codeBlock).forEach(prepare);
+  const Observer = doc.defaultView?.MutationObserver;
+  const observer = Observer && new Observer((changes) => {
+    for (const [block, button] of watched) {
+      if (block.isConnected && button.isConnected) continue;
+      watched.delete(block);
+      if (block.isConnected) prepare(block);
+    }
+    for (const change of changes) {
+      for (const node of change.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        const element = node;
+        const owner = element.closest(codeBlock);
+        if (owner) prepare(owner);
+        element.querySelectorAll(codeBlock).forEach(prepare);
+      }
+    }
+  });
+  observer?.observe(doc.body, { childList: true, subtree: true });
+  return () => {
+    observer?.disconnect();
+    style.remove();
+    for (const [block, button] of watched) {
+      block.removeAttribute("data-sessivra-cli-output");
+      button.remove();
+    }
+  };
+}
+
 // src/bookmark-user-text.ts
 var boundary = /\[引用的收藏问答，作为历史资料读取\]\r?\n(\{[^\r\n]*\})\r?\n\[收藏问答结束\]/gu;
 var bookmarkUserText = {
@@ -16717,12 +16982,12 @@ var bookmarkUserText = {
 };
 
 // src/sent-bookmark.tsx
-var import_react5 = require("react");
+var import_react6 = require("react");
 var import_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-var import_jsx_runtime6 = require("react/jsx-runtime");
+var import_jsx_runtime7 = require("react/jsx-runtime");
 function SentBookmarkChip({ quote, locateLegacy, jump }) {
-  const resolving = (0, import_react5.useRef)(false);
-  const [status, setStatus] = (0, import_react5.useState)("");
+  const resolving = (0, import_react6.useRef)(false);
+  const [status, setStatus] = (0, import_react6.useState)("");
   const open = async () => {
     if (quote.origin) {
       jump(quote.origin);
@@ -16742,30 +17007,30 @@ function SentBookmarkChip({ quote, locateLegacy, jump }) {
       resolving.current = false;
     }
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
     import_dsh_client_ui_primitives.HoverCard,
     {
       inline: true,
       openDelayMs: 230,
-      anchor: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(import_dsh_client_ui_primitives.ReferenceChip, { appearance: "session", label: quote.label, title: "", onActivate: () => void open() }),
-      content: /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { minWidth: 0, width: "min(272px, 65vw)", maxWidth: "100%", textAlign: "start", fontSize: 13, lineHeight: "1.45" }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 8, fontWeight: 500, overflowWrap: "anywhere" }, children: [
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives.ReferenceChip, { appearance: "session", label: quote.label, title: "", onActivate: () => void open() }),
+      content: /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { style: { minWidth: 0, width: "min(272px, 65vw)", maxWidth: "100%", textAlign: "start", fontSize: 13, lineHeight: "1.45" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { style: { marginBottom: 8, fontWeight: 500, overflowWrap: "anywhere" }, children: [
           quote.title,
           " \xB7 \u7B2C ",
           quote.turn,
           " \u8F6E"
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u63D0\u95EE", text: quote.prompt }),
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(PreviewText, { title: "\u56DE\u590D", text: quote.response }),
-        status && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { role: "status", style: { marginTop: 6 }, children: status })
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(PreviewText, { title: "\u63D0\u95EE", text: quote.prompt }),
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(PreviewText, { title: "\u56DE\u590D", text: quote.response }),
+        status && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { role: "status", style: { marginTop: 6 }, children: status })
       ] })
     }
   );
 }
 function PreviewText({ title, text: text2 }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { marginBottom: 6 }, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { fontSize: 12, opacity: 0.72 }, children: title }),
-    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 5, overflow: "hidden", whiteSpace: "pre-line", overflowWrap: "anywhere" }, children: text2 || "\u2014" })
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { style: { marginBottom: 6 }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { style: { fontSize: 12, opacity: 0.72 }, children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { style: { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 5, overflow: "hidden", whiteSpace: "pre-line", overflowWrap: "anywhere" }, children: text2 || "\u2014" })
   ] });
 }
 
@@ -17787,6 +18052,10 @@ var descriptors = [
   ].map((e) => ({ ...e, id: `dsh-plugin-sessivra#sessivraImport/${e.method}`, service: "sessivraImport", namespace: "sessivraImport", invocation: { kind: "direct" }, result: codec2("import-result", external_exports.json()) })),
   ...[
     { method: "list", parameters: [parameter("query", panelQuery)] },
+    { method: "cliStatus", parameters: [] },
+    { method: "refreshCliStatus", parameters: [] },
+    { method: "cliChatProviders", parameters: [] },
+    { method: "cliLogin", parameters: [parameter("provider", external_exports.enum(["claude", "codex", "grok"]))] },
     { method: "participants", parameters: [] },
     { method: "operation", parameters: [parameter("id", external_exports.string().uuid())] },
     { method: "detail", parameters: [parameter("id", external_exports.string().max(160))] },
@@ -17823,7 +18092,7 @@ function createLegacyRecipientSource() {
 var import_dsh_client_ui_primitives3 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/import-panel.tsx
-var import_react6 = __toESM(require("react"), 1);
+var import_react7 = __toESM(require("react"), 1);
 var import_dsh_client_ui_primitives2 = require("@deepseek-ai/dsh-client-ui-primitives");
 
 // src/import-panel-styles.ts
@@ -17894,7 +18163,7 @@ var importPanelStyles = `
 `;
 
 // src/import-panel.tsx
-var import_jsx_runtime7 = require("react/jsx-runtime");
+var import_jsx_runtime8 = require("react/jsx-runtime");
 var maxSelection = 20;
 var globalMemoryLabel = "\u540C\u65F6\u5BFC\u5165\u5168\u5C40\u8BB0\u5FC6";
 var sourceTabs = [
@@ -17977,31 +18246,31 @@ async function download(api, id2, file2) {
   window.setTimeout(() => URL.revokeObjectURL(url2), 3e4);
 }
 function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
-  const [source2, setSource] = import_react6.default.useState(catalog.source);
-  const [folder, setFolder] = import_react6.default.useState(catalog.folders[source2]);
+  const [source2, setSource] = import_react7.default.useState(catalog.source);
+  const [folder, setFolder] = import_react7.default.useState(catalog.folders[source2]);
   const cacheKey = JSON.stringify([source2, folder]);
-  const [search, setSearch] = import_react6.default.useState("");
-  const [preview, setPreview] = import_react6.default.useState(() => archiveId ? void 0 : catalog.pages.get(cacheKey)?.page);
-  const [selected, setSelected] = import_react6.default.useState([]);
-  const [expanded, setExpanded] = import_react6.default.useState({});
-  const [globalMemory, setGlobalMemory] = import_react6.default.useState(false);
-  const [report, setReport] = import_react6.default.useState();
-  const [job, setJob] = import_react6.default.useState();
-  const [loadNotice, setLoadNotice] = import_react6.default.useState("");
-  const [archive, setArchive] = import_react6.default.useState();
-  const [loading, setLoading] = import_react6.default.useState(!preview);
-  const [busy, setBusy] = import_react6.default.useState("");
-  const [error51, setError] = import_react6.default.useState("");
-  const [revision, refresh] = import_react6.default.useReducer((value) => value + 1, 0);
-  const scroll = import_react6.default.useRef(null);
-  const mounted = import_react6.default.useRef(false);
-  import_react6.default.useEffect(() => {
+  const [search, setSearch] = import_react7.default.useState("");
+  const [preview, setPreview] = import_react7.default.useState(() => archiveId ? void 0 : catalog.pages.get(cacheKey)?.page);
+  const [selected, setSelected] = import_react7.default.useState([]);
+  const [expanded, setExpanded] = import_react7.default.useState({});
+  const [globalMemory, setGlobalMemory] = import_react7.default.useState(false);
+  const [report, setReport] = import_react7.default.useState();
+  const [job, setJob] = import_react7.default.useState();
+  const [loadNotice, setLoadNotice] = import_react7.default.useState("");
+  const [archive, setArchive] = import_react7.default.useState();
+  const [loading, setLoading] = import_react7.default.useState(!preview);
+  const [busy, setBusy] = import_react7.default.useState("");
+  const [error51, setError] = import_react7.default.useState("");
+  const [revision, refresh] = import_react7.default.useReducer((value) => value + 1, 0);
+  const scroll = import_react7.default.useRef(null);
+  const mounted = import_react7.default.useRef(false);
+  import_react7.default.useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
     };
   }, []);
-  import_react6.default.useEffect(() => {
+  import_react7.default.useEffect(() => {
     let current = true;
     setError("");
     const load = async () => {
@@ -18083,8 +18352,8 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
       setLoadNotice(`\u672C\u6B21\u65B0\u589E ${next.rows.length} \u6761\uFF0C\u5DF2\u52A0\u8F7D ${page.rows.length} \u6761${next.nextOffset === void 0 ? "\uFF0C\u5217\u8868\u5DF2\u5168\u90E8\u52A0\u8F7D\u3002" : "\uFF0C\u53EF\u7EE7\u7EED\u52A0\u8F7D\u3002"}`);
     });
   };
-  const fileList = (id2, files) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { className: "import-files", children: files.map((file2, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("li", { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+  const fileList = (id2, files) => /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("ul", { className: "import-files", children: files.map((file2, index) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("li", { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
       import_dsh_client_ui_primitives2.Button,
       {
         size: "sm",
@@ -18094,7 +18363,7 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
         children: file2.name
       }
     ),
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("small", { className: "muted", children: [
       file2.size.toLocaleString(),
       " \u5B57\u8282"
     ] })
@@ -18108,10 +18377,10 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
     const title = available ? row.displayTitle ?? row.title : row.title;
     const open2 = expanded[row.sourceId] ?? !!search.trim();
     const checked = available && selected.includes(row.key);
-    return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("li", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-session", "data-selected": checked, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-session-label", children: [
-          available && !child ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("li", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-session", "data-selected": checked, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-session-label", children: [
+          available && !child ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
             import_dsh_client_ui_primitives2.Checkbox,
             {
               label: title,
@@ -18119,8 +18388,8 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
               disabled: !!busy || !checked && selected.length >= maxSelection,
               onChange: (value) => setSelected((current) => value ? [...current, row.key] : current.filter((key) => key !== row.key))
             }
-          ) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: title }),
-          !!children.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+          ) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: title }),
+          !!children.length && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
             import_dsh_client_ui_primitives2.Button,
             {
               size: "sm",
@@ -18129,13 +18398,13 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
               "aria-label": `${open2 ? "\u6536\u8D77" : "\u5C55\u5F00"} ${title} \u7684\u5B50\u4F1A\u8BDD`,
               "aria-expanded": open2,
               onClick: () => setExpanded((current) => ({ ...current, [row.sourceId]: !open2 })),
-              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconChevronRightOutlineRegular, { size: 14 })
+              icon: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.IconChevronRightOutlineRegular, { size: 14 })
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { className: "muted", children: child ? "\u5B50\u4F1A\u8BDD" : placeholder ? "\u4E3B\u4F1A\u8BDD\u672A\u52A0\u8F7D" : available ? date6(row.updated) : "\u7F3A\u5C11\u672C\u673A\u539F\u6863" })
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("small", { className: "muted", children: child ? "\u5B50\u4F1A\u8BDD" : placeholder ? "\u4E3B\u4F1A\u8BDD\u672A\u52A0\u8F7D" : available ? date6(row.updated) : "\u7F3A\u5C11\u672C\u673A\u539F\u6863" })
       ] }),
-      open2 && !!children.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { className: "import-branches", children: children.map(sessionRow) })
+      open2 && !!children.length && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("ul", { className: "import-branches", children: children.map(sessionRow) })
     ] }, row.sourceId);
   };
   const watchImport = async (id2, roots) => {
@@ -18165,7 +18434,7 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
       return;
     }
   };
-  import_react6.default.useEffect(() => {
+  import_react7.default.useEffect(() => {
     const pending = !archiveId && catalog.jobs.get(cacheKey);
     if (pending) void perform("\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026", () => watchImport(pending.id, pending.selected));
   }, [archiveId, cacheKey, catalog]);
@@ -18180,20 +18449,20 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
       await watchImport(id2, selected);
     });
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("main", { className: "sessivra-import", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("style", { children: importPanelStyles }),
-    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-frame", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("header", { className: "import-header", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h1", { children: archiveId ? "\u4F1A\u8BDD\u539F\u59CB\u5F52\u6863" : "\u5BFC\u5165\u4F1A\u8BDD" }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", children: archiveId ? "\u67E5\u770B\u5E76\u4E0B\u8F7D\u539F\u59CB\u4F1A\u8BDD\u4E0E\u8BB0\u5FC6\u3002" : "\u4ECE Codex \u6216 Claude Code \u5BFC\u5165\u4F1A\u8BDD\uFF0C\u5728 DSH \u7EE7\u7EED\u5BF9\u8BDD\u3002" })
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("main", { className: "sessivra-import", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("style", { children: importPanelStyles }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-frame", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("header", { className: "import-header", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h1", { children: archiveId ? "\u4F1A\u8BDD\u539F\u59CB\u5F52\u6863" : "\u5BFC\u5165\u4F1A\u8BDD" }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "muted", children: archiveId ? "\u67E5\u770B\u5E76\u4E0B\u8F7D\u539F\u59CB\u4F1A\u8BDD\u4E0E\u8BB0\u5FC6\u3002" : "\u4ECE Codex \u6216 Claude Code \u5BFC\u5165\u4F1A\u8BDD\uFF0C\u5728 DSH \u7EE7\u7EED\u5BF9\u8BDD\u3002" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-actions", children: archiveId ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Button, { variant: "outline", onClick: back, children: "\u8FD4\u56DE\u5BFC\u5165\u4F1A\u8BDD" }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(import_jsx_runtime7.Fragment, { children: [
-          pickDirectory && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "import-actions", children: archiveId ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.Button, { variant: "outline", onClick: back, children: "\u8FD4\u56DE\u5BFC\u5165\u4F1A\u8BDD" }) : /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+          pickDirectory && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
             import_dsh_client_ui_primitives2.Button,
             {
               variant: "outline",
-              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }),
+              icon: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }),
               disabled: !!busy,
               onClick: () => void perform("\u6B63\u5728\u9009\u62E9\u6587\u4EF6\u5939\u2026", async () => {
                 const path2 = await pickDirectory();
@@ -18202,11 +18471,11 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
               children: "\u9009\u62E9\u6587\u4EF6\u5939"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
             import_dsh_client_ui_primitives2.Button,
             {
               variant: "outline",
-              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconRefreshOutlineRegular, { size: 16 }),
+              icon: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.IconRefreshOutlineRegular, { size: 16 }),
               disabled: loading || !!busy,
               onClick: () => {
                 catalog.pages.delete(cacheKey);
@@ -18216,11 +18485,11 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
               children: "\u5237\u65B0"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
             import_dsh_client_ui_primitives2.Button,
             {
               variant: "primary",
-              icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconDownloadOutlineRegular, { size: 16 }),
+              icon: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.IconDownloadOutlineRegular, { size: 16 }),
               disabled: !preview || loading || !selected.length || !!busy,
               onClick: submit,
               children: "\u5BFC\u5165\u6240\u9009\u4F1A\u8BDD"
@@ -18228,9 +18497,9 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
           )
         ] }) })
       ] }),
-      !archiveId && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-toolbar", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-controls", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.SegmentedTabs, { items: sourceTabs, value: source2, label: "\u6765\u6E90", onChange: (value) => {
+      !archiveId && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-toolbar", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-controls", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.SegmentedTabs, { items: sourceTabs, value: source2, label: "\u6765\u6E90", onChange: (value) => {
             if (busy || value === source2) return;
             catalog.source = value;
             const nextFolder = catalog.folders[value];
@@ -18240,19 +18509,19 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
             setSource(value);
             setFolder(nextFolder);
           } }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-memory", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { "aria-hidden": "true", children: globalMemoryLabel }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Switch, { label: globalMemoryLabel, checked: globalMemory, onChange: setGlobalMemory, disabled: !!busy })
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-memory", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { "aria-hidden": "true", children: globalMemoryLabel }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.Switch, { label: globalMemoryLabel, checked: globalMemory, onChange: setGlobalMemory, disabled: !!busy })
           ] })
         ] }),
-        folder && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-folder muted", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { title: folder, children: folder }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Button, { size: "sm", variant: "ghost", disabled: !!busy, onClick: () => changeFolder(void 0), children: "\u4F7F\u7528\u9ED8\u8BA4\u76EE\u5F55" })
+        folder && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-folder muted", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { title: folder, children: folder }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.Button, { size: "sm", variant: "ghost", disabled: !!busy, onClick: () => changeFolder(void 0), children: "\u4F7F\u7528\u9ED8\u8BA4\u76EE\u5F55" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
           import_dsh_client_ui_primitives2.Input,
           {
-            icon: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconSearchOutlineRegular, { size: 16 }),
+            icon: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.IconSearchOutlineRegular, { size: 16 }),
             "aria-label": "\u641C\u7D22\u9879\u76EE\u6216\u4F1A\u8BDD",
             placeholder: "\u641C\u7D22\u9879\u76EE\u6216\u4F1A\u8BDD",
             value: search,
@@ -18264,41 +18533,41 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
         )
       ] })
     ] }),
-    archiveId ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-scroll", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-frame import-content", children: [
-      loading && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5F52\u6863\u2026" }),
-      error51 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "alert", children: error51 }),
-      busy && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: busy }),
+    archiveId ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "import-scroll", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-frame import-content", children: [
+      loading && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "muted", role: "status", children: "\u6B63\u5728\u8BFB\u53D6\u5F52\u6863\u2026" }),
+      error51 && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { role: "alert", children: error51 }),
+      busy && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "muted", role: "status", children: busy }),
       archive && fileList(archiveId, archive)
-    ] }) }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_jsx_runtime7.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-scroll", ref: scroll, id: sourceTab.panelId, role: "tabpanel", "aria-labelledby": sourceTab.id, "aria-busy": loading, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-frame import-content", children: [
-      !!selected.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", "aria-live": "polite", children: [
+    ] }) }) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_jsx_runtime8.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "import-scroll", ref: scroll, id: sourceTab.panelId, role: "tabpanel", "aria-labelledby": sourceTab.id, "aria-busy": loading, children: /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-frame import-content", children: [
+      !!selected.length && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("small", { className: "muted", "aria-live": "polite", children: [
         "\u5DF2\u9009 ",
         selected.length,
         " \u9879"
       ] }),
-      loading && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("p", { className: "muted", role: "status", children: [
+      loading && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { className: "muted", role: "status", children: [
         "\u6B63\u5728\u52A0\u8F7D ",
         sourceTab.label,
         " \u4F1A\u8BDD\u2026"
       ] }),
-      busy && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: busy === "\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026" && job?.phase === "importing" ? `\u6B63\u5728\u5BFC\u5165 ${Math.min(job.completed + 1, job.total)} / ${job.total} \u6761\u4F1A\u8BDD${job.title ? ` \xB7 ${job.title}` : ""}` : busy === "\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026" ? "\u6B63\u5728\u67E5\u627E\u6240\u9009\u4E3B\u4F1A\u8BDD\u53CA\u5B50\u4F1A\u8BDD\u2026" : busy }),
-      loadNotice && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", role: "status", children: loadNotice }),
-      error51 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { role: "alert", children: error51 }),
-      report && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u5BFC\u5165\u7ED3\u679C", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("h2", { children: [
+      busy && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "muted", role: "status", children: busy === "\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026" && job?.phase === "importing" ? `\u6B63\u5728\u5BFC\u5165 ${Math.min(job.completed + 1, job.total)} / ${job.total} \u6761\u4F1A\u8BDD${job.title ? ` \xB7 ${job.title}` : ""}` : busy === "\u6B63\u5728\u5BFC\u5165\u4F1A\u8BDD\u2026" ? "\u6B63\u5728\u67E5\u627E\u6240\u9009\u4E3B\u4F1A\u8BDD\u53CA\u5B50\u4F1A\u8BDD\u2026" : busy }),
+      loadNotice && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "muted", role: "status", children: loadNotice }),
+      error51 && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { role: "alert", children: error51 }),
+      report && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("section", { "aria-label": "\u5BFC\u5165\u7ED3\u679C", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("h2", { children: [
           report.failures.length ? "\u5BFC\u5165\u5B8C\u6210\uFF0C\u90E8\u5206\u4F1A\u8BDD\u5931\u8D25" : "\u5BFC\u5165\u5B8C\u6210",
           " \xB7 ",
           report.sessions.length,
           " \u6761\u53EF\u7EE7\u7EED"
         ] }),
-        report.failures.map((row, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("p", { role: "alert", children: [
+        report.failures.map((row, index) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { role: "alert", children: [
           row.title ?? preview?.rows.find((candidate) => candidate.key === row.key)?.title,
           "\uFF1A",
           row.message
         ] }, row.key + ":" + index)),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { className: "import-results", children: report.sessions.map((row) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("li", { className: row.parentId ? "import-result-child" : void 0, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "import-result-row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: row.title }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("ul", { className: "import-results", children: report.sessions.map((row) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("li", { className: row.parentId ? "import-result-child" : void 0, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "import-result-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("strong", { children: row.title }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
               import_dsh_client_ui_primitives2.Button,
               {
                 size: "sm",
@@ -18309,62 +18578,62 @@ function ImportPanel({ api, open, archiveId, back, catalog, pickDirectory }) {
               }
             )
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("small", { className: "muted", children: [
             row.status === "existing" ? "\u5DF2\u5BFC\u5165 \xB7 " : "",
             row.projectedMessages,
             " \u6761\u6B63\u6587"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("details", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("summary", { children: "\u4E0B\u8F7D\u539F\u59CB\u4F1A\u8BDD\u4E0E\u8BB0\u5FC6" }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("details", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("summary", { children: "\u4E0B\u8F7D\u539F\u59CB\u4F1A\u8BDD\u4E0E\u8BB0\u5FC6" }),
             fileList(row.id, row.files)
           ] })
         ] }, row.id)) })
       ] }),
-      !!projects.size && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u9879\u76EE", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "\u9879\u76EE" }),
-        [...projects].map(([key, group]) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("details", { className: "import-project", open: !!search.trim(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("summary", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconChevronRightOutlineRegular, { className: "import-chevron", size: 14 }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: group.name }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { className: "muted", children: [
+      !!projects.size && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("section", { "aria-label": "\u9879\u76EE", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h2", { children: "\u9879\u76EE" }),
+        [...projects].map(([key, group]) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("details", { className: "import-project", open: !!search.trim(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("summary", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.IconChevronRightOutlineRegular, { className: "import-chevron", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.IconFolderCloseRegular, { size: 16 }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: group.name }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("small", { className: "muted", children: [
               group.rows.length,
               " \u4E2A\u4F1A\u8BDD"
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { children: group.rows.map(sessionRow) })
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("ul", { children: group.rows.map(sessionRow) })
         ] }, search.trim() + ":" + key))
       ] }),
-      !!standalone.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { "aria-label": "\u72EC\u7ACB\u4F1A\u8BDD", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "\u72EC\u7ACB\u4F1A\u8BDD" }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("ul", { children: standalone.map(sessionRow) })
+      !!standalone.length && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("section", { "aria-label": "\u72EC\u7ACB\u4F1A\u8BDD", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h2", { children: "\u72EC\u7ACB\u4F1A\u8BDD" }),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("ul", { children: standalone.map(sessionRow) })
       ] }),
-      preview && !projects.size && !standalone.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { className: "muted", children: search.trim() ? preview.nextOffset === void 0 ? "\u6CA1\u6709\u5339\u914D\u7684\u9879\u76EE\u6216\u4F1A\u8BDD\u3002" : "\u5DF2\u52A0\u8F7D\u7684\u4F1A\u8BDD\u4E2D\u6CA1\u6709\u5339\u914D\u9879\u3002" : "\u6CA1\u6709\u627E\u5230\u672C\u673A\u53EF\u8BFB\u53D6\u7684\u4F1A\u8BDD\u3002" }),
-      preview?.nextOffset !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "import-more", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(import_dsh_client_ui_primitives2.Button, { size: "sm", variant: "outline", disabled: loading || !!busy, onClick: loadMore, children: busy === "\u6B63\u5728\u52A0\u8F7D\u66F4\u591A\u4F1A\u8BDD\u2026" ? "\u52A0\u8F7D\u4E2D\u2026" : "\u52A0\u8F7D\u66F4\u591A\u4F1A\u8BDD" }) }),
-      !!preview?.warnings.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("details", { className: "muted", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("summary", { children: "\u90E8\u5206\u8BB0\u5F55\u672A\u80FD\u52A0\u8F7D" }),
-        preview.warnings.map((warning) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("p", { children: warning }, warning))
+      preview && !projects.size && !standalone.length && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "muted", children: search.trim() ? preview.nextOffset === void 0 ? "\u6CA1\u6709\u5339\u914D\u7684\u9879\u76EE\u6216\u4F1A\u8BDD\u3002" : "\u5DF2\u52A0\u8F7D\u7684\u4F1A\u8BDD\u4E2D\u6CA1\u6709\u5339\u914D\u9879\u3002" : "\u6CA1\u6709\u627E\u5230\u672C\u673A\u53EF\u8BFB\u53D6\u7684\u4F1A\u8BDD\u3002" }),
+      preview?.nextOffset !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "import-more", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_dsh_client_ui_primitives2.Button, { size: "sm", variant: "outline", disabled: loading || !!busy, onClick: loadMore, children: busy === "\u6B63\u5728\u52A0\u8F7D\u66F4\u591A\u4F1A\u8BDD\u2026" ? "\u52A0\u8F7D\u4E2D\u2026" : "\u52A0\u8F7D\u66F4\u591A\u4F1A\u8BDD" }) }),
+      !!preview?.warnings.length && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("details", { className: "muted", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("summary", { children: "\u90E8\u5206\u8BB0\u5F55\u672A\u80FD\u52A0\u8F7D" }),
+        preview.warnings.map((warning) => /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { children: warning }, warning))
       ] })
     ] }) }) })
   ] });
 }
 
 // src/session-tree-host.tsx
-var import_react9 = require("react");
+var import_react10 = require("react");
 
 // src/session-actions.tsx
-var import_react8 = require("react");
+var import_react9 = require("react");
 
 // src/session-dialog.tsx
-var import_react7 = require("react");
-var import_jsx_runtime8 = require("react/jsx-runtime");
+var import_react8 = require("react");
+var import_jsx_runtime9 = require("react/jsx-runtime");
 function createSessionDialogStore() {
   let owner;
-  let content = null;
+  let content2 = null;
   const listeners = /* @__PURE__ */ new Set();
   const emit = () => listeners.forEach((listener) => listener());
   return {
-    getSnapshot: () => content,
+    getSnapshot: () => content2,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {
@@ -18373,47 +18642,47 @@ function createSessionDialogStore() {
     },
     show: (key, next) => {
       owner = key;
-      content = next;
+      content2 = next;
       emit();
     },
     hide: (key) => {
       if (owner === key) {
         owner = void 0;
-        content = null;
+        content2 = null;
         emit();
       }
     },
     dispose: () => {
       owner = void 0;
-      content = null;
+      content2 = null;
       emit();
       listeners.clear();
     }
   };
 }
 function SessionDialogRequest({ dialogs, children }) {
-  const owner = (0, import_react7.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
-  (0, import_react7.useLayoutEffect)(() => {
+  const owner = (0, import_react8.useRef)(/* @__PURE__ */ Symbol("session-dialog")).current;
+  (0, import_react8.useLayoutEffect)(() => {
     if (children) dialogs.show(owner, children);
     else dialogs.hide(owner);
   }, [dialogs, owner, children]);
-  (0, import_react7.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
+  (0, import_react8.useLayoutEffect)(() => () => dialogs.hide(owner), [dialogs, owner]);
   return null;
 }
 function SessionDialogOutlet({ dialogs }) {
-  const content = (0, import_react7.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(import_jsx_runtime8.Fragment, { children: content });
+  const content2 = (0, import_react8.useSyncExternalStore)(dialogs.subscribe, dialogs.getSnapshot, dialogs.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_jsx_runtime9.Fragment, { children: content2 });
 }
 
 // src/session-actions.tsx
-var import_jsx_runtime9 = require("react/jsx-runtime");
+var import_jsx_runtime10 = require("react/jsx-runtime");
 function SessionActionsMenu({ session, pinned, actions: actions2, controls, dialogs, onChanged, alias, setAlias }) {
-  const [open, setOpen] = (0, import_react8.useState)(false);
-  const [dialog, setDialog] = (0, import_react8.useState)();
-  const [title, setTitle] = (0, import_react8.useState)(session.label);
-  const [busy, setBusy] = (0, import_react8.useState)(false);
-  const [error51, setError] = (0, import_react8.useState)("");
-  const composing = (0, import_react8.useRef)(false);
+  const [open, setOpen] = (0, import_react9.useState)(false);
+  const [dialog, setDialog] = (0, import_react9.useState)();
+  const [title, setTitle] = (0, import_react9.useState)(session.label);
+  const [busy, setBusy] = (0, import_react9.useState)(false);
+  const [error51, setError] = (0, import_react9.useState)("");
+  const composing = (0, import_react9.useRef)(false);
   const { Menu: Menu2, Modal: Modal2, Button: Button3 } = controls;
   const member = session.subagent && session.subagentKind === "teammate";
   const close = () => {
@@ -18444,9 +18713,9 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
     if (dialog === "rename") void run(() => member ? Promise.resolve(setAlias(title.trim())) : actions2.rename(session.id, title.trim()), member ? "\u663E\u793A\u540D\u79F0\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002" : void 0);
     else if (dialog === "archive") void run(() => actions2.archive(session.id), "\u5F52\u6863\u672A\u5B8C\u6210\u3002\u4F1A\u8BDD\u82E5\u6B63\u5728\u8FD0\u884C\uFF0C\u8BF7\u5148\u505C\u6B62\u540E\u518D\u91CD\u8BD5\u3002");
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: "dshsm-session-actions", "data-open": open || Boolean(dialog), onPointerOverCapture: (event) => event.stopPropagation(), onPointerOutCapture: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), onDoubleClick: (event) => event.stopPropagation(), onPointerDown: (event) => event.stopPropagation(), children: [
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("style", { children: `.dshsm-session-actions{flex:none}.dshsm-native-children .dshsm-session-menu{width:28px;height:28px;padding:0;border-radius:var(--dsw-radius-sm)}.dshsm-session-menu:hover{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-session-form{margin:0}.dshsm-session-form input{box-sizing:border-box;width:100%;height:44px;padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:transparent;color:var(--dsw-alias-label-primary);font-family:inherit;font-size:14px;font-weight:400;line-height:22px;outline:none}.dshsm-session-form input:focus-visible{border-color:var(--dsw-alias-label-secondary)}.dshsm-session-form input:disabled{color:var(--dsw-alias-label-dimmed)}.dshsm-session-form [role=alert]{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px;margin:8px 0 0}.dshsm-session-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:18px;margin:8px 0 0}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
       Menu2,
       {
         open,
@@ -18454,7 +18723,7 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
         align: "end",
         autoFocus: true,
         onClose: () => setOpen(false),
-        anchor: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
+        anchor: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { type: "button", className: "dshsm-session-menu", disabled: busy, "aria-label": `\u7BA1\u7406\u4F1A\u8BDD\uFF1A${alias || session.label}`, title: member ? "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" : "\u7BA1\u7406\u4F1A\u8BDD", "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: "\xB7\xB7\xB7" }),
         items: member ? [{ id: "rename", label: "\u8BBE\u7F6E\u663E\u793A\u540D\u79F0" }] : [{ id: "rename", label: "\u91CD\u547D\u540D" }, { id: "pin", label: pinned ? "\u53D6\u6D88\u7F6E\u9876" : "\u7F6E\u9876" }, { id: "archive", label: "\u5F52\u6863", disabled: session.running }],
         onSelect: (id2) => {
           setOpen(false);
@@ -18468,23 +18737,23 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
         }
       }
     ),
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(SessionDialogRequest, { dialogs, children: dialog && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
       Modal2,
       {
         open: true,
         title: dialog === "rename" ? member ? "\u8BBE\u7F6E\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u91CD\u547D\u540D\u4F1A\u8BDD" : dialog === "archive" ? "\u5F52\u6863\u4F1A\u8BDD" : "\u64CD\u4F5C\u672A\u5B8C\u6210",
         closeLabel: "\u5173\u95ED",
         onClose: close,
-        footer: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(Button3, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
-          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(Button3, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
+        footer: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_jsx_runtime10.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Button3, { variant: "outline", disabled: busy, onClick: close, children: dialog === "error" ? "\u5173\u95ED" : "\u53D6\u6D88" }),
+          dialog !== "error" && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(Button3, { variant: "primary", disabled: blocked, onClick: confirm, children: busy ? "\u5904\u7406\u4E2D\u2026" : dialog === "rename" ? member ? "\u4FDD\u5B58" : "\u91CD\u547D\u540D" : "\u5F52\u6863" })
         ] }),
-        children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
+        children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("form", { className: "dshsm-session-form", onSubmit: (event) => {
           event.preventDefault();
           confirm();
         }, children: [
-          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
+          dialog === "rename" ? /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_jsx_runtime10.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("input", { "data-modal-autofocus": true, "aria-label": member ? "\u961F\u5458\u663E\u793A\u540D\u79F0" : "\u4F1A\u8BDD\u540D\u79F0", placeholder: member ? session.label : void 0, maxLength: member ? 60 : void 0, value: title, disabled: busy, onFocus: (event) => event.target.select(), onChange: (event) => {
               setTitle(event.target.value);
               setError("");
             }, onCompositionStart: () => {
@@ -18497,17 +18766,17 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
                 if (!event.nativeEvent.isComposing) confirm();
               }
             } }),
-            member && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "dshsm-session-hint", children: [
+            member && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("p", { className: "dshsm-session-hint", children: [
               "\u539F\u540D\uFF1A",
               session.label,
               "\u3002\u663E\u793A\u540D\u79F0\u4EC5\u4FDD\u5B58\u5728\u672C\u673A\uFF0C\u7559\u7A7A\u6062\u590D\u9ED8\u8BA4\u540D\u79F0\u3002"
             ] })
-          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { children: [
+          ] }) : dialog === "archive" ? /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("p", { children: [
             "\u5F52\u6863\u201C",
             session.label,
             "\u201D\u540E\u53EF\u5728\u5BBF\u4E3B\u7684\u5F52\u6863\u5217\u8868\u4E2D\u6062\u590D\u3002"
           ] }) : null,
-          error51 && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { role: "alert", children: error51 })
+          error51 && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { role: "alert", children: error51 })
         ] })
       }
     ) })
@@ -18515,35 +18784,35 @@ function SessionActionsMenu({ session, pinned, actions: actions2, controls, dial
 }
 
 // src/session-tree-host.tsx
-var import_jsx_runtime10 = require("react/jsx-runtime");
+var import_jsx_runtime11 = require("react/jsx-runtime");
 function NativeSessionTreeHost(props) {
   const selected = props.useSessions((list) => Object.values(list.byId).find((session) => (session.retainedBy.mainView ?? 0) > 0)?.id);
   const panelActive = props.usePanelInfo((info) => info.activePanelId !== null);
   const statuses = props.useSessionStatus((state) => state);
   const pinnedIds = new Set(props.useWorkspaces((state) => state.pinnedSessionIds));
-  const snapshot2 = (0, import_react9.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
-  return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+  const snapshot2 = (0, import_react10.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
     NativeSessionChildren,
     {
       ...props,
       currentId: panelActive ? void 0 : selected,
       statuses,
       pinnedIds,
-      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_jsx_runtime10.Fragment, { children: [
-        session.task && props.openTask && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { type: "button", className: "dshsm-session-actions", title: "\u67E5\u770B\u4EFB\u52A1", onClick: (e) => {
+      renderActions: (session) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
+        session.task && props.openTask && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", className: "dshsm-session-actions", title: "\u67E5\u770B\u4EFB\u52A1", onClick: (e) => {
           e.stopPropagation();
           props.openTask?.(session.task.id);
         }, children: "\u4EFB\u52A1" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot2.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(SessionActionsMenu, { session: { ...session, running: statuses.get(session.id)?.running ?? session.running }, pinned: pinnedIds.has(session.id), actions: props.sessionActions, controls: props.controls, dialogs: props.dialogs, alias: snapshot2.aliases.get(session.id), setAlias: (name) => props.store.setAlias(session.id, name), onChanged: () => void props.store.refresh() })
       ] })
     }
   );
 }
 
 // src/session-navigation.tsx
-var import_react10 = __toESM(require("react"), 1);
+var import_react11 = __toESM(require("react"), 1);
 var import_react_dom2 = require("react-dom");
-var import_jsx_runtime11 = require("react/jsx-runtime");
+var import_jsx_runtime12 = require("react/jsx-runtime");
 function createWorkspaceArchiveSource(slots) {
   let entry;
   let source2;
@@ -18675,10 +18944,10 @@ function revealNativeBranch(doc, store, id2, workspaces) {
   return stop;
 }
 function HistoryTaskAction({ action: { Button: Button3, open }, location, onOpen }) {
-  const request2 = import_react10.default.useRef();
-  const [busy, setBusy] = (0, import_react10.useState)(false);
-  const [error51, setError] = (0, import_react10.useState)("");
-  (0, import_react10.useEffect)(() => () => request2.current?.abort(), []);
+  const request2 = import_react11.default.useRef();
+  const [busy, setBusy] = (0, import_react11.useState)(false);
+  const [error51, setError] = (0, import_react11.useState)("");
+  (0, import_react11.useEffect)(() => () => request2.current?.abort(), []);
   const start = async () => {
     const controller = new AbortController();
     request2.current = controller;
@@ -18693,16 +18962,16 @@ function HistoryTaskAction({ action: { Button: Button3, open }, location, onOpen
       if (!controller.signal.aborted) setBusy(false);
     }
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "dshsm-search-task", title: "\u6574\u7406\u6210\u4EFB\u52A1", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Button3, { size: "sm", variant: "ghost", "aria-label": "\u6574\u7406\u6210\u4EFB\u52A1", disabled: busy, onClick: () => void start(), children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("path", { d: "M4 6h14M4 12h9M4 18h9M18 13v8m-4-4h8" }) }) }) }),
-    error51 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { role: "alert", className: "dshsm-search-heading", style: { gridColumn: "1 / -1" }, children: error51 })
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "dshsm-search-task", title: "\u6574\u7406\u6210\u4EFB\u52A1", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(Button3, { size: "sm", variant: "ghost", "aria-label": "\u6574\u7406\u6210\u4EFB\u52A1", disabled: busy, onClick: () => void start(), children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("path", { d: "M4 6h14M4 12h9M4 18h9M18 13v8m-4-4h8" }) }) }) }),
+    error51 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { role: "alert", className: "dshsm-search-heading", style: { gridColumn: "1 / -1" }, children: error51 })
   ] });
 }
 function SearchMatches({ store, openSession, target: target2, query, reveal, archivedIds, searchHistory, openMessage, taskAction, showTeam = true }) {
-  const snapshot2 = (0, import_react10.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const snapshot2 = (0, import_react11.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const matches = showTeam ? searchTeamMembers(store, query, archivedIds) : [];
-  const [history, setHistory] = (0, import_react10.useState)();
-  (0, import_react10.useEffect)(() => {
+  const [history, setHistory] = (0, import_react11.useState)();
+  (0, import_react11.useEffect)(() => {
     if (!searchHistory) return;
     let active = true;
     const timer = setTimeout(() => {
@@ -18722,13 +18991,13 @@ function SearchMatches({ store, openSession, target: target2, query, reveal, arc
   }, [query, searchHistory]);
   const currentHistory = history?.query === query ? history : void 0;
   const hasSupplement = Boolean(searchHistory) || matches.length > 0 || showTeam && (!snapshot2.loaded || Boolean(snapshot2.problem));
-  const [container] = (0, import_react10.useState)(() => target2.results.ownerDocument.createElement("div"));
-  (0, import_react10.useEffect)(() => {
+  const [container] = (0, import_react11.useState)(() => target2.results.ownerDocument.createElement("div"));
+  (0, import_react11.useEffect)(() => {
     container.dataset.dshsmSearch = "true";
     target2.results.after(container);
     return () => container.remove();
   }, [target2.results, container]);
-  (0, import_react10.useEffect)(() => {
+  (0, import_react11.useEffect)(() => {
     const marked = /* @__PURE__ */ new Set();
     const mark = () => {
       if (hasSupplement) for (const sibling of target2.results.parentElement?.children ?? []) {
@@ -18758,9 +19027,9 @@ function SearchMatches({ store, openSession, target: target2, query, reveal, arc
     openSession(node);
     reveal(node.id);
   };
-  return (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: `
+  return (0, import_react_dom2.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("style", { children: `[data-dshsm-search-empty=true]{display:none!important}.dshsm-search-heading{color:var(--dsw-alias-label-tertiary);font-size:12px;padding:8px 12px 4px}.dshsm-search-result{display:block;width:100%;border:0;background:transparent;color:var(--dsw-alias-label-primary);text-align:left;padding:8px 12px;border-radius:var(--dsw-radius-md);font:inherit;cursor:pointer}.dshsm-search-result:hover,.dshsm-search-result:focus-visible{background:var(--dsw-alias-interactive-bg-hover)}.dshsm-search-result:focus-visible{outline:2px solid var(--dsw-focus-ring-color);outline-offset:-2px}.dshsm-search-result:disabled{opacity:.65;cursor:default}.dshsm-search-result span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dshsm-search-result small{display:block;font-size:12px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("style", { children: `
       .dshsm-search-hit{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding-inline-end:4px}
       .dshsm-search-task button{color:var(--dsw-alias-label-secondary)}
       @media (hover:hover){
@@ -18768,34 +19037,34 @@ function SearchMatches({ store, openSession, target: target2, query, reveal, arc
         .dshsm-search-hit:hover .dshsm-search-task,.dshsm-search-hit:focus-within .dshsm-search-task{opacity:1}
       }
     ` }),
-    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dshsm-search-heading", children: [
+    matches.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("section", { "aria-label": "\u961F\u5458\u641C\u7D22\u7ED3\u679C", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "dshsm-search-heading", children: [
         "\u961F\u5458 \xB7 ",
         matches.length
       ] }),
-      matches.slice(0, 50).map(({ node, display, path: path2 }) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
+      matches.slice(0, 50).map(({ node, display, path: path2 }) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("button", { type: "button", className: "dshsm-search-result", disabled: !node.openable, title: `${display.title}
 ${path2}`, onClick: () => open(node), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: display.label }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("small", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: display.label }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("small", { children: [
           node.teammateName,
           display.state ? ` \xB7 ${display.state}` : ""
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("small", { children: path2 })
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("small", { children: path2 })
       ] }, node.id)),
-      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
+      matches.length > 50 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { className: "dshsm-search-heading", children: "\u4EC5\u663E\u793A\u524D 50 \u4E2A\u961F\u5458\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002" })
     ] }),
-    showTeam && !snapshot2.loaded && !snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
-    showTeam && snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
+    showTeam && !snapshot2.loaded && !snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { role: "status", className: "dshsm-search-heading", children: "\u6B63\u5728\u641C\u7D22\u961F\u5458\u2026" }),
+    showTeam && snapshot2.problem && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { role: "alert", className: "dshsm-search-heading", children: [
       "\u961F\u5458\u641C\u7D22\u6682\u672A\u66F4\u65B0\uFF0C",
       snapshot2.problem,
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { type: "button", onClick: () => void store.refresh(), children: "\u91CD\u8BD5" })
     ] }),
-    searchHistory && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("section", { "aria-label": "\u6D88\u606F\u6B63\u6587\u641C\u7D22\u7ED3\u679C", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dshsm-search-heading", title: currentHistory?.error, "aria-live": "polite", children: !currentHistory ? "\u6B63\u5728\u641C\u7D22\u6D88\u606F\u6B63\u6587\u2026" : currentHistory.error ? "\u6D88\u606F\u6B63\u6587\u6682\u65F6\u65E0\u6CD5\u641C\u7D22" : currentHistory.results?.items.length ? "\u6D88\u606F\u6B63\u6587" : "\u6CA1\u6709\u5339\u914D\u7684\u6D88\u606F\u6B63\u6587" }),
+    searchHistory && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("section", { "aria-label": "\u6D88\u606F\u6B63\u6587\u641C\u7D22\u7ED3\u679C", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dshsm-search-heading", title: currentHistory?.error, "aria-live": "polite", children: !currentHistory ? "\u6B63\u5728\u641C\u7D22\u6D88\u606F\u6B63\u6587\u2026" : currentHistory.error ? "\u6D88\u606F\u6B63\u6587\u6682\u65F6\u65E0\u6CD5\u641C\u7D22" : currentHistory.results?.items.length ? "\u6D88\u606F\u6B63\u6587" : "\u6CA1\u6709\u5339\u914D\u7684\u6D88\u606F\u6B63\u6587" }),
       currentHistory?.results?.items.map((hit) => {
         const location = { sessionId: hit.sessionId, seq: hit.seq };
-        return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dshsm-search-hit", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "dshsm-search-hit", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
             "button",
             {
               type: "button",
@@ -18806,20 +19075,20 @@ ${path2}`, onClick: () => open(node), children: [
                 openMessage?.(location);
               },
               children: [
-                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: hit.snippet }),
-                /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("small", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: hit.snippet }),
+                /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("small", { children: [
                   hit.child ? "\u5B50\u4F1A\u8BDD \xB7 " : "",
                   snapshot2.aliases.get(hit.sessionId) ?? hit.title
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("small", { children: hit.cwd })
+                /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("small", { children: hit.cwd })
               ]
             }
           ),
-          taskAction && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(HistoryTaskAction, { action: taskAction, location, onOpen: clearSearch })
+          taskAction && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(HistoryTaskAction, { action: taskAction, location, onOpen: clearSearch })
         ] }, `${query}:${hit.sessionId}:${hit.seq}`);
       }),
-      currentHistory?.results?.more && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dshsm-search-heading", children: "\u8FD8\u6709\u66F4\u591A\u547D\u4E2D\uFF0C\u53EF\u7F29\u5C0F\u5173\u952E\u8BCD\u8303\u56F4\u3002" }),
-      currentHistory?.results?.partial && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dshsm-search-heading", children: "\u90E8\u5206\u5386\u53F2\u6682\u4E0D\u53EF\u8BFB\u3002" })
+      currentHistory?.results?.more && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dshsm-search-heading", children: "\u8FD8\u6709\u66F4\u591A\u547D\u4E2D\uFF0C\u53EF\u7F29\u5C0F\u5173\u952E\u8BCD\u8303\u56F4\u3002" }),
+      currentHistory?.results?.partial && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dshsm-search-heading", children: "\u90E8\u5206\u5386\u53F2\u6682\u4E0D\u53EF\u8BFB\u3002" })
     ] })
   ] }), container);
 }
@@ -18827,10 +19096,10 @@ function NativeTeamSearch(props) {
   const workspaces = props.useWorkspaces((state) => state.items);
   const archivedIds = props.useWorkspaces((state) => state.archivedSessionIds);
   const archiveFilter = props.useArchiveFilter((filter) => filter);
-  const pendingReveal = import_react10.default.useRef();
-  (0, import_react10.useEffect)(() => () => pendingReveal.current?.(), []);
-  const [search, setSearch] = (0, import_react10.useState)();
-  (0, import_react10.useEffect)(() => {
+  const pendingReveal = import_react11.default.useRef();
+  (0, import_react11.useEffect)(() => () => pendingReveal.current?.(), []);
+  const [search, setSearch] = (0, import_react11.useState)();
+  (0, import_react11.useEffect)(() => {
     let queued = false, stopped = false;
     let workspace;
     const scan = () => {
@@ -18862,7 +19131,7 @@ function NativeTeamSearch(props) {
     };
   }, []);
   const showTeam = archiveFilter === "default" || archiveFilter === "show";
-  return search && (showTeam || props.searchHistory) ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(SearchMatches, { ...props, ...search, showTeam, archivedIds, reveal: (id2) => {
+  return search && (showTeam || props.searchHistory) ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(SearchMatches, { ...props, ...search, showTeam, archivedIds, reveal: (id2) => {
     pendingReveal.current?.();
     pendingReveal.current = revealNativeBranch(document, props.store, id2, workspaces);
   } }) : null;
@@ -18872,20 +19141,20 @@ function selectParentUnavailable(owner) {
   return child?.address.mode === "continuable" && child.parentAvailable === false && owner.session?.running !== true ? { parentId: child.address.parentSessionId } : null;
 }
 function ParentUnavailableComposer({ store, openSession, matched, Button: Button3 }) {
-  const snapshot2 = (0, import_react10.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const snapshot2 = (0, import_react11.useSyncExternalStore)(store.subscribe, store.getSnapshot, store.getSnapshot);
   const parent = snapshot2.nodes.get(matched.parentId);
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(Button3, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { role: "status", className: "dshsm-parent-notice", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("style", { children: `.dshsm-parent-notice{border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-lg);background:var(--dsw-alias-bg-layer-1);min-height:54px;color:var(--dsw-alias-label-tertiary);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0 24px 20px;padding:10px 16px;font-size:13px;line-height:20px}.dshsm-parent-notice strong{color:var(--dsw-alias-label-primary);font-weight:510}` }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("strong", { children: "\u6B64\u961F\u5458\u6682\u65F6\u53EA\u8BFB" }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: "\u7236\u4F1A\u8BDD\u5F53\u524D\u4E0D\u5728\u7EBF\uFF0C\u8BF7\u5148\u6253\u5F00\u7236\u4F1A\u8BDD\uFF0C\u518D\u8FD4\u56DE\u6B64\u961F\u5458\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(Button3, { variant: "outline", size: "sm", disabled: !parent || parent.subagent && !parent.openable, onClick: () => {
       if (parent) openSession(parent);
     }, children: "\u6253\u5F00\u7236\u4F1A\u8BDD" })
   ] });
 }
 
 // src/session-views.tsx
-var import_react12 = require("react");
+var import_react13 = require("react");
 var import_react_dom4 = require("react-dom");
 
 // src/split-layout.ts
@@ -18954,9 +19223,9 @@ function edgePreview(rect, edge) {
 }
 
 // src/compact-headers.tsx
-var import_react11 = __toESM(require("react"), 1);
+var import_react12 = __toESM(require("react"), 1);
 var import_react_dom3 = require("react-dom");
-var import_jsx_runtime12 = require("react/jsx-runtime");
+var import_jsx_runtime13 = require("react/jsx-runtime");
 var css2 = `
 [data-sessivra-compact]{height:40px!important;min-height:40px!important;padding:4px 12px!important;overflow:hidden}
 [data-sessivra-compact] [data-sessivra-tab-row]{display:none!important}
@@ -18966,12 +19235,12 @@ var css2 = `
 .sessivra-header-menu button.sessivra-pane-close{width:24px;height:28px}
 `;
 function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
-  const [open, setOpen] = (0, import_react11.useState)(false);
-  const registry2 = (0, import_react11.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
+  const [open, setOpen] = (0, import_react12.useState)(false);
+  const registry2 = (0, import_react12.useSyncExternalStore)(headerViews.subscribe, headerViews.getSnapshot, headerViews.getSnapshot);
   const native = sessionId ? registry2.get(sessionId) : void 0;
   const views = native?.views ?? seat.tabs.map((tab, index) => ({ id: String(index), label: tab.textContent?.trim() ?? "" }));
   if (!views.length) return null;
-  return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "sessivra-header-menu", onPointerDown: (event) => event.stopPropagation(), onClick: (event) => event.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
     Menu2,
     {
       open,
@@ -18979,8 +19248,8 @@ function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
       autoFocus: true,
       align: "start",
       onClose: () => setOpen(false),
-      anchor: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
-      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", {}) })),
+      anchor: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { type: "button", draggable: false, className: "sessivra-pane-close", title: "\u5207\u6362\u4F1A\u8BDD\u89C6\u56FE", "aria-label": `\u89C6\u56FE\u83DC\u5355\uFF1A${label}`, "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen(!open), children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("path", { d: "m4 6 4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
+      items: views.map((view) => ({ id: view.id, label: view.label, icon: (native ? view.id === (native.current ?? "chat") : seat.tabs[Number(view.id)]?.getAttribute("aria-selected") === "true") ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { "aria-label": "\u5F53\u524D\u89C6\u56FE", children: "\u2713" }) : /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", {}) })),
       onSelect: (id2) => {
         setOpen(false);
         if (native) native.selectView(id2);
@@ -18990,8 +19259,8 @@ function ViewMenu({ seat, label, Menu: Menu2, headerViews, sessionId }) {
   ) });
 }
 function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, current }) {
-  const [seats, setSeats] = (0, import_react11.useState)([]);
-  (0, import_react11.useLayoutEffect)(() => {
+  const [seats, setSeats] = (0, import_react12.useState)([]);
+  (0, import_react12.useLayoutEffect)(() => {
     const markedHeaders = /* @__PURE__ */ new Set(), markedTabs = /* @__PURE__ */ new Set();
     const scan = () => {
       const headers = [...host.querySelectorAll("[data-sessivra-main-header],.sessivra-pane-native-header header")];
@@ -19022,23 +19291,23 @@ function CompactHeaders({ host, Menu: Menu2, labelFor, close, headerViews, curre
       for (const row of markedTabs) delete row.dataset.sessivraTabRow;
     };
   }, [host]);
-  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("style", { children: css2 }),
-    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_react11.default.Fragment, { children: [
-      seat.menu && (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime12.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
-      (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_jsx_runtime13.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("style", { children: css2 }),
+    seats.map((seat) => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_react12.default.Fragment, { children: [
+      seat.menu && (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime13.jsx)(ViewMenu, { seat, label: labelFor(seat.id), Menu: Menu2, headerViews, sessionId: seat.id === MAIN_PANE ? current : seat.id }), seat.menu),
+      (0, import_react_dom3.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { type: "button", className: "sessivra-pane-close", draggable: false, title: "\u5173\u95ED\u89C6\u56FE", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${labelFor(seat.id)}`, onPointerDown: (event) => event.stopPropagation(), onDragStart: (event) => {
         event.preventDefault();
         event.stopPropagation();
       }, onClick: (event) => {
         event.stopPropagation();
         close(seat.id);
-      }, children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
+      }, children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) }), seat.corner)
     ] }, seat.id))
   ] });
 }
 
 // src/session-views.tsx
-var import_jsx_runtime13 = require("react/jsx-runtime");
+var import_jsx_runtime14 = require("react/jsx-runtime");
 function SessionViewContent(props) {
   const session = props.useSession((value) => value);
   const conversation = props.useConversation((value) => value);
@@ -19047,7 +19316,7 @@ function SessionViewContent(props) {
   const pending = session.subagent?.address.mode === "continuable" && session.subagent.parentAvailable === void 0;
   const settling = !active && session.openState === "loading" && blank !== true || pending;
   const hero = !active && (session.openState === "open" || blank === true);
-  return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(import_jsx_runtime13.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
+  return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(import_jsx_runtime14.Fragment, { children: props.renderFactorySlot("conversation.content", { variant: "embedded", phase: settling ? "settling" : hero ? "hero" : "active", hero }) });
 }
 function createSessionViews(sessions) {
   let snapshot2 = [];
@@ -19124,27 +19393,27 @@ var styles4 = `
 `;
 var position = (rect) => ({ left: rect.x, top: rect.y, width: rect.width, height: rect.height });
 function SessionViews(props) {
-  const panes = (0, import_react12.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
-  (0, import_react12.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
+  const panes = (0, import_react13.useSyncExternalStore)(props.views.subscribe, props.views.getSnapshot, props.views.getSnapshot);
+  (0, import_react13.useSyncExternalStore)(props.store.subscribe, props.store.getSnapshot, props.store.getSnapshot);
   const listedCurrent = props.useSessions((list) => Object.values(list.byId).find((row) => (row.retainedBy.mainView ?? 0) > 0)?.id);
-  const [nativeCurrent, setNativeCurrent] = (0, import_react12.useState)();
+  const [nativeCurrent, setNativeCurrent] = (0, import_react13.useState)();
   const current = listedCurrent ?? nativeCurrent;
   const panel = props.usePanelInfo((info) => info.activePanelId);
-  const [host, setHost] = (0, import_react12.useState)();
+  const [host, setHost] = (0, import_react13.useState)();
   const { fish } = props;
-  (0, import_react12.useEffect)(() => host && fish && panel === null ? mountTurnBookmarks(host, fish) : void 0, [host, fish, panel]);
-  const [canvas, setCanvas] = (0, import_react12.useState)(null);
-  const [size, setSize] = (0, import_react12.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
-  const [layout, setLayout] = (0, import_react12.useState)(mainLayout);
-  const [notice, setNotice] = (0, import_react12.useState)("");
-  const [preview, setPreview] = (0, import_react12.useState)();
-  const drag = (0, import_react12.useRef)({ consumed: false });
-  const resize = (0, import_react12.useRef)();
-  const pointerDock = (0, import_react12.useRef)();
-  const suppressClick = (0, import_react12.useRef)(0);
-  const splitSerial = (0, import_react12.useRef)(0);
-  const promotion = (0, import_react12.useRef)();
-  const [promoting, setPromoting] = (0, import_react12.useState)();
+  (0, import_react13.useEffect)(() => host && fish && panel === null ? mountTurnBookmarks(host, fish) : void 0, [host, fish, panel]);
+  const [canvas, setCanvas] = (0, import_react13.useState)(null);
+  const [size, setSize] = (0, import_react13.useState)({ width: 0, height: 0, x: 0, y: 0, header: 0 });
+  const [layout, setLayout] = (0, import_react13.useState)(mainLayout);
+  const [notice, setNotice] = (0, import_react13.useState)("");
+  const [preview, setPreview] = (0, import_react13.useState)();
+  const drag = (0, import_react13.useRef)({ consumed: false });
+  const resize = (0, import_react13.useRef)();
+  const pointerDock = (0, import_react13.useRef)();
+  const suppressClick = (0, import_react13.useRef)(0);
+  const splitSerial = (0, import_react13.useRef)(0);
+  const promotion = (0, import_react13.useRef)();
+  const [promoting, setPromoting] = (0, import_react13.useState)();
   const labelFor = (id2) => props.store.getSnapshot().nodes.get(id2 === MAIN_PANE ? current ?? "" : id2)?.label ?? panes.find((pane) => pane.id === id2)?.label ?? "\u4F1A\u8BDD";
   const close = (id2) => {
     if (id2 !== MAIN_PANE) {
@@ -19159,7 +19428,7 @@ function SessionViews(props) {
     promotion.current = { closed: current ?? "", replacement: replacement.id };
     setPromoting(replacement.id);
   };
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     if (!promoting || promotion.current?.replacement !== promoting) return;
     const node = props.store.getSnapshot().nodes.get(promoting);
     props.selectSession(node?.subagent ? { parentSessionId: node.parentId, childSessionId: node.id, mode: node.subagentMode } : promoting);
@@ -19171,7 +19440,7 @@ function SessionViews(props) {
     }, 1e4);
     return () => window.clearTimeout(timer);
   }, [promoting, props.selectSession, props.store]);
-  const geometry = (0, import_react12.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
+  const geometry = (0, import_react13.useMemo)(() => splitGeometry(layout, size.width, size.height), [layout, size.width, size.height]);
   const focus = (id2) => queueMicrotask(() => [...document.querySelectorAll("[data-sessivra-pane]")].find((element) => element.dataset.sessivraPane === id2)?.focus());
   const dock = (id2, destination, edge) => {
     const source2 = id2 === current ? MAIN_PANE : id2;
@@ -19193,13 +19462,13 @@ function SessionViews(props) {
     setNotice("");
     focus(source2);
   };
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     let mounted;
     const scan = () => {
-      const content = [...document.querySelectorAll("[data-conversation-content]")].find((element) => !element.closest("[data-sessivra-pane]") && element.parentElement?.hasAttribute("data-phase"));
-      setNativeCurrent(content?.dataset.conversationSession);
-      if (mounted?.isConnected && content?.parentElement === mounted) return;
-      mounted = content?.parentElement ?? void 0;
+      const content2 = [...document.querySelectorAll("[data-conversation-content]")].find((element) => !element.closest("[data-sessivra-pane]") && element.parentElement?.hasAttribute("data-phase"));
+      setNativeCurrent(content2?.dataset.conversationSession);
+      if (mounted?.isConnected && content2?.parentElement === mounted) return;
+      mounted = content2?.parentElement ?? void 0;
       setHost((previous) => previous === mounted ? previous : mounted);
     };
     const observer = new MutationObserver(scan);
@@ -19207,7 +19476,7 @@ function SessionViews(props) {
     scan();
     return () => observer.disconnect();
   }, []);
-  (0, import_react12.useLayoutEffect)(() => {
+  (0, import_react13.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     host.dataset.sessivraViews = "true";
     return () => {
@@ -19215,7 +19484,7 @@ function SessionViews(props) {
       for (const name of ["left", "top", "width", "height"]) host.style.removeProperty(`--sessivra-main-${name}`);
     };
   }, [host, panel]);
-  (0, import_react12.useLayoutEffect)(() => {
+  (0, import_react13.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const header = host.querySelector(':scope > [data-slot="conversation.header"] header') ?? host.querySelector(":scope > header");
     host.dataset.sessivraSplit = String(panes.length > 0);
@@ -19233,7 +19502,7 @@ function SessionViews(props) {
       }
     };
   }, [host, panel, panes.length, current]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     const visible = new Set(panel === null ? [current, ...panes.map((pane) => pane.id)] : []);
     const marked = /* @__PURE__ */ new Set();
     const sync = () => {
@@ -19253,7 +19522,7 @@ function SessionViews(props) {
       for (const row of marked) delete row.dataset.sessivraVisible;
     };
   }, [current, panes, panel]);
-  (0, import_react12.useLayoutEffect)(() => {
+  (0, import_react13.useLayoutEffect)(() => {
     if (!canvas || !host) return;
     const measure = () => {
       const rect = canvas.getBoundingClientRect(), outer = host.getBoundingClientRect();
@@ -19272,7 +19541,7 @@ function SessionViews(props) {
       window.removeEventListener("resize", measure);
     };
   }, [canvas, host, panes.length, current]);
-  (0, import_react12.useLayoutEffect)(() => {
+  (0, import_react13.useLayoutEffect)(() => {
     if (!host || panel !== null) return;
     const rect = geometry.panes.get(MAIN_PANE);
     if (!rect) return;
@@ -19283,11 +19552,11 @@ function SessionViews(props) {
       host.style.removeProperty("--sessivra-header-top");
     };
   }, [host, panel, geometry, size.x, size.y, size.header, panes.length]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     const retained = new Set(panes.map((pane) => pane.id));
     setLayout((previous) => paneIds(previous).filter((id2) => id2 !== MAIN_PANE && !retained.has(id2)).reduce((next, id2) => removePane(next, id2) ?? mainLayout(), previous));
   }, [panes]);
-  (0, import_react12.useLayoutEffect)(() => {
+  (0, import_react13.useLayoutEffect)(() => {
     if (current && promotion.current?.replacement === current) {
       setLayout((previous) => promotePane(previous, current));
       promotion.current = void 0;
@@ -19298,7 +19567,7 @@ function SessionViews(props) {
     }
     if (current) props.views.close(current);
   }, [current, props.views]);
-  (0, import_react12.useEffect)(() => {
+  (0, import_react13.useEffect)(() => {
     if (!host || !canvas || panel !== null) return;
     const hit = (event) => {
       const bounds = canvas.getBoundingClientRect(), x = event.clientX - bounds.left, y = event.clientY - bounds.top;
@@ -19453,26 +19722,26 @@ function SessionViews(props) {
   };
   const previewSource = drag.current.source ?? pointerDock.current?.source;
   if (!host || panel !== null) return null;
-  return (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_jsx_runtime13.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("style", { children: styles4 }),
-    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
-    /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
-      notice && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
+  return (0, import_react_dom4.createPortal)(/* @__PURE__ */ (0, import_jsx_runtime14.jsxs)(import_jsx_runtime14.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("style", { children: styles4 }),
+    /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(CompactHeaders, { host, Menu: props.Menu, labelFor, close, headerViews: props.headerViews, current }),
+    /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { ref: setCanvas, className: "sessivra-canvas", "data-sessivra-canvas": "true", children: [
+      notice && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "sessivra-views-notice", role: "status", children: notice }),
       panes.map((pane) => {
         const rect = geometry.panes.get(pane.id);
         if (!rect) return null;
-        return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("section", { className: "sessivra-pane", style: position(rect), "data-sessivra-pane": pane.id, "aria-label": `\u4F1A\u8BDD\u89C6\u56FE\uFF1A${pane.label}`, tabIndex: -1, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("header", { className: "sessivra-pane-header", draggable: true, "data-view-source": pane.id, onDragStart: (event) => {
             event.dataTransfer.setData("text/plain", pane.id);
             event.dataTransfer.effectAllowed = "move";
           }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
-            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "sessivra-pane-native-header", children: pane.ready && !pane.error ? /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.header", {}) }) : /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "sessivra-pane-title", children: pane.label }) }),
+            (!pane.ready || pane.error) && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("button", { className: "sessivra-pane-close", type: "button", "aria-label": `\u5173\u95ED\u89C6\u56FE\uFF1A${pane.label}`, title: "\u5173\u95ED\u89C6\u56FE", onPointerDown: (event) => event.stopPropagation(), onClick: () => close(pane.id), children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("svg", { "aria-hidden": "true", width: "14", height: "14", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("path", { d: "m4 4 8 8M12 4l-8 8", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round" }) }) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "sessivra-pane-body", children: promoting === pane.id ? null : pane.error ? /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("p", { role: "alert", children: pane.error }) : !pane.ready ? /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("p", { role: "status", children: "\u6B63\u5728\u6253\u5F00\u4F1A\u8BDD\u2026" }) : /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(props.SessionProvider, { session: pane.reference, children: props.renderSlot("sessivra.conversation.pane", {}) }) })
         ] }, pane.id);
       }),
-      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+      geometry.dividers.map(({ node, rect, parent }, index) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
         "div",
         {
           role: "separator",
@@ -19522,13 +19791,13 @@ function SessionViews(props) {
         },
         node.id
       )),
-      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
+      preview && preview.target !== (previewSource === current ? MAIN_PANE : previewSource) && geometry.panes.has(preview.target) && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "sessivra-drop-preview", "aria-hidden": "true", "data-drop-edge": preview.edge, "data-drop-target": preview.target, style: position(edgePreview(geometry.panes.get(preview.target), preview.edge)) })
     ] })
   ] }), host);
 }
 
 // src/native-pane-header.tsx
-var import_jsx_runtime14 = require("react/jsx-runtime");
+var import_jsx_runtime15 = require("react/jsx-runtime");
 function mirrorNativePaneHeader(slots) {
   let disposed = false, queued = false;
   let cleanup = [];
@@ -19551,20 +19820,20 @@ function mirrorNativePaneHeader(slots) {
       }
       for (const entry of slots.entriesOfSlot(source2)) {
         const children = {};
-        const names = /* @__PURE__ */ new Map();
+        const names2 = /* @__PURE__ */ new Map();
         for (const [name, spec] of Object.entries(entry.children ?? {})) {
           const alias = `sessivra.pane-header.${name}`;
-          names.set(name, alias);
+          names2.set(name, alias);
           children[alias] = spec;
         }
         const Component = entry.component;
         const Occurrence = (props) => {
           const render = (method) => (name, ...args) => {
-            const alias = names.get(name);
+            const alias = names2.get(name);
             if (!alias) throw new Error(`Undeclared native header child: ${name}`);
             return props[method](alias, ...args);
           };
-          return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
+          return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(Component, { ...props, renderSlot: render("renderSlot"), renderSlotChain: render("renderSlotChain") });
         };
         cleanup.push(slots.register({
           name: target2,
@@ -19573,9 +19842,9 @@ function mirrorNativePaneHeader(slots) {
           ...entry.store ? { store: entry.store } : {},
           ...entry.locale ? { locale: entry.locale } : {},
           ...entry.select ? { select: entry.select } : {},
-          ...names.size ? { children } : {}
+          ...names2.size ? { children } : {}
         }, Occurrence));
-        for (const [name, alias] of names) mirror(name, alias);
+        for (const [name, alias] of names2) mirror(name, alias);
       }
     };
     mirror("conversation.header", "sessivra.conversation.header");
@@ -19589,7 +19858,7 @@ function mirrorNativePaneHeader(slots) {
 }
 
 // src/header-views.tsx
-var import_react13 = require("react");
+var import_react14 = require("react");
 function createHeaderViews() {
   let snapshot2 = /* @__PURE__ */ new Map();
   const listeners = /* @__PURE__ */ new Set();
@@ -19619,7 +19888,7 @@ function createHeaderViews() {
 }
 function HeaderViewsBridge(props) {
   const views = props.useConversationViews((views2) => views2), current = props.useStore((state) => state.view);
-  (0, import_react13.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
+  (0, import_react14.useEffect)(() => props.headerViews.register(props.sessionId, { views, current, selectView: props.selectView }), [props.headerViews, props.sessionId, views, current, props.selectView]);
   return null;
 }
 function wireHeaderViews(slots, headerViews) {
@@ -19646,7 +19915,7 @@ function wireHeaderViews(slots, headerViews) {
 }
 
 // src/session-reference-drop.tsx
-var import_react14 = require("react");
+var import_react15 = require("react");
 function createSessionReferenceDrop() {
   const inputs = /* @__PURE__ */ new Map();
   return {
@@ -19673,18 +19942,19 @@ function createSessionReferenceDrop() {
   };
 }
 function SessionReferenceDropInput(props) {
-  (0, import_react14.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
+  (0, import_react15.useEffect)(() => props.referenceDrop.register(props.sessionId, props.inputActions, props.sessionInput), [props.referenceDrop, props.sessionId, props.inputActions, props.sessionInput]);
   return null;
 }
 
 // src/client.tsx
-var import_jsx_runtime15 = require("react/jsx-runtime");
+var import_jsx_runtime16 = require("react/jsx-runtime");
 var reportLabels = { code: { copyLabel: "\u590D\u5236\u4EE3\u7801", copiedLabel: "\u5DF2\u590D\u5236" }, footnotes: "\u811A\u6CE8" };
-var renderReport = (text2) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_dsh_client_ui_primitives3.MarkdownText, { text: text2, labels: reportLabels });
+var renderReport = (text2) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_dsh_client_ui_primitives3.MarkdownText, { text: text2, labels: reportLabels });
 var bookmarkFish = { path: import_dsh_client_ui_primitives3.FISH_LOGO_PATH, ...import_dsh_client_ui_primitives3.FISH_LOGO_VIEWBOX };
 var inject = ["slots", "remote"];
 async function apply(ctx) {
   await ctx.remote.$mount(remoteContribution);
+  if (typeof document !== "undefined" && document.body) ctx.effect(() => installCliToolOutput(document), "sessivra: collapse CLI tool output");
   await ctx.inject(["remote.sessionMessenger"], (remoteCtx) => {
     remoteCtx.inject(["uiWorkspace", "sessions", "conversation", "remote.sessionCollaboration"], (treeCtx) => {
       const treeSlots = treeCtx.slots;
@@ -19723,15 +19993,15 @@ async function apply(ctx) {
           id: panelId,
           order: 22,
           label: () => "\u5BFC\u5165\u4F1A\u8BDD"
-        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("path", { d: "M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4" }) })));
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("path", { d: "M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4" }) })));
         treeSlots.inject("main", () => treeSlots.register({ name: "main", key: panelId }, function MountedImport() {
-          const current = import_react15.default.useSyncExternalStore((listener) => {
+          const current = import_react16.default.useSyncExternalStore((listener) => {
             listeners.add(listener);
             return () => {
               listeners.delete(listener);
             };
           }, () => selection);
-          return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
             ImportPanel,
             {
               api,
@@ -19754,7 +20024,7 @@ async function apply(ctx) {
         }, ({ sessionId, useMenuOpenState }) => {
           const [, setOpen] = useMenuOpenState();
           if (!/^sessivra-import-[a-f0-9]{32}$/.test(sessionId)) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_dsh_client_ui_primitives3.MenuItemButton, { onSelect: () => {
+          return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_dsh_client_ui_primitives3.MenuItemButton, { onSelect: () => {
             setOpen(false);
             show(sessionId);
           }, children: "\u67E5\u770B\u5BFC\u5165\u539F\u6863" });
@@ -19805,6 +20075,12 @@ async function apply(ctx) {
           return result2.value;
         };
         panelCtx.inject(["inputTriggers"], (mentionCtx) => {
+          const cli = createCliMentionSource(async () => {
+            const result2 = await api.cliChatProviders();
+            return result2.ok ? result2.value : [];
+          });
+          const registry2 = mentionCtx.inputTriggers;
+          mentionCtx.effect(() => registry2.registerSource(cli), "sessivra: CLI chat mentions");
           const source2 = createBookmarkMentionSource(loadBookmarks2, async (origin, turn) => {
             const result2 = await api.bookmarkReference(origin, turn);
             if (!result2.ok) throw new Error(result2.error.message);
@@ -19832,12 +20108,18 @@ async function apply(ctx) {
         };
         panelCtx.inject(["uiConversation"], (textCtx) => {
           const { uiConversation } = textCtx;
+          textCtx.effect(() => uiConversation.userText.register(cliUserText), "sessivra: display sent CLI selection");
+          panelSlots.inject("conversation.user.text.node", () => panelSlots.register({
+            name: "conversation.user.text.node",
+            key: cliUserText.id,
+            priority: 100
+          }, ({ node }) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("strong", { children: node.data.label })));
           textCtx.effect(() => uiConversation.userText.register(bookmarkUserText), "sessivra: display sent bookmark references");
           panelSlots.inject("conversation.user.text.node", () => panelSlots.register({
             name: "conversation.user.text.node",
             key: bookmarkUserText.id,
             priority: 100
-          }, ({ node }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(SentBookmarkChip, { quote: node.data, jump: jumpBookmark, locateLegacy: async (quote) => {
+          }, ({ node }) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(SentBookmarkChip, { quote: node.data, jump: jumpBookmark, locateLegacy: async (quote) => {
             const result2 = await api.locateLegacyBookmark(quote);
             if (!result2.ok) throw new Error(result2.error.message);
             return result2.value;
@@ -19848,8 +20130,8 @@ async function apply(ctx) {
           id: bookmarkPanelId,
           order: 21,
           label: () => "\u6536\u85CF"
-        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("svg", { width: size, height: size, viewBox: `-1 -1 ${bookmarkFish.width + 2} ${bookmarkFish.height + 2}`, fill: "none", stroke: "currentColor", strokeWidth: "1.4", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("path", { d: bookmarkFish.path }) })));
-        panelSlots.inject("main", () => panelSlots.register({ name: "main", key: bookmarkPanelId }, () => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(BookmarkLibrary, { load: loadBookmarks2, jump: jumpBookmark, Menu: import_dsh_client_ui_primitives3.Menu })));
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("svg", { width: size, height: size, viewBox: `-1 -1 ${bookmarkFish.width + 2} ${bookmarkFish.height + 2}`, fill: "none", stroke: "currentColor", strokeWidth: "1.4", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("path", { d: bookmarkFish.path }) })));
+        panelSlots.inject("main", () => panelSlots.register({ name: "main", key: bookmarkPanelId }, () => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(BookmarkLibrary, { load: loadBookmarks2, jump: jumpBookmark, Menu: import_dsh_client_ui_primitives3.Menu })));
         panelSlots.inject("shell.overlay", () => panelSlots.register({
           name: "shell.overlay",
           id: "sessivra-message-origin",
@@ -19860,20 +20142,20 @@ async function apply(ctx) {
           id: panelId,
           order: 20,
           label: () => taskPanelTitle
-        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("path", { d: "m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9" }) })));
+        }, ({ size }) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("path", { d: "m3 6 2 2 4-5M12 6h9M3 14l2 2 4-5M12 14h9M12 20h9" }) })));
         panelSlots.inject("main", () => panelSlots.register({ name: "main", key: panelId }, function Mounted(props) {
           const current = props.useSessions((s) => Object.values(s.byId).find((row) => row.retainedBy.mainView)?.id);
-          const selection = import_react15.default.useSyncExternalStore((listener) => {
+          const selection = import_react16.default.useSyncExternalStore((listener) => {
             listeners.add(listener);
             return () => {
               listeners.delete(listener);
             };
           }, () => requested);
-          import_react15.default.useEffect(() => () => {
+          import_react16.default.useEffect(() => () => {
             if (requested === selection && selection.source) requested = { key: selection.key + 1 };
           }, [selection]);
           const initialSession = selection.source ? selection.source.child?.parentSessionId ?? selection.source.origin.sessionId : current;
-          return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
             TaskPanel,
             {
               initialSession,

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-dev.31
+
+- Add a Task Center page for local CLI detection and official login. Reuse the last detection across desktop restarts and distinguish an unconfirmed probe from a confirmed logout.
+- Mention Codex or Grok Build in the composer to chat in DSH, or let DSH recommend a CLI and approve the switch. Keep replies, execution output, and supported permission decisions in the conversation.
+- Add configurable dispatch and session continuation for Claude Code, Codex, and Grok Build. Keep long tool output collapsed behind the native code block toolbar.
+
 ## 0.3.0-dev.30
 
 - Keep known child sessions nested when their workspace is collapsed. Reopening the workspace restores the branch under its original parent.

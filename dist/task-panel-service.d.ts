@@ -4,15 +4,21 @@ import { type LegacyBookmarkQuote, type MessageLocation, type MessageOrigin } fr
 import type { Collaboration } from './collaboration.js';
 import { type Messenger } from './core.js';
 import type { Tasks } from './tasks.js';
+import type { LocalCli, LocalCliStatus } from './local-cli.js';
 type Item = ReturnType<Tasks['panelTasks']>[number];
 export declare const labels: Record<Item['status'], string>;
 export declare class SessivraPanel extends TypertRemoteService {
     private tasks;
     private collaboration;
     private messenger;
+    private localCli;
     private history;
-    constructor(ctx: Context, tasks: Tasks, collaboration: Collaboration, messenger: Messenger);
+    constructor(ctx: Context, tasks: Tasks, collaboration: Collaboration, messenger: Messenger, localCli: LocalCli);
     private owner;
+    cliStatus(): Promise<LocalCliStatus[]>;
+    refreshCliStatus(): Promise<LocalCliStatus[]>;
+    cliChatProviders(): ("codex" | "grok")[];
+    cliLogin(provider: LocalCliStatus['provider']): Promise<"started" | "already-running" | "terminal-required" | "missing">;
     searchHistory(query: string): Promise<{
         items: {
             sessionId: string;
@@ -171,7 +177,7 @@ export declare class SessivraPanel extends TypertRemoteService {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;
@@ -281,7 +287,7 @@ export declare class SessivraPanel extends TypertRemoteService {
             id: string;
             taskId: string;
             target: string;
-            kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+            kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
             revision: number;
             decisionRevision: number;
             messageId: string;

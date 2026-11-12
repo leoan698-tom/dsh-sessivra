@@ -12,6 +12,7 @@ import type { Tasks } from './tasks.js';
 import { taskIdFor } from './tasks.js';
 import { panelCommand, panelQuery, type PanelCommand } from './panel-contract.js';
 import { isRepositoryAgent, managedBySuperagent, requireSessivraSession } from './session-ownership.js';
+import type { LocalCli, LocalCliStatus } from './local-cli.js';
 
 type Item = ReturnType<Tasks['panelTasks']>[number];
 export const labels: Record<Item['status'], string> = {
@@ -35,6 +36,7 @@ export class SessivraPanel extends TypertRemoteService {
     private tasks: Tasks,
     private collaboration: Collaboration,
     private messenger: Messenger,
+    private localCli: LocalCli,
   ) {
     super(ctx, 'sessivraTaskPanel');
     this.history = new MessageHistory(ctx);
@@ -42,6 +44,22 @@ export class SessivraPanel extends TypertRemoteService {
   }
   private owner() {
     if (this.ctx.invocation?.peer.principal.kind !== 'owner') throw new Error('PANEL_OWNER_REQUIRED');
+  }
+  @Remote async cliStatus() {
+    this.owner();
+    return this.localCli.status();
+  }
+  @Remote async refreshCliStatus() {
+    this.owner();
+    return this.localCli.status(true);
+  }
+  @Remote cliChatProviders() {
+    this.owner();
+    return this.localCli.chatProviders();
+  }
+  @Remote async cliLogin(provider: LocalCliStatus['provider']) {
+    this.owner();
+    return this.localCli.login(provider);
   }
   @Remote async searchHistory(query: string) {
     this.owner();

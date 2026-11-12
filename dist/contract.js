@@ -36,6 +36,10 @@ export const descriptors = [
     ].map(e => ({ ...e, id: `dsh-plugin-sessivra#sessivraImport/${e.method}`, service: 'sessivraImport', namespace: 'sessivraImport', invocation: { kind: 'direct' }, result: codec('import-result', z.json()) })),
     ...[
         { method: 'list', parameters: [parameter('query', panelQuery)] },
+        { method: 'cliStatus', parameters: [] },
+        { method: 'refreshCliStatus', parameters: [] },
+        { method: 'cliChatProviders', parameters: [] },
+        { method: 'cliLogin', parameters: [parameter('provider', z.enum(['claude', 'codex', 'grok']))] },
         { method: 'participants', parameters: [] },
         { method: 'operation', parameters: [parameter('id', z.string().uuid())] },
         { method: 'detail', parameters: [parameter('id', z.string().max(160))] },

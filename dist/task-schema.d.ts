@@ -142,11 +142,11 @@ export declare const eventKind: z.ZodEnum<{
     start: "start";
     question: "question";
     review: "review";
+    resume: "resume";
     result: "result";
     decision: "decision";
     update: "update";
     attention: "attention";
-    resume: "resume";
 }>;
 export declare const eventSchema: z.ZodObject<{
     id: z.ZodString;
@@ -158,11 +158,11 @@ export declare const eventSchema: z.ZodObject<{
         start: "start";
         question: "question";
         review: "review";
+        resume: "resume";
         result: "result";
         decision: "decision";
         update: "update";
         attention: "attention";
-        resume: "resume";
     }>;
     revision: z.ZodNumber;
     decisionRevision: z.ZodNumber;
@@ -308,11 +308,11 @@ export declare const taskStateSchema: z.ZodObject<{
             start: "start";
             question: "question";
             review: "review";
+            resume: "resume";
             result: "result";
             decision: "decision";
             update: "update";
             attention: "attention";
-            resume: "resume";
         }>;
         revision: z.ZodNumber;
         decisionRevision: z.ZodNumber;
@@ -460,11 +460,11 @@ export declare const archiveSchema: z.ZodObject<{
             start: "start";
             question: "question";
             review: "review";
+            resume: "resume";
             result: "result";
             decision: "decision";
             update: "update";
             attention: "attention";
-            resume: "resume";
         }>;
         revision: z.ZodNumber;
         decisionRevision: z.ZodNumber;
@@ -619,11 +619,11 @@ export declare const archiveDomainSpec: {
                         start: "start";
                         question: "question";
                         review: "review";
+                        resume: "resume";
                         result: "result";
                         decision: "decision";
                         update: "update";
                         attention: "attention";
-                        resume: "resume";
                     }>;
                     revision: z.ZodNumber;
                     decisionRevision: z.ZodNumber;
@@ -784,11 +784,11 @@ export declare const taskDomainSpec: {
                     start: "start";
                     question: "question";
                     review: "review";
+                    resume: "resume";
                     result: "result";
                     decision: "decision";
                     update: "update";
                     attention: "attention";
-                    resume: "resume";
                 }>;
                 revision: z.ZodNumber;
                 decisionRevision: z.ZodNumber;
@@ -910,7 +910,7 @@ export declare const taskDomainSpec: {
                 id: string;
                 taskId: string;
                 target: string;
-                kind: "cancel" | "pause" | "start" | "question" | "review" | "result" | "decision" | "update" | "attention" | "resume";
+                kind: "cancel" | "pause" | "start" | "question" | "review" | "resume" | "result" | "decision" | "update" | "attention";
                 revision: number;
                 decisionRevision: number;
                 messageId: string;
